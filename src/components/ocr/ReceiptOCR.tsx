@@ -69,6 +69,9 @@ export function ReceiptOCR({ onExtracted }: ReceiptOCRProps) {
   const [segmentationMode, setSegmentationMode] = useState<SegmentationMode>('fast')
   const [samLoaded, setSamLoaded] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [fileQueue, setFileQueue] = useState<File[]>([])
+  const [queueIndex, setQueueIndex] = useState(0)
+  const [totalInQueue, setTotalInQueue] = useState(0)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const currentFileRef = useRef<File | null>(null)
 
@@ -492,6 +495,21 @@ export function ReceiptOCR({ onExtracted }: ReceiptOCRProps) {
     setProgress(0)
   }
 
+  // Process next file in queue
+  const processNextInQueue = () => {
+    const nextIndex = queueIndex + 1
+    if (nextIndex < fileQueue.length) {
+      setQueueIndex(nextIndex)
+      reset()
+      processImage(fileQueue[nextIndex])
+    } else {
+      // Queue complete
+      setFileQueue([])
+      setQueueIndex(0)
+      setTotalInQueue(0)
+    }
+  }
+
   const currentReceipt = receipts[currentReceiptIndex]
 
   const handleUseReceipt = () => {
@@ -594,6 +612,7 @@ export function ReceiptOCR({ onExtracted }: ReceiptOCRProps) {
                 type="file"
                 accept="image/*"
                 capture="environment"
+                multiple
                 onChange={handleFileChange}
                 className="hidden"
                 id="receipt-upload"
@@ -764,6 +783,11 @@ export function ReceiptOCR({ onExtracted }: ReceiptOCRProps) {
                     <Plus className="h-4 w-4 mr-2" />
                     Use This Receipt
                   </Button>
+                  {fileQueue.length > 0 && (
+                    <Button variant="secondary" onClick={processNextInQueue}>
+                      Next ({queueIndex + 1}/{totalInQueue})
+                    </Button>
+                  )}
                   {receipts.length > 1 && (
                     <Button variant="secondary" onClick={handleUseAllReceipts}>
                       <Plus className="h-4 w-4 mr-2" />
