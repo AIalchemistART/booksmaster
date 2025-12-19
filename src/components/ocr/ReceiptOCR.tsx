@@ -18,7 +18,7 @@ interface Word {
 }
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Loader2, Camera, Check, ChevronLeft, ChevronRight, Scissors, Plus, Sparkles, Zap } from 'lucide-react'
+import { Loader2, Camera, Check, ChevronLeft, ChevronRight, Scissors, Plus, Sparkles, Zap, Pencil } from 'lucide-react'
 
 interface LineItem {
   description: string
@@ -68,6 +68,7 @@ export function ReceiptOCR({ onExtracted }: ReceiptOCRProps) {
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 })
   const [segmentationMode, setSegmentationMode] = useState<SegmentationMode>('fast')
   const [samLoaded, setSamLoaded] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const currentFileRef = useRef<File | null>(null)
 
