@@ -68,14 +68,19 @@ export default function HeicConverter({ onConvertedFiles }: HeicConverterProps) 
         throw new Error('Original file not found')
       }
 
-      // Dynamic import heic2any to avoid SSR issues
-      const heic2any = (await import('heic2any')).default
+      // Dynamic import heic-to for better HEIC support
+      const { heicTo } = await import('heic-to')
 
-      const convertedBlob = await heic2any({
+      // Convert HEIC to JPEG blob
+      const convertedBlob = await heicTo({
         blob: originalFile,
-        toType: 'image/jpeg',
+        type: 'image/jpeg',
         quality: quality / 100,
-      }) as Blob
+      })
+      
+      if (!convertedBlob) {
+        throw new Error('No output from conversion')
+      }
 
       const convertedUrl = URL.createObjectURL(convertedBlob)
 
@@ -85,11 +90,25 @@ export default function HeicConverter({ onConvertedFiles }: HeicConverterProps) 
         convertedUrl,
         status: 'done',
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('HEIC conversion error:', error)
+      
+      // Provide more specific error messages
+      let errorMsg = 'Conversion failed'
+      if (error?.message) {
+        if (error.message.includes('not a HEIC') || error.message.includes('Invalid')) {
+          errorMsg = 'Not a valid HEIC file'
+        } else if (error.message.includes('ArrayBuffer')) {
+          errorMsg = 'File read error'
+        } else {
+          errorMsg = error.message.substring(0, 50)
+        }
+      }
+      
       return {
         ...file,
         status: 'error',
-        error: error instanceof Error ? error.message : 'Conversion failed',
+        error: errorMsg,
       }
     }
   }
