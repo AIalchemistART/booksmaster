@@ -10,6 +10,17 @@ const HeicConverter = dynamic(
 export default function ToolsPage() {
   const handleConvertedFiles = (files: File[]) => {
     console.log('Converted files ready for use:', files)
+    // Auto-download each converted file
+    files.forEach(file => {
+      const url = URL.createObjectURL(file)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = file.name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    })
   }
 
   return (
@@ -25,3 +36,4 @@ export default function ToolsPage() {
     </div>
   )
 }
+
