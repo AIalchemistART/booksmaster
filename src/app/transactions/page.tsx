@@ -20,6 +20,12 @@ const categoryOptions = [
   { value: 'subcontractors', label: 'Subcontractors' },
   { value: 'insurance', label: 'Insurance' },
   { value: 'permits', label: 'Permits' },
+  { value: 'office_supplies', label: 'Office Supplies' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'vehicle_maintenance', label: 'Vehicle Maintenance' },
+  { value: 'equipment_rental', label: 'Equipment Rental' },
+  { value: 'professional_services', label: 'Professional Services' },
+  { value: 'utilities', label: 'Utilities' },
   { value: 'other', label: 'Other' },
 ]
 
@@ -131,7 +137,7 @@ export default function TransactionsPage() {
       notes: transaction.notes || '',
     })
     setEditingId(transaction.id)
-    setShowForm(true)
+    setShowForm(false) // Don't show the top form when editing inline
   }
 
   // Convert receipt to transaction (basic conversion)
@@ -471,53 +477,143 @@ export default function TransactionsPage() {
                 </thead>
                 <tbody>
                   {filteredTransactions.map((transaction) => (
-                    <tr key={transaction.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4">{formatDate(transaction.date)}</td>
-                      <td className="py-3 px-4">
-                        <div>
-                          <p className="font-medium">{transaction.description}</p>
-                          {transaction.notes && (
-                            <p className="text-sm text-gray-500">{transaction.notes}</p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 capitalize">{transaction.category}</td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            transaction.type === 'income'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                    <>
+                      <tr key={transaction.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4">{formatDate(transaction.date)}</td>
+                        <td className="py-3 px-4">
+                          <div>
+                            <p className="font-medium">{transaction.description}</p>
+                            {transaction.notes && (
+                              <p className="text-sm text-gray-500">{transaction.notes}</p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 capitalize">{transaction.category.replace(/_/g, ' ')}</td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              transaction.type === 'income'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {transaction.type}
+                          </span>
+                        </td>
+                        <td
+                          className={`py-3 px-4 text-right font-medium ${
+                            transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                           }`}
                         >
-                          {transaction.type}
-                        </span>
-                      </td>
-                      <td
-                        className={`py-3 px-4 text-right font-medium ${
-                          transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                        }`}
-                      >
-                        {transaction.type === 'income' ? '+' : '-'}
-                        {formatCurrency(transaction.amount)}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => handleEdit(transaction)}
-                            className="p-1 text-gray-500 hover:text-blue-600"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteTransaction(transaction.id)}
-                            className="p-1 text-gray-500 hover:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                          {transaction.type === 'income' ? '+' : '-'}
+                          {formatCurrency(transaction.amount)}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleEdit(transaction)}
+                              className="p-1 text-gray-500 hover:text-blue-600"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteTransaction(transaction.id)}
+                              className="p-1 text-gray-500 hover:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      
+                      {/* Inline Edit Form */}
+                      {editingId === transaction.id && (
+                        <tr key={`edit-${transaction.id}`}>
+                          <td colSpan={6} className="p-4 bg-blue-50 border-b-2 border-blue-200">
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <Input
+                                  label="Date"
+                                  type="date"
+                                  value={formData.date}
+                                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                  required
+                                />
+                                <Input
+                                  label="Amount"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="0.00"
+                                  value={formData.amount}
+                                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                                  required
+                                />
+                                <Select
+                                  label="Type"
+                                  options={typeOptions}
+                                  value={formData.type}
+                                  onChange={(e) => setFormData({ ...formData, type: e.target.value as TransactionType })}
+                                />
+                                <Select
+                                  label="Category"
+                                  options={categoryOptions}
+                                  value={formData.category}
+                                  onChange={(e) => setFormData({ ...formData, category: e.target.value as ExpenseCategory })}
+                                />
+                              </div>
+                              <Input
+                                label="Description"
+                                placeholder="Enter description"
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                required
+                              />
+                              
+                              {/* AI Categorization Button */}
+                              <div className="bg-blue-100 border border-blue-300 rounded-lg p-3">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="text-sm font-medium text-blue-900 mb-1">
+                                      Smart Categorization
+                                    </p>
+                                    <p className="text-xs text-blue-700">
+                                      Let AI analyze the description and suggest the best type and category
+                                    </p>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={handleSmartCategorize}
+                                    disabled={categorizing || !formData.description || !formData.amount}
+                                  >
+                                    <Sparkles className="h-4 w-4 mr-2" />
+                                    {categorizing ? 'Analyzing...' : 'Auto-Categorize'}
+                                  </Button>
+                                </div>
+                              </div>
+
+                              <Input
+                                label="Notes (optional)"
+                                placeholder="Additional notes"
+                                value={formData.notes}
+                                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                              />
+                              <div className="flex gap-2">
+                                <Button type="submit">
+                                  <Check className="h-4 w-4 mr-2" />
+                                  Update
+                                </Button>
+                                <Button type="button" variant="outline" onClick={resetForm}>
+                                  <X className="h-4 w-4 mr-2" />
+                                  Cancel
+                                </Button>
+                              </div>
+                            </form>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   ))}
                 </tbody>
               </table>

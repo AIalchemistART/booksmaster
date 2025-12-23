@@ -20,6 +20,12 @@ const categoryLabels: Record<ExpenseCategory, string> = {
   subcontractors: 'Subcontractors',
   insurance: 'Insurance',
   permits: 'Permits',
+  office_supplies: 'Office Supplies',
+  marketing: 'Marketing',
+  vehicle_maintenance: 'Vehicle Maintenance',
+  equipment_rental: 'Equipment Rental',
+  professional_services: 'Professional Services',
+  utilities: 'Utilities',
   other: 'Other',
 }
 

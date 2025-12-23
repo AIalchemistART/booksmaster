@@ -6,6 +6,12 @@ export type ExpenseCategory =
   | 'subcontractors'
   | 'insurance'
   | 'permits'
+  | 'office_supplies'
+  | 'marketing'
+  | 'vehicle_maintenance'
+  | 'equipment_rental'
+  | 'professional_services'
+  | 'utilities'
   | 'other'
 
 // Custody expense types

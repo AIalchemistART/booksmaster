@@ -142,32 +142,94 @@ function fallbackCategorization(
     }
   }
 
-  // Expense categorization by keywords
-  if (desc.includes('fuel') || desc.includes('gas') || vendorLower.includes('shell') || vendorLower.includes('chevron')) {
-    return { type: 'expense', category: 'Fuel', confidence: 0.7 }
+  // Expense categorization by keywords and vendor names
+  
+  // Fuel/Gas stations
+  if (desc.includes('fuel') || desc.includes('gas') || desc.includes('diesel') ||
+      vendorLower.includes('shell') || vendorLower.includes('chevron') || 
+      vendorLower.includes('exxon') || vendorLower.includes('mobil') ||
+      vendorLower.includes('bp') || vendorLower.includes('arco') ||
+      vendorLower.includes('texaco') || vendorLower.includes('citgo') ||
+      vendorLower.includes('7-eleven') || vendorLower.includes('circle k')) {
+    return { type: 'expense', category: 'Fuel', confidence: 0.8 }
   }
 
-  if (desc.includes('home depot') || desc.includes('lowes') || vendorLower.includes('depot') || vendorLower.includes('lowes')) {
+  // Building materials suppliers
+  if (desc.includes('home depot') || desc.includes('lowes') || desc.includes('lumber') ||
+      vendorLower.includes('depot') || vendorLower.includes('lowes') ||
+      vendorLower.includes('84 lumber') || vendorLower.includes('menards') ||
+      vendorLower.includes('ace hardware')) {
     return { type: 'expense', category: 'Materials', confidence: 0.8 }
   }
 
-  if (desc.includes('tool') || desc.includes('hardware')) {
-    return { type: 'expense', category: 'Tools', confidence: 0.7 }
+  // Tools and equipment
+  if (desc.includes('tool') || desc.includes('drill') || desc.includes('saw') ||
+      vendorLower.includes('harbor freight') || vendorLower.includes('northern tool')) {
+    return { type: 'expense', category: 'Tools', confidence: 0.8 }
   }
 
-  if (desc.includes('insurance')) {
+  // Insurance
+  if (desc.includes('insurance') || desc.includes('premium') ||
+      vendorLower.includes('state farm') || vendorLower.includes('geico') ||
+      vendorLower.includes('progressive') || vendorLower.includes('allstate')) {
     return { type: 'expense', category: 'Insurance', confidence: 0.9 }
   }
 
-  if (desc.includes('permit')) {
-    return { type: 'expense', category: 'Permits', confidence: 0.9 }
+  // Permits and licenses
+  if (desc.includes('permit') || desc.includes('license') || desc.includes('fee') ||
+      vendorLower.includes('city of') || vendorLower.includes('county')) {
+    return { type: 'expense', category: 'Permits', confidence: 0.85 }
   }
 
-  // Default to Materials for expenses
+  // Office supplies
+  if (desc.includes('office') || desc.includes('staples') || desc.includes('paper') ||
+      vendorLower.includes('staples') || vendorLower.includes('office depot') ||
+      vendorLower.includes('officemax')) {
+    return { type: 'expense', category: 'Office Supplies', confidence: 0.8 }
+  }
+
+  // Marketing and advertising
+  if (desc.includes('marketing') || desc.includes('advertising') || desc.includes('ad') ||
+      desc.includes('website') || desc.includes('seo') || desc.includes('social media') ||
+      vendorLower.includes('google ads') || vendorLower.includes('facebook')) {
+    return { type: 'expense', category: 'Marketing', confidence: 0.8 }
+  }
+
+  // Vehicle maintenance
+  if (desc.includes('oil change') || desc.includes('tire') || desc.includes('brake') ||
+      desc.includes('repair') || desc.includes('auto') || desc.includes('vehicle') ||
+      vendorLower.includes('jiffy lube') || vendorLower.includes('pep boys') ||
+      vendorLower.includes('midas') || vendorLower.includes('firestone')) {
+    return { type: 'expense', category: 'Vehicle Maintenance', confidence: 0.8 }
+  }
+
+  // Equipment rental
+  if (desc.includes('rental') || desc.includes('rent') || desc.includes('lease') ||
+      vendorLower.includes('sunbelt') || vendorLower.includes('united rentals') ||
+      vendorLower.includes('herc rentals')) {
+    return { type: 'expense', category: 'Equipment Rental', confidence: 0.8 }
+  }
+
+  // Professional services (accountant, lawyer, etc.)
+  if (desc.includes('accountant') || desc.includes('lawyer') || desc.includes('attorney') ||
+      desc.includes('consultant') || desc.includes('professional') ||
+      vendorLower.includes('cpa') || vendorLower.includes('law firm')) {
+    return { type: 'expense', category: 'Professional Services', confidence: 0.8 }
+  }
+
+  // Utilities
+  if (desc.includes('electric') || desc.includes('water') || desc.includes('utility') ||
+      desc.includes('internet') || desc.includes('phone') ||
+      vendorLower.includes('pge') || vendorLower.includes('at&t') ||
+      vendorLower.includes('verizon') || vendorLower.includes('comcast')) {
+    return { type: 'expense', category: 'Utilities', confidence: 0.8 }
+  }
+
+  // Default to Other for expenses (lower confidence)
   return {
     type: 'expense',
-    category: 'Materials',
-    confidence: 0.4
+    category: 'Other',
+    confidence: 0.3
   }
 }
 
