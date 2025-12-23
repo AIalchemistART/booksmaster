@@ -20,7 +20,15 @@ export async function generateTaxReceiptDocx(
       properties: {
         page: {
           size: {
-            orientation: 'landscape' as any
+            orientation: 'landscape' as any,
+            width: 15840,  // 11 inches
+            height: 12240  // 8.5 inches
+          },
+          margin: {
+            top: 720,    // 0.5 inch
+            right: 720,
+            bottom: 720,
+            left: 720
           }
         }
       },
@@ -113,7 +121,15 @@ export async function generateCustodyReportDocx(
       properties: {
         page: {
           size: {
-            orientation: 'landscape' as any
+            orientation: 'landscape' as any,
+            width: 15840,  // 11 inches
+            height: 12240  // 8.5 inches
+          },
+          margin: {
+            top: 720,    // 0.5 inch
+            right: 720,
+            bottom: 720,
+            left: 720
           }
         }
       },
@@ -188,15 +204,17 @@ function createReceiptsTable(receipts: Receipt[], includeLineItems: boolean): Ta
     right: 100
   }
 
-  // Use DXA units (twentieths of a point) for absolute widths
-  // Landscape page width ~14400 DXA (10 inches usable)
+  // Use much larger DXA values to prevent text rotation
+  // Landscape Letter: 11" wide = 15840 DXA total
+  // 1 inch = 1440 DXA
   const colWidths = {
-    date: 2000,      // ~1.4 inches
-    vendor: 5000,    // ~3.5 inches  
-    amount: 2000,    // ~1.4 inches
+    date: 2500,      // ~1.7 inches
+    vendor: 7000,    // ~4.9 inches - largest for vendor names
+    amount: 2500,    // ~1.7 inches
     tax: 2000,       // ~1.4 inches
-    payment: 2500    // ~1.75 inches
+    payment: 2500    // ~1.7 inches
   }
+  const totalTableWidth = 16500 // ~11.5 inches in DXA
 
   const rows: TableRow[] = [
     // Header row
@@ -319,7 +337,7 @@ function createReceiptsTable(receipts: Receipt[], includeLineItems: boolean): Ta
   })
 
   return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
+    width: { size: totalTableWidth, type: WidthType.DXA },
     layout: TableLayoutType.FIXED,
     rows
   })

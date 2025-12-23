@@ -25,7 +25,8 @@ export default function ReportsPage() {
   const { custodyExpenses, transactions, receipts } = useStore()
   const [startDate, setStartDate] = useState(() => {
     const d = new Date()
-    d.setMonth(d.getMonth() - 1)
+    d.setMonth(0) // January (0-indexed)
+    d.setDate(1)  // 1st day of the month
     return d.toISOString().split('T')[0]
   })
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0])
