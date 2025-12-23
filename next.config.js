@@ -18,13 +18,28 @@ const nextConfig = {
         fs: false,
         path: false,
         crypto: false,
+        module: false,
+        'sharp': false,
       }
     }
     
-    // Ignore native modules
-    config.externals = config.externals || []
-    config.externals.push({
-      'onnxruntime-node': 'commonjs onnxruntime-node',
+    // Ignore native binary files and node-specific modules
+    config.module = config.module || {}
+    config.module.rules = config.module.rules || []
+    
+    // Ignore .node native binary files
+    config.module.rules.push({
+      test: /\.node$/,
+      use: 'ignore-loader'
+    })
+    
+    // Handle tesseract.js worker files
+    config.module.rules.push({
+      test: /\.worker\.js$/,
+      type: 'asset/resource',
+      generator: {
+        filename: 'static/[hash][ext][query]'
+      }
     })
     
     return config

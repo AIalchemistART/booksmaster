@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useStore } from '@/store'
-import { Settings, Download, Upload, Trash2, AlertTriangle } from 'lucide-react'
+import { Settings, Download, Upload, Trash2, AlertTriangle, Cpu, HardDrive } from 'lucide-react'
+import { GeminiApiKeySettings } from '@/components/settings/GeminiApiKeySettings'
+import { FileSystemSetup } from '@/components/settings/FileSystemSetup'
 
 export default function SettingsPage() {
   const store = useStore()
@@ -103,6 +105,32 @@ export default function SettingsPage() {
           <p className="text-sm text-gray-500 mt-4">
             Business information is for display purposes. Future versions will allow customization.
           </p>
+        </CardContent>
+      </Card>
+
+      {/* File System Storage */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HardDrive className="h-5 w-5" />
+            Local Storage
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FileSystemSetup />
+        </CardContent>
+      </Card>
+
+      {/* OCR Settings */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Cpu className="h-5 w-5" />
+            OCR & AI Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <GeminiApiKeySettings />
         </CardContent>
       </Card>
 

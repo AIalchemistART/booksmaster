@@ -22,6 +22,16 @@ export interface SegmentedRegion {
   croppedImageData: string // base64 data URL
 }
 
+export interface ReceiptCropResult {
+  croppedDataUrl: string
+  originalWidth: number
+  originalHeight: number
+  width: number
+  height: number
+  cropBounds: { x: number; y: number; width: number; height: number }
+  confidence: number
+}
+
 export async function loadSAMModel(
   onProgress?: (progress: number, status: string) => void
 ): Promise<void> {
@@ -67,26 +77,67 @@ async function generateMaskAtPoint(
   point: [number, number]
 ): Promise<{ mask: any; score: number } | null> {
   try {
+    console.log(`[SAM-MASK] Generating mask for point:`, point)
     const input_points = [[[point[0], point[1]]]]
+    console.log(`[SAM-MASK] Processing inputs...`)
     const inputs = await processor(rawImage, input_points)
+    console.log(`[SAM-MASK] Running model inference...`)
     const outputs = await model(inputs)
+    console.log(`[SAM-MASK] Post-processing masks...`)
     
     const masks = await processor.post_process_masks(
       outputs.pred_masks,
       inputs.original_sizes,
       inputs.reshaped_input_sizes
     )
+    console.log(`[SAM-MASK] Masks generated, validating...`)
+    console.log(`[SAM-MASK] Masks structure:`, masks)
+    
+    // Validate masks structure
+    if (!masks || !masks[0]) {
+      console.warn('[SAM-MASK] No masks generated for point:', point)
+      return null
+    }
     
     // Get the best mask (highest IoU score)
-    const scores = outputs.iou_scores.data
+    const scores = outputs.iou_scores.data || outputs.iou_scores
+    console.log(`[SAM-MASK] Scores array:`, scores, 'length:', scores?.length)
     const bestIdx = scores.indexOf(Math.max(...scores))
+    console.log(`[SAM-MASK] Best score index:`, bestIdx)
     
+    // masks is [Tensor] - access the first tensor
+    const maskTensor = masks[0]
+    console.log(`[SAM-MASK] Mask tensor:`, maskTensor, 'dims:', maskTensor.dims)
+    
+    // For SAM, the tensor has shape [batch, num_masks, height, width]
+    // dims[0] = batch (1), dims[1] = num_masks (3), dims[2] = height, dims[3] = width
+    const numMasks = maskTensor.dims[1]
+    const maskHeight = maskTensor.dims[2]
+    const maskWidth = maskTensor.dims[3]
+    const maskSize = maskHeight * maskWidth
+    
+    console.log(`[SAM-MASK] Extracting mask ${bestIdx} from tensor with ${numMasks} masks, size ${maskWidth}x${maskHeight}`)
+    
+    // Extract the specific mask data from the tensor
+    // The data is laid out as: [batch0_mask0, batch0_mask1, batch0_mask2]
+    const startIdx = bestIdx * maskSize
+    const endIdx = startIdx + maskSize
+    const maskData = maskTensor.data.slice(startIdx, endIdx)
+    
+    console.log(`[SAM-MASK] Extracted mask data, length: ${maskData.length}, expected: ${maskSize}`)
+    console.log(`[SAM-MASK] Mask generated successfully, score:`, scores[bestIdx])
+    
+    // Return a mask object with data property that downstream functions expect
     return {
-      mask: masks[0][bestIdx],
+      mask: { 
+        data: maskData,
+        width: maskWidth,
+        height: maskHeight
+      },
       score: scores[bestIdx],
     }
   } catch (e) {
-    console.error('Error generating mask at point:', point, e)
+    console.error('[SAM-MASK] Error generating mask at point:', point, e)
     return null
   }
 }
@@ -292,4 +343,205 @@ export async function segmentReceipts(
   onProgress?.(100, `Found ${regions.length} receipt(s)`)
   
   return regions
+}
+
+/**
+ * Detect receipt borders and crop out negative space
+ * Uses SAM to find the main receipt region in a phone photo
+ * Returns a cropped image focused on just the receipt
+ */
+export async function detectAndCropReceipt(
+  imageSource: string | File,
+  onProgress?: (progress: number, status: string) => void
+): Promise<ReceiptCropResult | null> {
+  console.log('[SAM-DETECT] detectAndCropReceipt called with:', imageSource instanceof File ? imageSource.name : 'data URL')
+  
+  // Ensure model is loaded
+  console.log('[SAM-DETECT] Loading SAM model...')
+  await loadSAMModel(onProgress)
+  console.log('[SAM-DETECT] SAM model loaded')
+  
+  onProgress?.(0, 'Analyzing image...')
+  
+  // Convert File to data URL if needed
+  let imageUrl: string
+  if (imageSource instanceof File) {
+    console.log('[SAM-DETECT] Converting File to data URL...')
+    imageUrl = await new Promise<string>((resolve) => {
+      const reader = new FileReader()
+      reader.onload = (e) => resolve(e.target?.result as string)
+      reader.readAsDataURL(imageSource)
+    })
+    console.log('[SAM-DETECT] File converted to data URL, length:', imageUrl.length)
+  } else {
+    imageUrl = imageSource
+    console.log('[SAM-DETECT] Using provided data URL, length:', imageUrl.length)
+  }
+  
+  // Load image using dynamic import
+  console.log('[SAM-DETECT] Loading image with RawImage...')
+  const { RawImage } = await getTransformers()
+  let rawImage = await RawImage.read(imageUrl)
+  const originalWidth = rawImage.width
+  const originalHeight = rawImage.height
+  console.log('[SAM-DETECT] Image loaded, dimensions:', originalWidth, 'x', originalHeight)
+  
+  // Resize large images for better SAM performance (SAM works best with ~1024-2048px images)
+  const MAX_DIMENSION = 1536
+  let samImageUrl = imageUrl
+  let samScale = 1.0
+  
+  if (originalWidth > MAX_DIMENSION || originalHeight > MAX_DIMENSION) {
+    samScale = MAX_DIMENSION / Math.max(originalWidth, originalHeight)
+    const newWidth = Math.round(originalWidth * samScale)
+    const newHeight = Math.round(originalHeight * samScale)
+    console.log(`[SAM-DETECT] Resizing image from ${originalWidth}x${originalHeight} to ${newWidth}x${newHeight} for SAM processing`)
+    
+    // Resize using canvas
+    const resizeCanvas = document.createElement('canvas')
+    resizeCanvas.width = newWidth
+    resizeCanvas.height = newHeight
+    const resizeCtx = resizeCanvas.getContext('2d')!
+    
+    const tempImg = new Image()
+    tempImg.src = imageUrl
+    await new Promise((resolve) => (tempImg.onload = resolve))
+    resizeCtx.drawImage(tempImg, 0, 0, newWidth, newHeight)
+    
+    samImageUrl = resizeCanvas.toDataURL('image/jpeg', 0.9)
+    rawImage = await RawImage.read(samImageUrl)
+    console.log('[SAM-DETECT] Image resized for SAM processing:', rawImage.width, 'x', rawImage.height)
+  }
+  
+  const samWidth = rawImage.width
+  const samHeight = rawImage.height
+  
+  // Create canvas for cropping using ORIGINAL resolution
+  const canvas = document.createElement('canvas')
+  canvas.width = originalWidth
+  canvas.height = originalHeight
+  const ctx = canvas.getContext('2d')!
+  
+  // Draw ORIGINAL image to canvas
+  const img = new Image()
+  img.src = imageUrl
+  await new Promise((resolve) => (img.onload = resolve))
+  ctx.drawImage(img, 0, 0)
+  
+  onProgress?.(20, 'Detecting receipt boundaries...')
+  
+  // Sample center point - receipts are usually centered in phone photos (use SAM-resized dimensions)
+  const centerPoint: [number, number] = [Math.round(samWidth / 2), Math.round(samHeight / 2)]
+  
+  // Also try points in a cross pattern to find the receipt
+  const samplePoints: [number, number][] = [
+    centerPoint,
+    [Math.round(samWidth * 0.3), Math.round(samHeight / 2)],
+    [Math.round(samWidth * 0.7), Math.round(samHeight / 2)],
+    [Math.round(samWidth / 2), Math.round(samHeight * 0.3)],
+    [Math.round(samWidth / 2), Math.round(samHeight * 0.7)],
+  ]
+  
+  let bestMask: { mask: any; score: number } | null = null
+  let bestArea = 0
+  
+  console.log('[SAM-DETECT] Scanning', samplePoints.length, 'sample points for receipt...')
+  for (let i = 0; i < samplePoints.length; i++) {
+    const point = samplePoints[i]
+    console.log(`[SAM-DETECT] Scanning point ${i + 1}/${samplePoints.length}:`, point)
+    onProgress?.(20 + Math.round((i / samplePoints.length) * 40), `Scanning point ${i + 1}/${samplePoints.length}...`)
+    
+    const result = await generateMaskAtPoint(rawImage, point)
+    console.log(`[SAM-DETECT] Point ${i + 1} result:`, result ? `score=${result.score.toFixed(3)}` : 'NULL')
+    
+    if (result && result.score > 0.7) {
+      const area = getMaskArea(result.mask)
+      const bb = getBoundingBox(result.mask, samWidth, samHeight)
+      const aspectRatio = bb.width / bb.height
+      console.log(`[SAM-DETECT] Point ${i + 1} passed score threshold. Area: ${area}, BBox: ${bb.width}x${bb.height}, AspectRatio: ${aspectRatio.toFixed(2)}`)
+      
+      // Receipts are typically portrait-oriented (taller than wide)
+      // Accept aspect ratios from 0.3 (very tall) to 1.5 (slightly wide)
+      if (aspectRatio >= 0.2 && aspectRatio <= 2.0) {
+        // Prefer larger areas (more likely to be the full receipt)
+        // But not too large (>60% is probably background/whole image)
+        const imageArea = samWidth * samHeight
+        const areaPercent = area / imageArea
+        console.log(`[SAM-DETECT] Point ${i + 1} aspect ratio OK. Area %: ${(areaPercent * 100).toFixed(1)}%`)
+        
+        if (areaPercent > 0.05 && areaPercent < 0.60 && area > bestArea) {
+          console.log(`[SAM-DETECT] Point ${i + 1} is new BEST mask (area: ${area} > ${bestArea})`)
+          bestMask = result
+          bestArea = area
+        } else if (areaPercent >= 0.60) {
+          console.log(`[SAM-DETECT] Point ${i + 1} REJECTED - area too large (${(areaPercent * 100).toFixed(1)}% > 60%), likely background`)
+        }
+      }
+    }
+  }
+  
+  if (!bestMask) {
+    console.warn('[SAM-DETECT] No valid mask found after scanning all points')
+    onProgress?.(100, 'No receipt detected, using full image')
+    return null
+  }
+  
+  console.log('[SAM-DETECT] Best mask found with score:', bestMask.score.toFixed(3), 'area:', bestArea)
+  onProgress?.(70, 'Cropping receipt...')
+  
+  // Get bounding box from SAM (in SAM-resized coordinates)
+  const samBoundingBox = getBoundingBox(bestMask.mask, samWidth, samHeight)
+  console.log('[SAM-DETECT] SAM bounding box (resized coords):', samBoundingBox)
+  
+  // Scale bounding box back to original image dimensions
+  const boundingBox = {
+    x: Math.round(samBoundingBox.x / samScale),
+    y: Math.round(samBoundingBox.y / samScale),
+    width: Math.round(samBoundingBox.width / samScale),
+    height: Math.round(samBoundingBox.height / samScale),
+  }
+  console.log('[SAM-DETECT] Bounding box (original coords):', boundingBox)
+  
+  // Add small padding around the receipt
+  const padding = Math.min(originalWidth, originalHeight) * 0.02
+  const cropBounds = {
+    x: Math.max(0, boundingBox.x - padding),
+    y: Math.max(0, boundingBox.y - padding),
+    width: Math.min(originalWidth - boundingBox.x + padding, boundingBox.width + padding * 2),
+    height: Math.min(originalHeight - boundingBox.y + padding, boundingBox.height + padding * 2),
+  }
+  console.log('[SAM-DETECT] Crop bounds with padding:', cropBounds)
+  
+  // Create cropped canvas
+  const croppedCanvas = document.createElement('canvas')
+  croppedCanvas.width = cropBounds.width
+  croppedCanvas.height = cropBounds.height
+  const croppedCtx = croppedCanvas.getContext('2d')!
+  console.log('[SAM-DETECT] Created cropped canvas:', cropBounds.width, 'x', cropBounds.height)
+  
+  croppedCtx.drawImage(
+    canvas,
+    cropBounds.x, cropBounds.y, cropBounds.width, cropBounds.height,
+    0, 0, cropBounds.width, cropBounds.height
+  )
+  
+  onProgress?.(100, 'Receipt cropped!')
+  
+  const result = {
+    croppedDataUrl: croppedCanvas.toDataURL('image/jpeg', 0.92),
+    originalWidth: originalWidth,
+    originalHeight: originalHeight,
+    width: cropBounds.width,
+    height: cropBounds.height,
+    cropBounds,
+    confidence: bestMask.score,
+  }
+  
+  console.log('[SAM-DETECT] Returning result:', {
+    dataUrlLength: result.croppedDataUrl.length,
+    dimensions: `${result.width}x${result.height}`,
+    confidence: result.confidence.toFixed(3)
+  })
+  
+  return result
 }

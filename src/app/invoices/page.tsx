@@ -9,6 +9,8 @@ import { useStore, generateId } from '@/store'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Plus, Trash2, Edit2, X, Check, FileText } from 'lucide-react'
 import type { Invoice } from '@/types'
+import { useFileSystemCheck } from '@/hooks/useFileSystemCheck'
+import { FileSystemRequiredModal } from '@/components/modals/FileSystemRequiredModal'
 
 const statusOptions = [
   { value: 'draft', label: 'Draft' },
@@ -19,6 +21,7 @@ const statusOptions = [
 
 export default function InvoicesPage() {
   const { invoices, addInvoice, updateInvoice, deleteInvoice, addTransaction } = useStore()
+  const { showModal, requireFileSystem, handleSetupComplete, handleCancel } = useFileSystemCheck()
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
@@ -132,7 +135,7 @@ export default function InvoicesPage() {
           <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
           <p className="text-gray-600 mt-1">Track client invoices and payments</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
+        <Button onClick={() => requireFileSystem(() => setShowForm(true))}>
           <Plus className="h-4 w-4 mr-2" />
           New Invoice
         </Button>
@@ -316,6 +319,14 @@ export default function InvoicesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* File System Setup Modal */}
+      {showModal && (
+        <FileSystemRequiredModal 
+          onSetupComplete={handleSetupComplete}
+          onCancel={handleCancel}
+        />
+      )}
     </div>
   )
 }

@@ -7,18 +7,23 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useStore, generateId } from '@/store'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Camera, Upload, Trash2, Link2, ExternalLink, Scan, Loader2 } from 'lucide-react'
+import { Camera, Upload, Trash2, Link2, ExternalLink, Scan, Loader2, Layers } from 'lucide-react'
 import type { Receipt } from '@/types'
+import type { ExtractedReceiptData } from '@/lib/receipt-processor'
+import { useFileSystemCheck } from '@/hooks/useFileSystemCheck'
+import { FileSystemRequiredModal } from '@/components/modals/FileSystemRequiredModal'
+import { useGeminiApiKeyCheck } from '@/hooks/useGeminiApiKeyCheck'
+import { GeminiApiKeyRequiredModal } from '@/components/modals/GeminiApiKeyRequiredModal'
 
 // Dynamic import with SSR disabled to avoid ONNX runtime issues
-const ReceiptOCR = dynamic(
-  () => import('@/components/ocr/ReceiptOCR').then((mod) => mod.ReceiptOCR),
+const BatchReceiptScanner = dynamic(
+  () => import('@/components/ocr/BatchReceiptScanner'),
   { 
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-        <span className="ml-2 text-gray-500">Loading scanner...</span>
+        <span className="ml-2 text-gray-500">Loading batch scanner...</span>
       </div>
     )
   }
@@ -26,21 +31,39 @@ const ReceiptOCR = dynamic(
 
 export default function ReceiptsPage() {
   const { receipts, addReceipt, deleteReceipt, updateReceipt } = useStore()
+  const { showModal: showFileSystemModal, requireFileSystem, handleSetupComplete: handleFileSystemSetup, handleCancel: handleFileSystemCancel } = useFileSystemCheck()
+  const { showModal: showGeminiModal, requireGeminiApiKey, handleSetupComplete: handleGeminiSetup, handleSkip: handleGeminiSkip } = useGeminiApiKeyCheck()
   const [showForm, setShowForm] = useState(false)
   const [showOCR, setShowOCR] = useState(false)
   const [formData, setFormData] = useState({
     driveUrl: '',
-    ocrVendor: '',
-    ocrAmount: '',
-    ocrDate: '',
+    vendor: '',
+    amount: '',
+    date: '',
+    time: '',
+    subtotal: '',
+    tax: '',
+    paymentMethod: '',
+    storeId: '',
+    transactionId: '',
+    lineItems: [] as Array<{ description: string; amount: number }>,
+    rawText: '',
   })
 
   const resetForm = () => {
     setFormData({
       driveUrl: '',
-      ocrVendor: '',
-      ocrAmount: '',
-      ocrDate: '',
+      vendor: '',
+      amount: '',
+      date: '',
+      time: '',
+      subtotal: '',
+      tax: '',
+      paymentMethod: '',
+      storeId: '',
+      transactionId: '',
+      lineItems: [],
+      rawText: '',
     })
     setShowForm(false)
   }
@@ -55,9 +78,17 @@ export default function ReceiptsPage() {
       id: generateId(),
       driveFileId: driveFileId || formData.driveUrl,
       driveUrl: formData.driveUrl,
-      ocrVendor: formData.ocrVendor || undefined,
-      ocrAmount: formData.ocrAmount ? parseFloat(formData.ocrAmount) : undefined,
-      ocrDate: formData.ocrDate || undefined,
+      ocrVendor: formData.vendor || undefined,
+      ocrAmount: formData.amount ? parseFloat(formData.amount) : undefined,
+      ocrDate: formData.date || undefined,
+      ocrTime: formData.time || undefined,
+      ocrSubtotal: formData.subtotal ? parseFloat(formData.subtotal) : undefined,
+      ocrTax: formData.tax ? parseFloat(formData.tax) : undefined,
+      ocrPaymentMethod: formData.paymentMethod || undefined,
+      ocrStoreId: formData.storeId || undefined,
+      ocrTransactionId: formData.transactionId || undefined,
+      ocrLineItems: formData.lineItems.length > 0 ? formData.lineItems : undefined,
+      ocrRawText: formData.rawText || undefined,
       createdAt: new Date().toISOString(),
     }
     
@@ -65,26 +96,13 @@ export default function ReceiptsPage() {
     resetForm()
   }
 
-  const handleOCRExtracted = (data: { 
-    vendor: string
-    amount: number | null
-    date: string
-    rawText: string
-    imageData?: string
-    time?: string
-    subtotal?: number
-    tax?: number
-    lineItems?: { description: string; amount: number; sku?: string }[]
-    paymentMethod?: string
-    storeId?: string
-    transactionId?: string
-  }) => {
-    // Add receipt directly from OCR scan (no Google Drive URL needed)
+  const handleBatchReceiptProcessed = (data: ExtractedReceiptData) => {
+    // Add receipt directly from batch scanner
     const newReceipt: Receipt = {
       id: generateId(),
-      driveFileId: `ocr-${generateId()}`, // Placeholder for OCR-scanned receipts
-      driveUrl: '', // No Drive URL for direct scans
-      imageData: data.imageData, // Store the scanned image
+      driveFileId: `ocr-${generateId()}`,
+      driveUrl: '',
+      imageData: data.imageData,
       ocrVendor: data.vendor,
       ocrAmount: data.amount || undefined,
       ocrDate: data.date,
@@ -100,7 +118,6 @@ export default function ReceiptsPage() {
       createdAt: new Date().toISOString(),
     }
     addReceipt(newReceipt)
-    setShowOCR(false) // Close scanner after adding
   }
 
   const extractDriveFileId = (url: string): string | null => {
@@ -130,21 +147,25 @@ export default function ReceiptsPage() {
           <p className="text-gray-600 mt-1">Manage receipts with OCR auto-extraction</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowOCR(!showOCR)}>
-            <Scan className="h-4 w-4 mr-2" />
-            Scan Receipt
+          <Button variant="outline" onClick={() => {
+            requireFileSystem(() => {
+              requireGeminiApiKey(() => setShowOCR(!showOCR))
+            })
+          }}>
+            <Layers className="h-4 w-4 mr-2" />
+            {showOCR ? 'Hide Scanner' : 'Batch Scan'}
           </Button>
-          <Button onClick={() => setShowForm(true)}>
+          <Button onClick={() => requireFileSystem(() => setShowForm(true))}>
             <Upload className="h-4 w-4 mr-2" />
             Add Manual
           </Button>
         </div>
       </div>
 
-      {/* OCR Scanner */}
+      {/* Batch Receipt Scanner */}
       {showOCR && (
         <div className="mb-8">
-          <ReceiptOCR onExtracted={handleOCRExtracted} />
+          <BatchReceiptScanner onReceiptProcessed={handleBatchReceiptProcessed} />
         </div>
       )}
 
@@ -192,26 +213,72 @@ export default function ReceiptsPage() {
               />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Input
-                  label="Vendor (optional)"
+                  label="Vendor"
                   placeholder="Store name"
-                  value={formData.ocrVendor}
-                  onChange={(e) => setFormData({ ...formData, ocrVendor: e.target.value })}
+                  value={formData.vendor}
+                  onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
                 />
                 <Input
-                  label="Amount (optional)"
+                  label="Total Amount"
                   type="number"
                   step="0.01"
                   placeholder="0.00"
-                  value={formData.ocrAmount}
-                  onChange={(e) => setFormData({ ...formData, ocrAmount: e.target.value })}
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  required
                 />
                 <Input
-                  label="Date (optional)"
+                  label="Date"
                   type="date"
-                  value={formData.ocrDate}
-                  onChange={(e) => setFormData({ ...formData, ocrDate: e.target.value })}
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  required
                 />
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Time (optional)"
+                  type="time"
+                  value={formData.time}
+                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                />
+                <Input
+                  label="Payment Method (optional)"
+                  placeholder="Cash, Credit, Debit"
+                  value={formData.paymentMethod}
+                  onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input
+                  label="Subtotal (optional)"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.subtotal}
+                  onChange={(e) => setFormData({ ...formData, subtotal: e.target.value })}
+                />
+                <Input
+                  label="Tax (optional)"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.tax}
+                  onChange={(e) => setFormData({ ...formData, tax: e.target.value })}
+                />
+                <Input
+                  label="Transaction ID (optional)"
+                  placeholder="Receipt #"
+                  value={formData.transactionId}
+                  onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
+                />
+              </div>
+              <Input
+                label="Store ID (optional)"
+                placeholder="Store number or location"
+                value={formData.storeId}
+                onChange={(e) => setFormData({ ...formData, storeId: e.target.value })}
+              />
               <div className="flex gap-2">
                 <Button type="submit">
                   <Link2 className="h-4 w-4 mr-2" />
@@ -360,6 +427,22 @@ export default function ReceiptsPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* File System Setup Modal */}
+      {showFileSystemModal && (
+        <FileSystemRequiredModal 
+          onSetupComplete={handleFileSystemSetup}
+          onCancel={handleFileSystemCancel}
+        />
+      )}
+
+      {/* Gemini API Key Setup Modal */}
+      {showGeminiModal && (
+        <GeminiApiKeyRequiredModal 
+          onSetupComplete={handleGeminiSetup}
+          onSkip={handleGeminiSkip}
+        />
       )}
     </div>
   )

@@ -9,6 +9,8 @@ import { useStore, generateId } from '@/store'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Plus, Trash2, Edit2, X, Check, Receipt, ArrowRight } from 'lucide-react'
 import type { Transaction, ExpenseCategory, TransactionType, Receipt as ReceiptType } from '@/types'
+import { useFileSystemCheck } from '@/hooks/useFileSystemCheck'
+import { FileSystemRequiredModal } from '@/components/modals/FileSystemRequiredModal'
 
 const categoryOptions = [
   { value: 'materials', label: 'Materials' },
@@ -27,6 +29,7 @@ const typeOptions = [
 
 export default function TransactionsPage() {
   const { transactions, addTransaction, updateTransaction, deleteTransaction, receipts, updateReceipt } = useStore()
+  const { showModal, requireFileSystem, handleSetupComplete, handleCancel } = useFileSystemCheck()
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [filterType, setFilterType] = useState<'all' | TransactionType>('all')
@@ -138,7 +141,7 @@ export default function TransactionsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
           <p className="text-gray-600 mt-1">Track income and expenses</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
+        <Button onClick={() => requireFileSystem(() => setShowForm(true))}>
           <Plus className="h-4 w-4 mr-2" />
           Add Transaction
         </Button>
@@ -354,6 +357,14 @@ export default function TransactionsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* File System Setup Modal */}
+      {showModal && (
+        <FileSystemRequiredModal 
+          onSetupComplete={handleSetupComplete}
+          onCancel={handleCancel}
+        />
+      )}
     </div>
   )
 }

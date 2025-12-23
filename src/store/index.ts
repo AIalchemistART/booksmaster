@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Transaction, CustodyExpense, Invoice, BankAccount, Receipt } from '@/types'
+import { 
+  saveReceiptsToFileSystem,
+  saveInvoicesToFileSystem,
+  saveTransactionsToFileSystem,
+  saveCustodyExpensesToFileSystem,
+  createFullBackup
+} from '@/lib/file-system-storage'
 
 interface AppState {
   // Transactions
@@ -39,47 +46,71 @@ export const useStore = create<AppState>()(
       // Transactions
       transactions: [],
       addTransaction: (transaction) =>
-        set((state) => ({ transactions: [...state.transactions, transaction] })),
+        set((state) => {
+          const newTransactions = [...state.transactions, transaction]
+          saveTransactionsToFileSystem(newTransactions).catch(console.error)
+          return { transactions: newTransactions }
+        }),
       updateTransaction: (id, updates) =>
-        set((state) => ({
-          transactions: state.transactions.map((t) =>
+        set((state) => {
+          const newTransactions = state.transactions.map((t) =>
             t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t
-          ),
-        })),
+          )
+          saveTransactionsToFileSystem(newTransactions).catch(console.error)
+          return { transactions: newTransactions }
+        }),
       deleteTransaction: (id) =>
-        set((state) => ({
-          transactions: state.transactions.filter((t) => t.id !== id),
-        })),
+        set((state) => {
+          const newTransactions = state.transactions.filter((t) => t.id !== id)
+          saveTransactionsToFileSystem(newTransactions).catch(console.error)
+          return { transactions: newTransactions }
+        }),
 
       // Custody Expenses
       custodyExpenses: [],
       addCustodyExpense: (expense) =>
-        set((state) => ({ custodyExpenses: [...state.custodyExpenses, expense] })),
+        set((state) => {
+          const newExpenses = [...state.custodyExpenses, expense]
+          saveCustodyExpensesToFileSystem(newExpenses).catch(console.error)
+          return { custodyExpenses: newExpenses }
+        }),
       updateCustodyExpense: (id, updates) =>
-        set((state) => ({
-          custodyExpenses: state.custodyExpenses.map((e) =>
+        set((state) => {
+          const newExpenses = state.custodyExpenses.map((e) =>
             e.id === id ? { ...e, ...updates, updatedAt: new Date().toISOString() } : e
-          ),
-        })),
+          )
+          saveCustodyExpensesToFileSystem(newExpenses).catch(console.error)
+          return { custodyExpenses: newExpenses }
+        }),
       deleteCustodyExpense: (id) =>
-        set((state) => ({
-          custodyExpenses: state.custodyExpenses.filter((e) => e.id !== id),
-        })),
+        set((state) => {
+          const newExpenses = state.custodyExpenses.filter((e) => e.id !== id)
+          saveCustodyExpensesToFileSystem(newExpenses).catch(console.error)
+          return { custodyExpenses: newExpenses }
+        }),
 
       // Invoices
       invoices: [],
       addInvoice: (invoice) =>
-        set((state) => ({ invoices: [...state.invoices, invoice] })),
+        set((state) => {
+          const newInvoices = [...state.invoices, invoice]
+          saveInvoicesToFileSystem(newInvoices).catch(console.error)
+          return { invoices: newInvoices }
+        }),
       updateInvoice: (id, updates) =>
-        set((state) => ({
-          invoices: state.invoices.map((i) =>
+        set((state) => {
+          const newInvoices = state.invoices.map((i) =>
             i.id === id ? { ...i, ...updates, updatedAt: new Date().toISOString() } : i
-          ),
-        })),
+          )
+          saveInvoicesToFileSystem(newInvoices).catch(console.error)
+          return { invoices: newInvoices }
+        }),
       deleteInvoice: (id) =>
-        set((state) => ({
-          invoices: state.invoices.filter((i) => i.id !== id),
-        })),
+        set((state) => {
+          const newInvoices = state.invoices.filter((i) => i.id !== id)
+          saveInvoicesToFileSystem(newInvoices).catch(console.error)
+          return { invoices: newInvoices }
+        }),
 
       // Bank Accounts
       bankAccounts: [],
@@ -93,17 +124,25 @@ export const useStore = create<AppState>()(
       // Receipts
       receipts: [],
       addReceipt: (receipt) =>
-        set((state) => ({ receipts: [...state.receipts, receipt] })),
+        set((state) => {
+          const newReceipts = [...state.receipts, receipt]
+          saveReceiptsToFileSystem(newReceipts).catch(console.error)
+          return { receipts: newReceipts }
+        }),
       updateReceipt: (id, updates) =>
-        set((state) => ({
-          receipts: state.receipts.map((r) =>
+        set((state) => {
+          const newReceipts = state.receipts.map((r) =>
             r.id === id ? { ...r, ...updates } : r
-          ),
-        })),
+          )
+          saveReceiptsToFileSystem(newReceipts).catch(console.error)
+          return { receipts: newReceipts }
+        }),
       deleteReceipt: (id) =>
-        set((state) => ({
-          receipts: state.receipts.filter((r) => r.id !== id),
-        })),
+        set((state) => {
+          const newReceipts = state.receipts.filter((r) => r.id !== id)
+          saveReceiptsToFileSystem(newReceipts).catch(console.error)
+          return { receipts: newReceipts }
+        }),
     }),
     {
       name: 'thomas-books-storage',

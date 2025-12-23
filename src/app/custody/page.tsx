@@ -9,6 +9,8 @@ import { useStore, generateId } from '@/store'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Plus, Trash2, Edit2, X, Check, Users } from 'lucide-react'
 import type { CustodyExpense, CustodyExpenseType } from '@/types'
+import { useFileSystemCheck } from '@/hooks/useFileSystemCheck'
+import { FileSystemRequiredModal } from '@/components/modals/FileSystemRequiredModal'
 
 const expenseTypeOptions = [
   { value: 'child_support', label: 'Child Support' },
@@ -28,6 +30,7 @@ const paidByOptions = [
 
 export default function CustodyPage() {
   const { custodyExpenses, addCustodyExpense, updateCustodyExpense, deleteCustodyExpense } = useStore()
+  const { showModal, requireFileSystem, handleSetupComplete, handleCancel } = useFileSystemCheck()
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
@@ -142,7 +145,7 @@ export default function CustodyPage() {
           <h1 className="text-3xl font-bold text-gray-900">Custody Expenses</h1>
           <p className="text-gray-600 mt-1">Track shared child-related expenses</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
+        <Button onClick={() => requireFileSystem(() => setShowForm(true))}>
           <Plus className="h-4 w-4 mr-2" />
           Add Expense
         </Button>
@@ -360,6 +363,14 @@ export default function CustodyPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* File System Setup Modal */}
+      {showModal && (
+        <FileSystemRequiredModal 
+          onSetupComplete={handleSetupComplete}
+          onCancel={handleCancel}
+        />
+      )}
     </div>
   )
 }
