@@ -36,6 +36,8 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState<'all' | TransactionType>('all')
   const [filterCategory, setFilterCategory] = useState<'all' | ExpenseCategory>('all')
   const [categorizing, setCategorizing] = useState(false)
+  const [converting, setConverting] = useState(false)
+  const [convertingAll, setConvertingAll] = useState(false)
   
   // Get unlinked receipts (receipts not yet converted to transactions)
   const unlinkedReceipts = receipts.filter(r => !r.linkedTransactionId && r.ocrAmount)
@@ -132,18 +134,22 @@ export default function TransactionsPage() {
     setShowForm(true)
   }
 
-  // Convert receipt to transaction
+  // Convert receipt to transaction (basic conversion)
   const convertReceiptToTransaction = (receipt: ReceiptType) => {
     const now = new Date().toISOString()
     const transactionId = generateId()
+    
+    // Use AI categorization if available, otherwise defaults
+    const type = receipt.transactionType || 'expense'
+    const category = (receipt.transactionCategory?.toLowerCase().replace(/\s+/g, '_') as ExpenseCategory) || 'materials'
     
     const newTransaction: Transaction = {
       id: transactionId,
       date: receipt.ocrDate || new Date().toISOString().split('T')[0],
       amount: receipt.ocrAmount || 0,
       description: receipt.ocrVendor || 'Receipt purchase',
-      type: 'expense',
-      category: 'materials', // Default category
+      type,
+      category,
       notes: receipt.ocrLineItems 
         ? `Items: ${receipt.ocrLineItems.map(i => i.description).join(', ')}`
         : undefined,
@@ -154,6 +160,82 @@ export default function TransactionsPage() {
     
     addTransaction(newTransaction)
     updateReceipt(receipt.id, { linkedTransactionId: transactionId })
+  }
+
+  // Convert receipt with AI categorization
+  const convertWithCategorization = async (receipt: ReceiptType) => {
+    if (!receipt.ocrVendor || !receipt.ocrAmount) return
+    
+    setConverting(true)
+    try {
+      // Get AI categorization
+      const categorization = await categorizeTransaction(
+        receipt.ocrVendor,
+        receipt.ocrAmount,
+        receipt.ocrVendor
+      )
+      
+      // Update receipt with categorization
+      updateReceipt(receipt.id, {
+        transactionType: categorization.type,
+        transactionCategory: categorization.category,
+        categorizationConfidence: categorization.confidence
+      })
+      
+      // Now convert with the categorization
+      const now = new Date().toISOString()
+      const transactionId = generateId()
+      
+      const newTransaction: Transaction = {
+        id: transactionId,
+        date: receipt.ocrDate || new Date().toISOString().split('T')[0],
+        amount: receipt.ocrAmount || 0,
+        description: receipt.ocrVendor || 'Receipt purchase',
+        type: categorization.type,
+        category: categorization.category.toLowerCase().replace(/\s+/g, '_') as ExpenseCategory,
+        notes: receipt.ocrLineItems 
+          ? `Items: ${receipt.ocrLineItems.map(i => i.description).join(', ')}`
+          : undefined,
+        receiptId: receipt.id,
+        createdAt: now,
+        updatedAt: now,
+      }
+      
+      addTransaction(newTransaction)
+      updateReceipt(receipt.id, { linkedTransactionId: transactionId })
+    } catch (error) {
+      console.error('Failed to categorize and convert:', error)
+      alert('AI categorization failed. Please try again or use regular convert.')
+    } finally {
+      setConverting(false)
+    }
+  }
+
+  // Convert all receipts
+  const convertAllReceipts = () => {
+    unlinkedReceipts.forEach(receipt => {
+      convertReceiptToTransaction(receipt)
+    })
+  }
+
+  // Convert all with AI categorization
+  const convertAllWithCategorization = async () => {
+    setConvertingAll(true)
+    try {
+      for (const receipt of unlinkedReceipts) {
+        if (receipt.ocrVendor && receipt.ocrAmount) {
+          await convertWithCategorization(receipt)
+        } else {
+          // Fallback to basic conversion if no vendor/amount
+          convertReceiptToTransaction(receipt)
+        }
+      }
+    } catch (error) {
+      console.error('Batch conversion failed:', error)
+      alert('Some receipts failed to convert. Please check and try again.')
+    } finally {
+      setConvertingAll(false)
+    }
   }
 
   // Filter transactions
@@ -179,10 +261,31 @@ export default function TransactionsPage() {
       {unlinkedReceipts.length > 0 && (
         <Card className="mb-6 border-amber-200 bg-amber-50">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2 text-amber-800">
-              <Receipt className="h-5 w-5" />
-              {unlinkedReceipts.length} Receipt{unlinkedReceipts.length > 1 ? 's' : ''} Ready to Convert
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2 text-amber-800">
+                <Receipt className="h-5 w-5" />
+                {unlinkedReceipts.length} Receipt{unlinkedReceipts.length > 1 ? 's' : ''} Ready to Convert
+              </CardTitle>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={convertAllReceipts}
+                  disabled={convertingAll}
+                >
+                  <ArrowRight className="h-4 w-4 mr-1" />
+                  Convert All
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={convertAllWithCategorization}
+                  disabled={convertingAll}
+                >
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  {convertingAll ? 'Converting...' : 'Convert & Categorize All'}
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -201,13 +304,26 @@ export default function TransactionsPage() {
                       <p className="text-xs text-gray-500">{receipt.ocrDate}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <span className="font-bold text-green-600">
                       {formatCurrency(receipt.ocrAmount || 0)}
                     </span>
-                    <Button size="sm" onClick={() => convertReceiptToTransaction(receipt)}>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => convertReceiptToTransaction(receipt)}
+                      disabled={converting || convertingAll}
+                    >
                       <ArrowRight className="h-4 w-4 mr-1" />
                       Convert
+                    </Button>
+                    <Button 
+                      size="sm"
+                      onClick={() => convertWithCategorization(receipt)}
+                      disabled={converting || convertingAll}
+                    >
+                      <Sparkles className="h-4 w-4 mr-1" />
+                      {converting ? 'AI...' : 'AI Convert'}
                     </Button>
                   </div>
                 </div>
