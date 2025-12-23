@@ -120,6 +120,7 @@ export default function ReceiptsPage() {
       ocrStoreId: data.storeId,
       ocrTransactionId: data.transactionId,
       ocrRawText: data.rawText,
+      ocrFailed: data.ocrFailed || false,
       processedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
     }
@@ -257,7 +258,7 @@ export default function ReceiptsPage() {
                     setAmountRange([newMin, amountRange[1]])
                   }
                 }}
-                className="absolute w-full h-2 bg-transparent appearance-none pointer-events-none"
+                className="absolute w-full h-2 bg-transparent appearance-none cursor-pointer"
                 style={{
                   zIndex: amountRange[0] > amountRange[1] - 1000 ? 5 : 3
                 }}
@@ -274,7 +275,7 @@ export default function ReceiptsPage() {
                     setAmountRange([amountRange[0], newMax])
                   }
                 }}
-                className="absolute w-full h-2 bg-transparent appearance-none pointer-events-none"
+                className="absolute w-full h-2 bg-transparent appearance-none cursor-pointer"
                 style={{
                   zIndex: amountRange[0] > amountRange[1] - 1000 ? 3 : 5
                 }}

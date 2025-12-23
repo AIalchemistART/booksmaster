@@ -45,11 +45,19 @@ export default function ReportsPage() {
   })
 
   // Filter receipts by date range (use ocrDate if available, otherwise createdAt)
+  // Include all receipts even if date parsing fails
   const filteredReceipts = receipts.filter((r) => {
     const dateStr = r.ocrDate || r.createdAt
-    if (!dateStr) return false
-    const date = new Date(dateStr)
-    return date >= new Date(startDate) && date <= new Date(endDate)
+    if (!dateStr) return true // Include receipts without dates (likely failed OCR)
+    
+    try {
+      const date = new Date(dateStr)
+      // Check if date is valid
+      if (isNaN(date.getTime())) return true // Include invalid dates
+      return date >= new Date(startDate) && date <= new Date(endDate)
+    } catch {
+      return true // Include receipts with unparseable dates
+    }
   })
 
   // Calculate custody totals

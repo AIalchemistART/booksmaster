@@ -170,6 +170,13 @@ export default function TransactionsPage() {
     const type = receipt.transactionType || 'expense'
     const category = (receipt.transactionCategory?.toLowerCase().replace(/\s+/g, '_') as TransactionCategory) || (type === 'income' ? 'other_income' : 'materials')
     
+    // Handle failed OCR receipts with special notes
+    const notes = receipt.ocrFailed 
+      ? '⚠️ OCR Failed - Please verify and update all fields'
+      : receipt.ocrLineItems 
+        ? `Items: ${receipt.ocrLineItems.map(i => i.description).join(', ')}`
+        : undefined
+    
     const newTransaction: Transaction = {
       id: transactionId,
       date: receipt.ocrDate || new Date().toISOString().split('T')[0],
@@ -177,9 +184,7 @@ export default function TransactionsPage() {
       description: receipt.ocrVendor || 'Receipt purchase',
       type,
       category,
-      notes: receipt.ocrLineItems 
-        ? `Items: ${receipt.ocrLineItems.map(i => i.description).join(', ')}`
-        : undefined,
+      notes,
       receiptId: receipt.id,
       createdAt: now,
       updatedAt: now,
