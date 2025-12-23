@@ -25,8 +25,19 @@ export type CustodyExpenseType =
   | 'food'
   | 'other'
 
+// Income categories
+export type IncomeCategory =
+  | 'residential_job'
+  | 'commercial_job'
+  | 'repairs'
+  | 'consultation'
+  | 'other_income'
+
 // Transaction types
 export type TransactionType = 'income' | 'expense'
+
+// Transaction category - can be either income or expense category
+export type TransactionCategory = ExpenseCategory | IncomeCategory
 
 // Base transaction interface
 export interface Transaction {
@@ -35,7 +46,7 @@ export interface Transaction {
   amount: number
   description: string
   type: TransactionType
-  category: ExpenseCategory
+  category: TransactionCategory
   receiptUrl?: string
   receiptDriveId?: string
   receiptId?: string // Link to scanned receipt

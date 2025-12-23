@@ -17,7 +17,13 @@ export async function generateTaxReceiptDocx(
 
   const doc = new Document({
     sections: [{
-      properties: {},
+      properties: {
+        page: {
+          size: {
+            orientation: 'landscape' as any
+          }
+        }
+      },
       children: [
         // Title
         new Paragraph({
@@ -104,7 +110,13 @@ export async function generateCustodyReportDocx(
 ): Promise<void> {
   const doc = new Document({
     sections: [{
-      properties: {},
+      properties: {
+        page: {
+          size: {
+            orientation: 'landscape' as any
+          }
+        }
+      },
       children: [
         new Paragraph({
           text: 'CUSTODY EXPENSE REPORT',
@@ -172,11 +184,26 @@ function createReceiptsTable(receipts: Receipt[], includeLineItems: boolean): Ta
     // Header row
     new TableRow({
       children: [
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Date', bold: true })] })] }),
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Vendor', bold: true })] })] }),
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Amount', bold: true })] })] }),
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Tax', bold: true })] })] }),
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Payment', bold: true })] })] })
+        new TableCell({ 
+          width: { size: 15, type: WidthType.PERCENTAGE },
+          children: [new Paragraph({ children: [new TextRun({ text: 'Date', bold: true })] })] 
+        }),
+        new TableCell({ 
+          width: { size: 35, type: WidthType.PERCENTAGE },
+          children: [new Paragraph({ children: [new TextRun({ text: 'Vendor', bold: true })] })] 
+        }),
+        new TableCell({ 
+          width: { size: 15, type: WidthType.PERCENTAGE },
+          children: [new Paragraph({ children: [new TextRun({ text: 'Amount', bold: true })] })] 
+        }),
+        new TableCell({ 
+          width: { size: 15, type: WidthType.PERCENTAGE },
+          children: [new Paragraph({ children: [new TextRun({ text: 'Tax', bold: true })] })] 
+        }),
+        new TableCell({ 
+          width: { size: 20, type: WidthType.PERCENTAGE },
+          children: [new Paragraph({ children: [new TextRun({ text: 'Payment', bold: true })] })] 
+        })
       ]
     })
   ]
@@ -190,11 +217,26 @@ function createReceiptsTable(receipts: Receipt[], includeLineItems: boolean): Ta
   sortedReceipts.forEach(receipt => {
     rows.push(new TableRow({
       children: [
-        new TableCell({ children: [new Paragraph(formatDate(receipt.ocrDate || receipt.createdAt))] }),
-        new TableCell({ children: [new Paragraph(receipt.ocrVendor || 'Unknown')] }),
-        new TableCell({ children: [new Paragraph(formatCurrency(receipt.ocrAmount || 0))] }),
-        new TableCell({ children: [new Paragraph(formatCurrency(receipt.ocrTax || 0))] }),
-        new TableCell({ children: [new Paragraph(receipt.ocrPaymentMethod || '-')] })
+        new TableCell({ 
+          width: { size: 15, type: WidthType.PERCENTAGE },
+          children: [new Paragraph(formatDate(receipt.ocrDate || receipt.createdAt))] 
+        }),
+        new TableCell({ 
+          width: { size: 35, type: WidthType.PERCENTAGE },
+          children: [new Paragraph(receipt.ocrVendor || 'Unknown')] 
+        }),
+        new TableCell({ 
+          width: { size: 15, type: WidthType.PERCENTAGE },
+          children: [new Paragraph(formatCurrency(receipt.ocrAmount || 0))] 
+        }),
+        new TableCell({ 
+          width: { size: 15, type: WidthType.PERCENTAGE },
+          children: [new Paragraph(formatCurrency(receipt.ocrTax || 0))] 
+        }),
+        new TableCell({ 
+          width: { size: 20, type: WidthType.PERCENTAGE },
+          children: [new Paragraph(receipt.ocrPaymentMethod || '-')] 
+        })
       ]
     }))
 
@@ -202,8 +244,12 @@ function createReceiptsTable(receipts: Receipt[], includeLineItems: boolean): Ta
       receipt.ocrLineItems.forEach((item: any) => {
         rows.push(new TableRow({
           children: [
-            new TableCell({ children: [new Paragraph('')] }),
             new TableCell({ 
+              width: { size: 15, type: WidthType.PERCENTAGE },
+              children: [new Paragraph('')] 
+            }),
+            new TableCell({ 
+              width: { size: 35, type: WidthType.PERCENTAGE },
               children: [new Paragraph({
                 children: [
                   new TextRun({ text: '  • ', italics: true }),
@@ -211,9 +257,18 @@ function createReceiptsTable(receipts: Receipt[], includeLineItems: boolean): Ta
                 ]
               })] 
             }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: formatCurrency(item.price || 0), italics: true })] })] }),
-            new TableCell({ children: [new Paragraph('')] }),
-            new TableCell({ children: [new Paragraph('')] })
+            new TableCell({ 
+              width: { size: 15, type: WidthType.PERCENTAGE },
+              children: [new Paragraph({ children: [new TextRun({ text: formatCurrency(item.price || 0), italics: true })] })] 
+            }),
+            new TableCell({ 
+              width: { size: 15, type: WidthType.PERCENTAGE },
+              children: [new Paragraph('')] 
+            }),
+            new TableCell({ 
+              width: { size: 20, type: WidthType.PERCENTAGE },
+              children: [new Paragraph('')] 
+            })
           ]
         }))
       })

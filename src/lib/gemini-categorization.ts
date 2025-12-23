@@ -130,15 +130,31 @@ function fallbackCategorization(
   const desc = description.toLowerCase()
   const vendorLower = (vendor || '').toLowerCase()
 
-  // Income indicators
-  const incomeKeywords = ['payment', 'paid', 'invoice', 'deposit', 'job completed', 'received']
-  const isIncome = incomeKeywords.some(keyword => desc.includes(keyword))
-
-  if (isIncome) {
-    return {
-      type: 'income',
-      category: 'Residential Job',
-      confidence: 0.6
+  // Income indicators - deposits, payments received, job payments
+  const incomeKeywords = [
+    'deposit', 'payment received', 'job completed', 'payment to thomas',
+    'check - same day', 'small business checking deposit', 'checking deposit',
+    'business share savings new account deposit'
+  ]
+  const hasIncomeKeyword = incomeKeywords.some(keyword => desc.includes(keyword) || vendorLower.includes(keyword))
+  
+  // Vendors that indicate income (banks, clients paying)
+  const incomeVendors = ['credit union', 'iccu', 'idaho central', 'bank']
+  const isIncomeVendor = incomeVendors.some(vendor => vendorLower.includes(vendor))
+  
+  // Check if description mentions payment TO the business owner
+  const paymentToOwner = desc.includes('payment to thomas') || desc.includes('tom fenwick')
+  
+  if (hasIncomeKeyword || (isIncomeVendor && desc.includes('deposit')) || paymentToOwner) {
+    // Determine income category
+    if (desc.includes('remod') || desc.includes('bath') || desc.includes('residential') || paymentToOwner) {
+      return { type: 'income', category: 'Residential Job', confidence: 0.8 }
+    } else if (desc.includes('commercial')) {
+      return { type: 'income', category: 'Commercial Job', confidence: 0.8 }
+    } else if (desc.includes('repair')) {
+      return { type: 'income', category: 'Repairs', confidence: 0.8 }
+    } else {
+      return { type: 'income', category: 'Residential Job', confidence: 0.6 }
     }
   }
 

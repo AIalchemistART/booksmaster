@@ -8,12 +8,12 @@ import { Select } from '@/components/ui/Select'
 import { useStore, generateId } from '@/store'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Plus, Trash2, Edit2, X, Check, Receipt, ArrowRight, Sparkles } from 'lucide-react'
-import type { Transaction, ExpenseCategory, TransactionType, Receipt as ReceiptType } from '@/types'
+import type { Receipt as ReceiptType, Transaction, TransactionType, TransactionCategory, ExpenseCategory, IncomeCategory } from '@/types'
 import { useFileSystemCheck } from '@/hooks/useFileSystemCheck'
 import { FileSystemRequiredModal } from '@/components/modals/FileSystemRequiredModal'
 import { categorizeTransaction, getCategoriesForType } from '@/lib/gemini-categorization'
 
-const categoryOptions = [
+const expenseCategoryOptions = [
   { value: 'materials', label: 'Materials' },
   { value: 'tools', label: 'Tools' },
   { value: 'fuel', label: 'Fuel' },
@@ -29,6 +29,14 @@ const categoryOptions = [
   { value: 'other', label: 'Other' },
 ]
 
+const incomeCategoryOptions = [
+  { value: 'residential_job', label: 'Residential Job' },
+  { value: 'commercial_job', label: 'Commercial Job' },
+  { value: 'repairs', label: 'Repairs' },
+  { value: 'consultation', label: 'Consultation' },
+  { value: 'other_income', label: 'Other Income' },
+]
+
 const typeOptions = [
   { value: 'income', label: 'Income' },
   { value: 'expense', label: 'Expense' },
@@ -40,7 +48,7 @@ export default function TransactionsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [filterType, setFilterType] = useState<'all' | TransactionType>('all')
-  const [filterCategory, setFilterCategory] = useState<'all' | ExpenseCategory>('all')
+  const [filterCategory, setFilterCategory] = useState<'all' | TransactionCategory>('all')
   const [categorizing, setCategorizing] = useState(false)
   const [converting, setConverting] = useState(false)
   const [convertingAll, setConvertingAll] = useState(false)
@@ -54,9 +62,22 @@ export default function TransactionsPage() {
     amount: '',
     description: '',
     type: 'expense' as TransactionType,
-    category: 'materials' as ExpenseCategory,
+    category: 'materials' as TransactionCategory,
     notes: '',
   })
+
+  // Get category options based on type
+  const categoryOptions = formData.type === 'income' ? incomeCategoryOptions : expenseCategoryOptions
+
+  // Handle type change to reset category appropriately
+  const handleTypeChange = (newType: TransactionType) => {
+    const defaultCategory = newType === 'income' ? 'residential_job' : 'materials'
+    setFormData({
+      ...formData,
+      type: newType,
+      category: defaultCategory as TransactionCategory
+    })
+  }
 
   const handleSmartCategorize = async () => {
     if (!formData.description || !formData.amount) {
@@ -74,7 +95,7 @@ export default function TransactionsPage() {
       setFormData({
         ...formData,
         type: result.type,
-        category: result.category.toLowerCase().replace(/\s+/g, '_') as ExpenseCategory
+        category: result.category.toLowerCase().replace(/\s+/g, '_') as TransactionCategory
       })
     } catch (error) {
       console.error('Categorization error:', error)
@@ -90,7 +111,7 @@ export default function TransactionsPage() {
       amount: '',
       description: '',
       type: 'expense',
-      category: 'materials',
+      category: 'materials' as TransactionCategory,
       notes: '',
     })
     setShowForm(false)
@@ -147,7 +168,7 @@ export default function TransactionsPage() {
     
     // Use AI categorization if available, otherwise defaults
     const type = receipt.transactionType || 'expense'
-    const category = (receipt.transactionCategory?.toLowerCase().replace(/\s+/g, '_') as ExpenseCategory) || 'materials'
+    const category = (receipt.transactionCategory?.toLowerCase().replace(/\s+/g, '_') as TransactionCategory) || (type === 'income' ? 'other_income' : 'materials')
     
     const newTransaction: Transaction = {
       id: transactionId,
@@ -198,7 +219,7 @@ export default function TransactionsPage() {
         amount: receipt.ocrAmount || 0,
         description: receipt.ocrVendor || 'Receipt purchase',
         type: categorization.type,
-        category: categorization.category.toLowerCase().replace(/\s+/g, '_') as ExpenseCategory,
+        category: categorization.category.toLowerCase().replace(/\s+/g, '_') as TransactionCategory,
         notes: receipt.ocrLineItems 
           ? `Items: ${receipt.ocrLineItems.map(i => i.description).join(', ')}`
           : undefined,
@@ -374,13 +395,13 @@ export default function TransactionsPage() {
                   label="Type"
                   options={typeOptions}
                   value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as TransactionType })}
+                  onChange={(e) => handleTypeChange(e.target.value as TransactionType)}
                 />
                 <Select
                   label="Category"
                   options={categoryOptions}
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value as ExpenseCategory })}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value as TransactionCategory })}
                 />
               </div>
               <Input
@@ -447,9 +468,13 @@ export default function TransactionsPage() {
             />
             <Select
               label="Filter by Category"
-              options={[{ value: 'all', label: 'All Categories' }, ...categoryOptions]}
+              options={[
+                { value: 'all', label: 'All Categories' },
+                ...expenseCategoryOptions,
+                ...incomeCategoryOptions
+              ]}
               value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value as 'all' | ExpenseCategory)}
+              onChange={(e) => setFilterCategory(e.target.value as 'all' | TransactionCategory)}
             />
           </div>
         </CardContent>
@@ -553,13 +578,13 @@ export default function TransactionsPage() {
                                   label="Type"
                                   options={typeOptions}
                                   value={formData.type}
-                                  onChange={(e) => setFormData({ ...formData, type: e.target.value as TransactionType })}
+                                  onChange={(e) => handleTypeChange(e.target.value as TransactionType)}
                                 />
                                 <Select
                                   label="Category"
                                   options={categoryOptions}
                                   value={formData.category}
-                                  onChange={(e) => setFormData({ ...formData, category: e.target.value as ExpenseCategory })}
+                                  onChange={(e) => setFormData({ ...formData, category: e.target.value as TransactionCategory })}
                                 />
                               </div>
                               <Input

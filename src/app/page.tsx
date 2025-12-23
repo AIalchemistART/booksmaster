@@ -61,7 +61,8 @@ export default function Dashboard() {
   const expensesByCategory = transactions
     .filter((t) => t.type === 'expense')
     .reduce((acc, t) => {
-      acc[t.category] = (acc[t.category] || 0) + t.amount
+      const cat = t.category as ExpenseCategory
+      acc[cat] = (acc[cat] || 0) + t.amount
       return acc
     }, {} as Record<ExpenseCategory, number>)
 
