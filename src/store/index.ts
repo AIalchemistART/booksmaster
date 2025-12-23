@@ -146,6 +146,14 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'thomas-books-storage',
+      partialize: (state) => ({
+        transactions: state.transactions,
+        custodyExpenses: state.custodyExpenses,
+        invoices: state.invoices,
+        bankAccounts: state.bankAccounts,
+        // Exclude imageData from receipts to prevent localStorage quota exceeded
+        receipts: state.receipts.map(({ imageData, ...receipt }) => receipt),
+      }),
     }
   )
 )

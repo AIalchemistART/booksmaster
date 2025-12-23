@@ -57,7 +57,7 @@ export function GeminiApiKeyRequiredModal({ onSetupComplete, onSkip }: GeminiApi
                 <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
                   <li>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="underline">Google AI Studio</a></li>
                   <li>Sign in with your Google account</li>
-                  <li>Click "Get API Key" or "Create API Key"</li>
+                  <li>Click &quot;Get API Key&quot; or &quot;Create API Key&quot;</li>
                   <li>Copy the key and paste it below</li>
                 </ol>
               </div>

@@ -96,7 +96,7 @@ export function GeminiApiKeySettings() {
         <ol className="list-decimal list-inside space-y-1 ml-2">
           <li>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a></li>
           <li>Sign in with your Google account</li>
-          <li>Click "Get API key" or "Create API key"</li>
+          <li>Click &quot;Get API key&quot; or &quot;Create API key&quot;</li>
           <li>Copy the key and paste it above</li>
         </ol>
         <p className="mt-2">

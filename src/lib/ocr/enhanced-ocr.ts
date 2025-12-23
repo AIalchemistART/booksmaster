@@ -124,9 +124,11 @@ export async function performEnhancedOCR(
     try {
       const geminiResult = await extractReceiptWithGemini(imageDataUrl, geminiApiKey)
       onProgress?.(100, 'OCR complete!')
+      const { rawText, ...restGemini } = geminiResult
       return {
-        ...geminiResult,
-        method: 'gemini',
+        ...restGemini,
+        method: 'gemini' as const,
+        rawText: rawText || '',
       }
     } catch (error) {
       console.warn('Gemini failed, falling back to Tesseract:', error)
@@ -149,9 +151,11 @@ export async function performEnhancedOCR(
   try {
     const geminiResult = await extractReceiptWithGemini(imageDataUrl, geminiApiKey)
     onProgress?.(100, 'OCR complete!')
+    const { rawText, ...restGemini } = geminiResult
     return {
-      ...geminiResult,
-      method: 'hybrid',
+      ...restGemini,
+      method: 'hybrid' as const,
+      rawText: rawText || '',
     }
   } catch (error) {
     console.warn('Gemini failed, using Tesseract result:', error)

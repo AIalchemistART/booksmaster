@@ -81,7 +81,7 @@ export function FileSystemSetup() {
           <div>
             <h3 className="text-sm font-semibold text-yellow-900">File System Access Not Supported</h3>
             <p className="text-sm text-yellow-800 mt-1">
-              Your browser doesn't support the File System Access API. Please use a Chromium-based browser (Chrome, Edge, Brave) for local file system storage.
+              Your browser doesn&apos;t support the File System Access API. Please use a Chromium-based browser (Chrome, Edge, Brave) for local file system storage.
             </p>
             <p className="text-xs text-yellow-700 mt-2">
               Data will continue to be saved to browser localStorage as a fallback.

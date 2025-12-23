@@ -15,6 +15,7 @@ let rootDirHandle: FileSystemDirectoryHandle | null = null
  * Check if File System Access API is supported
  */
 export function isFileSystemAccessSupported(): boolean {
+  if (typeof window === 'undefined') return false
   return 'showDirectoryPicker' in window
 }
 

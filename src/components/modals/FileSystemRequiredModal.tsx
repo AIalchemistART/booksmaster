@@ -42,7 +42,7 @@ export function FileSystemRequiredModal({ onSetupComplete, onCancel }: FileSyste
               </p>
               
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <h4 className="text-sm font-semibold text-blue-900 mb-2">What we'll create:</h4>
+                <h4 className="text-sm font-semibold text-blue-900 mb-2">{`What we'll create:`}</h4>
                 <ul className="text-xs text-blue-700 space-y-1 font-mono bg-blue-100 p-3 rounded">
                   <li>📁 receipts/ (images & data)</li>
                   <li>📁 invoices/</li>
@@ -63,8 +63,8 @@ export function FileSystemRequiredModal({ onSetupComplete, onCancel }: FileSyste
                     <ol className="list-decimal list-inside space-y-1">
                       <li>Open File Explorer</li>
                       <li>Go to your Documents folder</li>
-                      <li>Create a new folder called "Thomas-Books"</li>
-                      <li>Click "Choose Folder" below and select that folder</li>
+                      <li>Create a new folder called &quot;Thomas-Books&quot;</li>
+                      <li>Click &quot;Choose Folder&quot; below and select that folder</li>
                     </ol>
                     <div className="mt-2 pt-2 border-t border-yellow-300">
                       <strong>Path example:</strong>
