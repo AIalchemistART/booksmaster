@@ -43,10 +43,11 @@ export default function ReportsPage() {
     return date >= new Date(startDate) && date <= new Date(endDate)
   })
 
-  // Filter receipts by date range
+  // Filter receipts by date range (use ocrDate if available, otherwise createdAt)
   const filteredReceipts = receipts.filter((r) => {
-    if (!r.ocrDate) return false
-    const date = new Date(r.ocrDate)
+    const dateStr = r.ocrDate || r.createdAt
+    if (!dateStr) return false
+    const date = new Date(dateStr)
     return date >= new Date(startDate) && date <= new Date(endDate)
   })
 

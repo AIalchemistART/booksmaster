@@ -135,6 +135,8 @@ export interface Receipt {
   transactionType?: TransactionType // 'income' or 'expense'
   transactionCategory?: string // Category suggestion from AI
   categorizationConfidence?: number // 0-1 confidence score
+  // Failed OCR indicator
+  ocrFailed?: boolean // True if OCR processing failed, needs manual entry
   createdAt: string
 }
 

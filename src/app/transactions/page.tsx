@@ -482,6 +482,14 @@ export default function TransactionsPage() {
 
       {/* Transactions List */}
       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Transactions</span>
+            <span className="text-sm font-normal text-gray-500">
+              Showing {filteredTransactions.length} {filteredTransactions.length === 1 ? 'transaction' : 'transactions'}
+            </span>
+          </CardTitle>
+        </CardHeader>
         <CardContent className="pt-6">
           {filteredTransactions.length === 0 ? (
             <p className="text-gray-500 text-center py-8">

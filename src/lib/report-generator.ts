@@ -1,4 +1,4 @@
-import { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx'
+import { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, TableLayoutType, VerticalAlign, TextDirection } from 'docx'
 import { saveAs } from 'file-saver'
 import type { Receipt } from '@/types'
 
@@ -180,28 +180,56 @@ export async function generateCustodyReportDocx(
 }
 
 function createReceiptsTable(receipts: Receipt[], includeLineItems: boolean): Table {
+  // Cell margin configuration
+  const cellMargins = {
+    top: 100,
+    bottom: 100,
+    left: 100,
+    right: 100
+  }
+
+  // Use DXA units (twentieths of a point) for absolute widths
+  // Landscape page width ~14400 DXA (10 inches usable)
+  const colWidths = {
+    date: 2000,      // ~1.4 inches
+    vendor: 5000,    // ~3.5 inches  
+    amount: 2000,    // ~1.4 inches
+    tax: 2000,       // ~1.4 inches
+    payment: 2500    // ~1.75 inches
+  }
+
   const rows: TableRow[] = [
     // Header row
     new TableRow({
       children: [
         new TableCell({ 
-          width: { size: 15, type: WidthType.PERCENTAGE },
+          width: { size: colWidths.date, type: WidthType.DXA },
+          margins: cellMargins,
+          verticalAlign: VerticalAlign.CENTER,
           children: [new Paragraph({ children: [new TextRun({ text: 'Date', bold: true })] })] 
         }),
         new TableCell({ 
-          width: { size: 35, type: WidthType.PERCENTAGE },
+          width: { size: colWidths.vendor, type: WidthType.DXA },
+          margins: cellMargins,
+          verticalAlign: VerticalAlign.CENTER,
           children: [new Paragraph({ children: [new TextRun({ text: 'Vendor', bold: true })] })] 
         }),
         new TableCell({ 
-          width: { size: 15, type: WidthType.PERCENTAGE },
+          width: { size: colWidths.amount, type: WidthType.DXA },
+          margins: cellMargins,
+          verticalAlign: VerticalAlign.CENTER,
           children: [new Paragraph({ children: [new TextRun({ text: 'Amount', bold: true })] })] 
         }),
         new TableCell({ 
-          width: { size: 15, type: WidthType.PERCENTAGE },
+          width: { size: colWidths.tax, type: WidthType.DXA },
+          margins: cellMargins,
+          verticalAlign: VerticalAlign.CENTER,
           children: [new Paragraph({ children: [new TextRun({ text: 'Tax', bold: true })] })] 
         }),
         new TableCell({ 
-          width: { size: 20, type: WidthType.PERCENTAGE },
+          width: { size: colWidths.payment, type: WidthType.DXA },
+          margins: cellMargins,
+          verticalAlign: VerticalAlign.CENTER,
           children: [new Paragraph({ children: [new TextRun({ text: 'Payment', bold: true })] })] 
         })
       ]
@@ -218,23 +246,33 @@ function createReceiptsTable(receipts: Receipt[], includeLineItems: boolean): Ta
     rows.push(new TableRow({
       children: [
         new TableCell({ 
-          width: { size: 15, type: WidthType.PERCENTAGE },
+          width: { size: colWidths.date, type: WidthType.DXA },
+          margins: cellMargins,
+          verticalAlign: VerticalAlign.CENTER,
           children: [new Paragraph(formatDate(receipt.ocrDate || receipt.createdAt))] 
         }),
         new TableCell({ 
-          width: { size: 35, type: WidthType.PERCENTAGE },
+          width: { size: colWidths.vendor, type: WidthType.DXA },
+          margins: cellMargins,
+          verticalAlign: VerticalAlign.CENTER,
           children: [new Paragraph(receipt.ocrVendor || 'Unknown')] 
         }),
         new TableCell({ 
-          width: { size: 15, type: WidthType.PERCENTAGE },
+          width: { size: colWidths.amount, type: WidthType.DXA },
+          margins: cellMargins,
+          verticalAlign: VerticalAlign.CENTER,
           children: [new Paragraph(formatCurrency(receipt.ocrAmount || 0))] 
         }),
         new TableCell({ 
-          width: { size: 15, type: WidthType.PERCENTAGE },
+          width: { size: colWidths.tax, type: WidthType.DXA },
+          margins: cellMargins,
+          verticalAlign: VerticalAlign.CENTER,
           children: [new Paragraph(formatCurrency(receipt.ocrTax || 0))] 
         }),
         new TableCell({ 
-          width: { size: 20, type: WidthType.PERCENTAGE },
+          width: { size: colWidths.payment, type: WidthType.DXA },
+          margins: cellMargins,
+          verticalAlign: VerticalAlign.CENTER,
           children: [new Paragraph(receipt.ocrPaymentMethod || '-')] 
         })
       ]
@@ -245,11 +283,13 @@ function createReceiptsTable(receipts: Receipt[], includeLineItems: boolean): Ta
         rows.push(new TableRow({
           children: [
             new TableCell({ 
-              width: { size: 15, type: WidthType.PERCENTAGE },
+              width: { size: colWidths.date, type: WidthType.DXA },
+              margins: cellMargins,
               children: [new Paragraph('')] 
             }),
             new TableCell({ 
-              width: { size: 35, type: WidthType.PERCENTAGE },
+              width: { size: colWidths.vendor, type: WidthType.DXA },
+              margins: cellMargins,
               children: [new Paragraph({
                 children: [
                   new TextRun({ text: '  • ', italics: true }),
@@ -258,15 +298,18 @@ function createReceiptsTable(receipts: Receipt[], includeLineItems: boolean): Ta
               })] 
             }),
             new TableCell({ 
-              width: { size: 15, type: WidthType.PERCENTAGE },
+              width: { size: colWidths.amount, type: WidthType.DXA },
+              margins: cellMargins,
               children: [new Paragraph({ children: [new TextRun({ text: formatCurrency(item.price || 0), italics: true })] })] 
             }),
             new TableCell({ 
-              width: { size: 15, type: WidthType.PERCENTAGE },
+              width: { size: colWidths.tax, type: WidthType.DXA },
+              margins: cellMargins,
               children: [new Paragraph('')] 
             }),
             new TableCell({ 
-              width: { size: 20, type: WidthType.PERCENTAGE },
+              width: { size: colWidths.payment, type: WidthType.DXA },
+              margins: cellMargins,
               children: [new Paragraph('')] 
             })
           ]
@@ -277,6 +320,7 @@ function createReceiptsTable(receipts: Receipt[], includeLineItems: boolean): Ta
 
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
+    layout: TableLayoutType.FIXED,
     rows
   })
 }

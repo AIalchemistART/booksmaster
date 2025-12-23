@@ -117,9 +117,24 @@ export function BatchReceiptScanner({ onReceiptProcessed }: BatchReceiptScannerP
   }
 
   const handleUseAll = () => {
+    // Process successful receipts
     queue.filter(r => r.status === 'done').forEach(receipt => {
       onReceiptProcessed(receipt.extractedData)
     })
+    
+    // Process failed receipts - create placeholder receipts for manual entry
+    const failedReceipts = queue.filter(r => r.status === 'error')
+    failedReceipts.forEach(receipt => {
+      onReceiptProcessed({
+        vendor: receipt.originalFile.name.replace(/\.(jpg|jpeg|png|heic|heif|webp)$/i, ''),
+        amount: null,
+        date: new Date().toISOString().split('T')[0],
+        rawText: receipt.error || 'OCR processing failed',
+        imageData: receipt.processedImageUrl || '',
+        ocrFailed: true
+      } as any)
+    })
+    
     handleClearCompleted()
   }
 

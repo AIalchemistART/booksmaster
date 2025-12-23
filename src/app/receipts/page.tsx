@@ -164,6 +164,14 @@ export default function ReceiptsPage() {
     const matchesDateRange = (!startDate || receiptDate >= startDate) && (!endDate || receiptDate <= endDate)
     
     return matchesSearch && matchesAmount && matchesVendor && matchesDateRange
+  }).sort((a, b) => {
+    // Sort failed receipts to the top
+    if (a.ocrFailed && !b.ocrFailed) return -1
+    if (!a.ocrFailed && b.ocrFailed) return 1
+    // Then sort by date (newest first)
+    const dateA = new Date(a.ocrDate || a.createdAt).getTime()
+    const dateB = new Date(b.ocrDate || b.createdAt).getTime()
+    return dateB - dateA
   })
 
   const toggleVendorFilter = (vendor: string) => {
@@ -451,7 +459,7 @@ export default function ReceiptsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredReceipts.map((receipt) => (
-            <Card key={receipt.id} className="overflow-hidden">
+            <Card key={receipt.id} className={`overflow-hidden ${receipt.ocrFailed ? 'border-2 border-orange-500 bg-orange-50' : ''}`}>
               <div className="aspect-[3/4] bg-gray-100 relative overflow-hidden">
                 {receipt.imageData ? (
                   <img
@@ -486,6 +494,11 @@ export default function ReceiptsPage() {
               </div>
               <CardContent className="pt-4">
                 <div className="space-y-2">
+                  {receipt.ocrFailed && (
+                    <div className="mb-2 px-2 py-1 bg-orange-600 text-white text-xs font-semibold rounded flex items-center gap-1">
+                      <span>⚠️ OCR Failed - Manual Entry Required</span>
+                    </div>
+                  )}
                   {receipt.ocrVendor && (
                     <p className="font-medium">{receipt.ocrVendor}</p>
                   )}

@@ -31,6 +31,7 @@ export interface ExtractedReceiptData {
   transactionType?: 'income' | 'expense'
   transactionCategory?: string
   categorizationConfidence?: number
+  ocrFailed?: boolean
 }
 
 export interface ProcessingOptions {
