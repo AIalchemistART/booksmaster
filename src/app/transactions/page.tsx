@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { useStore, generateId } from '@/store'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Plus, Trash2, Edit2, X, Check, Receipt, ArrowRight } from 'lucide-react'
+import { Plus, Trash2, Edit2, X, Check, Receipt, ArrowRight, Sparkles } from 'lucide-react'
 import type { Transaction, ExpenseCategory, TransactionType, Receipt as ReceiptType } from '@/types'
 import { useFileSystemCheck } from '@/hooks/useFileSystemCheck'
 import { FileSystemRequiredModal } from '@/components/modals/FileSystemRequiredModal'
+import { categorizeTransaction, getCategoriesForType } from '@/lib/gemini-categorization'
 
 const categoryOptions = [
   { value: 'materials', label: 'Materials' },
@@ -34,6 +35,7 @@ export default function TransactionsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [filterType, setFilterType] = useState<'all' | TransactionType>('all')
   const [filterCategory, setFilterCategory] = useState<'all' | ExpenseCategory>('all')
+  const [categorizing, setCategorizing] = useState(false)
   
   // Get unlinked receipts (receipts not yet converted to transactions)
   const unlinkedReceipts = receipts.filter(r => !r.linkedTransactionId && r.ocrAmount)
@@ -47,6 +49,32 @@ export default function TransactionsPage() {
     category: 'materials' as ExpenseCategory,
     notes: '',
   })
+
+  const handleSmartCategorize = async () => {
+    if (!formData.description || !formData.amount) {
+      alert('Please enter a description and amount first')
+      return
+    }
+
+    setCategorizing(true)
+    try {
+      const result = await categorizeTransaction(
+        formData.description,
+        parseFloat(formData.amount) || 0
+      )
+      
+      setFormData({
+        ...formData,
+        type: result.type,
+        category: result.category.toLowerCase().replace(/\s+/g, '_') as ExpenseCategory
+      })
+    } catch (error) {
+      console.error('Categorization error:', error)
+      alert('Failed to categorize transaction. Please select manually.')
+    } finally {
+      setCategorizing(false)
+    }
+  }
 
   const resetForm = () => {
     setFormData({
@@ -240,6 +268,30 @@ export default function TransactionsPage() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 required
               />
+              
+              {/* AI Categorization Button */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-900 mb-1">
+                      Smart Categorization
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      Let AI analyze the description and suggest the best type and category
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleSmartCategorize}
+                    disabled={categorizing || !formData.description || !formData.amount}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {categorizing ? 'Analyzing...' : 'Auto-Categorize'}
+                  </Button>
+                </div>
+              </div>
+
               <Input
                 label="Notes (optional)"
                 placeholder="Additional notes"

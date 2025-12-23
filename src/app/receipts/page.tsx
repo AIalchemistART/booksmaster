@@ -35,6 +35,10 @@ export default function ReceiptsPage() {
   const { showModal: showGeminiModal, requireGeminiApiKey, handleSetupComplete: handleGeminiSetup, handleSkip: handleGeminiSkip } = useGeminiApiKeyCheck()
   const [showForm, setShowForm] = useState(false)
   const [showOCR, setShowOCR] = useState(false)
+  const [searchVendor, setSearchVendor] = useState('')
+  const [minAmount, setMinAmount] = useState(0)
+  const [maxAmount, setMaxAmount] = useState(1000)
+  const [selectedVendors, setSelectedVendors] = useState<string[]>([])
   const [formData, setFormData] = useState({
     driveUrl: '',
     vendor: '',
@@ -139,6 +143,32 @@ export default function ReceiptsPage() {
     return `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w400`
   }
 
+  // Get unique vendors with counts
+  const vendorCounts = receipts.reduce((acc, r) => {
+    const vendor = r.ocrVendor || 'Unknown'
+    acc[vendor] = (acc[vendor] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
+
+  // Filter receipts
+  const filteredReceipts = receipts.filter(r => {
+    const amount = r.ocrAmount || 0
+    const vendor = (r.ocrVendor || 'Unknown').toLowerCase()
+    const matchesSearch = vendor.includes(searchVendor.toLowerCase())
+    const matchesAmount = amount >= minAmount && amount <= maxAmount
+    const matchesVendor = selectedVendors.length === 0 || selectedVendors.includes(r.ocrVendor || 'Unknown')
+    
+    return matchesSearch && matchesAmount && matchesVendor
+  })
+
+  const toggleVendorFilter = (vendor: string) => {
+    setSelectedVendors(prev => 
+      prev.includes(vendor) 
+        ? prev.filter(v => v !== vendor)
+        : [...prev, vendor]
+    )
+  }
+
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
@@ -169,29 +199,90 @@ export default function ReceiptsPage() {
         </div>
       )}
 
-      {/* Instructions */}
-      <Card className="mb-8 bg-blue-50 border-blue-200">
-        <CardContent className="pt-6">
-          <h3 className="font-semibold text-blue-900 mb-2">Two Ways to Add Receipts</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="font-medium text-blue-800 mb-1">Option 1: Scan with OCR</p>
-              <ol className="list-decimal list-inside space-y-1 text-blue-700">
-                <li>Click Scan Receipt above</li>
-                <li>Take a photo or upload an image</li>
-                <li>OCR will auto-extract vendor, amount, date</li>
-                <li>Review and save</li>
-              </ol>
+      {/* Search and Filters */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Search & Filter Receipts</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Search by Vendor"
+              placeholder="Type vendor name..."
+              value={searchVendor}
+              onChange={(e) => setSearchVendor(e.target.value)}
+            />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Amount Range: {formatCurrency(minAmount)} - {formatCurrency(maxAmount)}
+              </label>
+              <div className="flex gap-4 items-center">
+                <input
+                  type="range"
+                  min="0"
+                  max="1000"
+                  step="10"
+                  value={minAmount}
+                  onChange={(e) => setMinAmount(Number(e.target.value))}
+                  className="flex-1"
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="1000"
+                  step="10"
+                  value={maxAmount}
+                  onChange={(e) => setMaxAmount(Number(e.target.value))}
+                  className="flex-1"
+                />
+              </div>
             </div>
+          </div>
+
+          {/* Vendor Filter Bubbles */}
+          {Object.keys(vendorCounts).length > 0 && (
             <div>
-              <p className="font-medium text-blue-800 mb-1">Option 2: Google Drive Link</p>
-              <ol className="list-decimal list-inside space-y-1 text-blue-700">
-                <li>Upload receipt to Google Drive</li>
-                <li>Get shareable link (Anyone with link)</li>
-                <li>Click Add Manual and paste link</li>
-                <li>Fill in details manually</li>
-              </ol>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Filter by Vendor ({Object.keys(vendorCounts).length} unique)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(vendorCounts)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([vendor, count]) => (
+                    <button
+                      key={vendor}
+                      onClick={() => toggleVendorFilter(vendor)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        selectedVendors.includes(vendor)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {vendor} ({count})
+                    </button>
+                  ))}
+              </div>
             </div>
+          )}
+
+          <div className="flex justify-between items-center pt-2 border-t">
+            <p className="text-sm text-gray-600">
+              Showing {filteredReceipts.length} of {receipts.length} receipts
+            </p>
+            {(searchVendor || selectedVendors.length > 0 || minAmount > 0 || maxAmount < 1000) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchVendor('')
+                  setSelectedVendors([])
+                  setMinAmount(0)
+                  setMaxAmount(1000)
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -310,7 +401,7 @@ export default function ReceiptsPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {receipts.map((receipt) => (
+          {filteredReceipts.map((receipt) => (
             <Card key={receipt.id} className="overflow-hidden">
               <div className="aspect-[3/4] bg-gray-100 relative overflow-hidden">
                 {receipt.imageData ? (

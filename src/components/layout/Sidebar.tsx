@@ -23,7 +23,7 @@ const navigation = [
   { name: 'Receipts', href: '/receipts', icon: Camera },
   { name: 'Reports', href: '/reports', icon: TrendingUp },
   { name: 'Bank Accounts', href: '/bank-accounts', icon: CreditCard },
-  { name: 'Tools', href: '/tools', icon: Wrench },
+  // { name: 'Tools', href: '/tools', icon: Wrench },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 

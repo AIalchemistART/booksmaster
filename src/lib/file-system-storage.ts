@@ -304,6 +304,15 @@ export async function createFullBackup(allData: any): Promise<boolean> {
  * Check if file system storage is configured
  */
 export async function isFileSystemConfigured(): Promise<boolean> {
-  const handle = await getRootDirectory()
+  const handle = await loadDirectoryHandle()
   return handle !== null
+}
+
+/**
+ * Get the current folder path (name) if configured
+ */
+export async function getConfiguredFolderPath(): Promise<string | null> {
+  const handle = await loadDirectoryHandle()
+  if (!handle) return null
+  return handle.name
 }

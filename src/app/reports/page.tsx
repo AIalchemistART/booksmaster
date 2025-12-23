@@ -28,6 +28,7 @@ export default function ReportsPage() {
     return d.toISOString().split('T')[0]
   })
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0])
+  const [includeLineItems, setIncludeLineItems] = useState(false)
 
   // Filter custody expenses by date range
   const filteredCustodyExpenses = custodyExpenses.filter((e) => {
@@ -122,13 +123,73 @@ export default function ReportsPage() {
     return report
   }
 
-  const downloadReport = () => {
+  const generateTaxReceiptReport = () => {
+    let report = `TAX RECEIPT REPORT\n`
+    report += `Period: ${formatDate(startDate)} - ${formatDate(endDate)}\n`
+    report += `Generated: ${formatDate(new Date())}\n`
+    report += `${'='.repeat(80)}\n\n`
+
+    report += `SUMMARY\n`
+    report += `${'-'.repeat(50)}\n`
+    report += `Total Receipts: ${filteredReceipts.length}\n`
+    report += `Total Amount: ${formatCurrency(receiptTotals.totalAmount)}\n`
+    const totalSubtotal = filteredReceipts.reduce((sum, r) => sum + (r.ocrSubtotal || 0), 0)
+    report += `Total Subtotal: ${formatCurrency(totalSubtotal)}\n`
+    report += `Total Tax: ${formatCurrency(receiptTotals.totalTax)}\n\n`
+
+    report += `DETAILED RECEIPTS\n`
+    report += `${'-'.repeat(50)}\n`
+    
+    const sortedReceipts = filteredReceipts.sort((a, b) => {
+      const dateA = new Date(a.ocrDate || a.createdAt)
+      const dateB = new Date(b.ocrDate || b.createdAt)
+      return dateA.getTime() - dateB.getTime()
+    })
+
+    sortedReceipts.forEach((r, index) => {
+      report += `${index + 1}. ${formatDate(r.ocrDate || r.createdAt)} | ${r.ocrVendor || 'Unknown Vendor'}\n`
+      report += `   Amount: ${formatCurrency(r.ocrAmount || 0)}`
+      if (r.ocrSubtotal) report += ` (Subtotal: ${formatCurrency(r.ocrSubtotal)})`
+      if (r.ocrTax) report += ` (Tax: ${formatCurrency(r.ocrTax)})`
+      report += `\n`
+      if (r.ocrPaymentMethod) report += `   Payment: ${r.ocrPaymentMethod}\n`
+      if (r.ocrTransactionId) report += `   Transaction ID: ${r.ocrTransactionId}\n`
+      
+      if (includeLineItems && r.ocrLineItems && r.ocrLineItems.length > 0) {
+        report += `   Line Items:\n`
+        r.ocrLineItems.forEach((item: any) => {
+          report += `     - ${item.description}`
+          if (item.quantity) report += ` (${item.quantity}x)`
+          if (item.price) report += ` @ ${formatCurrency(item.price)}`
+          report += `\n`
+        })
+      }
+      report += `\n`
+    })
+
+    return report
+  }
+
+  const downloadCustodyReport = () => {
     const report = generateCustodyReport()
     const blob = new Blob([report], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = `custody-report-${startDate}-to-${endDate}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const downloadTaxReceiptReport = () => {
+    const report = generateTaxReceiptReport()
+    const blob = new Blob([report], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `tax-receipt-report-${startDate}-to-${endDate}.txt`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -164,10 +225,27 @@ export default function ReportsPage() {
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
             />
-            <Button onClick={downloadReport}>
-              <Download className="h-4 w-4 mr-2" />
-              Download Custody Report
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={downloadCustodyReport} variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Custody Report
+              </Button>
+              <Button onClick={downloadTaxReceiptReport}>
+                <Download className="h-4 w-4 mr-2" />
+                Tax Receipt Report
+              </Button>
+            </div>
+          </div>
+          <div className="mt-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={includeLineItems}
+                onChange={(e) => setIncludeLineItems(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <span>Include itemized line items in tax report</span>
+            </label>
           </div>
         </CardContent>
       </Card>

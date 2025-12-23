@@ -12,6 +12,8 @@ import { FileSystemSetup } from '@/components/settings/FileSystemSetup'
 export default function SettingsPage() {
   const store = useStore()
   const [showConfirmClear, setShowConfirmClear] = useState(false)
+  const [businessName, setBusinessName] = useState(store.businessName)
+  const [businessType, setBusinessType] = useState(store.businessType)
 
   const exportData = () => {
     const data = {
@@ -93,17 +95,19 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Business Name"
-              defaultValue="Thomas Contracting LLC"
-              disabled
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+              onBlur={() => store.setBusinessName(businessName)}
             />
             <Input
               label="Business Type"
-              defaultValue="Residential Contractor"
-              disabled
+              value={businessType}
+              onChange={(e) => setBusinessType(e.target.value)}
+              onBlur={() => store.setBusinessType(businessType)}
             />
           </div>
           <p className="text-sm text-gray-500 mt-4">
-            Business information is for display purposes. Future versions will allow customization.
+            Business information will be saved automatically when you click away from the field.
           </p>
         </CardContent>
       </Card>

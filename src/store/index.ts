@@ -10,6 +10,12 @@ import {
 } from '@/lib/file-system-storage'
 
 interface AppState {
+  // Business Info
+  businessName: string
+  businessType: string
+  setBusinessName: (name: string) => void
+  setBusinessType: (type: string) => void
+
   // Transactions
   transactions: Transaction[]
   addTransaction: (transaction: Transaction) => void
@@ -43,6 +49,12 @@ interface AppState {
 export const useStore = create<AppState>()(
   persist(
     (set) => ({
+      // Business Info
+      businessName: 'Thomas Contracting LLC',
+      businessType: 'Residential Contractor',
+      setBusinessName: (name) => set({ businessName: name }),
+      setBusinessType: (type) => set({ businessType: type }),
+
       // Transactions
       transactions: [],
       addTransaction: (transaction) =>

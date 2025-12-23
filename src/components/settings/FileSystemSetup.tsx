@@ -6,6 +6,7 @@ import {
   setupFileSystemStorage, 
   isFileSystemAccessSupported,
   isFileSystemConfigured,
+  getConfiguredFolderPath,
   createFullBackup
 } from '@/lib/file-system-storage'
 import { useStore } from '@/store'
@@ -16,6 +17,7 @@ export function FileSystemSetup() {
   const [checking, setChecking] = useState(true)
   const [setting, setSetting] = useState(false)
   const [backing, setBacking] = useState(false)
+  const [folderPath, setFolderPath] = useState<string | null>(null)
   const supported = isFileSystemAccessSupported()
   
   const store = useStore()
@@ -28,6 +30,10 @@ export function FileSystemSetup() {
     setChecking(true)
     const isConfigured = await isFileSystemConfigured()
     setConfigured(isConfigured)
+    if (isConfigured) {
+      const path = await getConfiguredFolderPath()
+      setFolderPath(path)
+    }
     setChecking(false)
   }
 
@@ -140,6 +146,10 @@ export function FileSystemSetup() {
           <p className="text-sm text-green-800 mb-3">
             All changes are automatically saved to your local file system in real-time.
           </p>
+          <div className="bg-white border border-green-300 rounded px-3 py-2 mb-3">
+            <p className="text-xs text-gray-500 mb-1">Selected Folder:</p>
+            <p className="text-sm font-mono text-gray-900">{folderPath || 'No folder selected'}</p>
+          </div>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={handleBackupNow} disabled={backing}>
               <Download className="h-4 w-4 mr-2" />
