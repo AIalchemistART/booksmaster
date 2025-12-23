@@ -116,25 +116,42 @@ export function BatchReceiptScanner({ onReceiptProcessed }: BatchReceiptScannerP
     }
   }
 
-  const handleUseAll = () => {
-    // Process successful receipts
-    queue.filter(r => r.status === 'done').forEach(receipt => {
-      onReceiptProcessed(receipt.extractedData)
-    })
+  const handleUseAll = async () => {
+    // Process receipts with small delays to avoid overwhelming the system
+    const successfulReceipts = queue.filter(r => r.status === 'done')
+    const failedReceipts = queue.filter(r => r.status === 'error')
+    
+    console.log(`Processing ${successfulReceipts.length} successful and ${failedReceipts.length} failed receipts`)
+    
+    // Process successful receipts with delay
+    for (const receipt of successfulReceipts) {
+      try {
+        onReceiptProcessed(receipt.extractedData)
+        // Small delay to prevent overwhelming localStorage/file system
+        await new Promise(resolve => setTimeout(resolve, 50))
+      } catch (error) {
+        console.error('Error processing receipt:', error)
+      }
+    }
     
     // Process failed receipts - create placeholder receipts for manual entry
-    const failedReceipts = queue.filter(r => r.status === 'error')
-    failedReceipts.forEach(receipt => {
-      onReceiptProcessed({
-        vendor: receipt.originalFile.name.replace(/\.(jpg|jpeg|png|heic|heif|webp)$/i, ''),
-        amount: null,
-        date: new Date().toISOString().split('T')[0],
-        rawText: receipt.error || 'OCR processing failed',
-        imageData: receipt.processedImageUrl || '',
-        ocrFailed: true
-      } as any)
-    })
+    for (const receipt of failedReceipts) {
+      try {
+        onReceiptProcessed({
+          vendor: receipt.originalFile.name.replace(/\.(jpg|jpeg|png|heic|heif|webp)$/i, ''),
+          amount: null,
+          date: new Date().toISOString().split('T')[0],
+          rawText: receipt.error || 'OCR processing failed',
+          imageData: receipt.processedImageUrl || '',
+          ocrFailed: true
+        } as any)
+        await new Promise(resolve => setTimeout(resolve, 50))
+      } catch (error) {
+        console.error('Error processing failed receipt:', error)
+      }
+    }
     
+    console.log('All receipts processed')
     handleClearCompleted()
   }
 

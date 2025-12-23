@@ -165,7 +165,10 @@ async function getRootDirectory(): Promise<FileSystemDirectoryHandle | null> {
 export async function saveReceiptsToFileSystem(receipts: any[]): Promise<boolean> {
   try {
     const rootDir = await getRootDirectory()
-    if (!rootDir) return false
+    if (!rootDir) {
+      console.warn('No root directory configured - skipping file system save')
+      return false
+    }
 
     const receiptsDir = await rootDir.getDirectoryHandle('receipts', { create: true })
     const dataDir = await receiptsDir.getDirectoryHandle('data', { create: true })
@@ -178,14 +181,21 @@ export async function saveReceiptsToFileSystem(receipts: any[]): Promise<boolean
     await writable.close()
 
     // Save individual receipt images if they have imageData
+    // Process sequentially to avoid overwhelming file system
+    let successCount = 0
+    let failCount = 0
+    
     for (const receipt of receipts) {
       if (receipt.imageData) {
         try {
           const filename = `receipt-${receipt.id}.jpg`
           const imageFile = await imagesDir.getFileHandle(filename, { create: true })
           
-          // Convert data URL to blob
+          // Convert data URL to blob with error handling
           const response = await fetch(receipt.imageData)
+          if (!response.ok) {
+            throw new Error(`Failed to fetch image data: ${response.statusText}`)
+          }
           const blob = await response.blob()
           
           const imageWritable = await imageFile.createWritable()
@@ -200,12 +210,17 @@ export async function saveReceiptsToFileSystem(receipts: any[]): Promise<boolean
           const metadata = { ...receipt, imageData: undefined, imageFilename: filename }
           await metadataWritable.write(JSON.stringify(metadata, null, 2))
           await metadataWritable.close()
+          
+          successCount++
         } catch (error) {
+          failCount++
           console.error(`Error saving receipt ${receipt.id}:`, error)
+          // Continue processing other receipts even if one fails
         }
       }
     }
 
+    console.log(`Saved ${successCount} receipts successfully, ${failCount} failed`)
     return true
   } catch (error) {
     console.error('Error saving receipts to file system:', error)

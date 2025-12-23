@@ -138,7 +138,10 @@ export const useStore = create<AppState>()(
       addReceipt: (receipt) =>
         set((state) => {
           const newReceipts = [...state.receipts, receipt]
-          saveReceiptsToFileSystem(newReceipts).catch(console.error)
+          // Save to file system asynchronously - don't block on failures
+          saveReceiptsToFileSystem(newReceipts).catch((error) => {
+            console.error('File system save failed, but receipt saved to memory:', error)
+          })
           return { receipts: newReceipts }
         }),
       updateReceipt: (id, updates) =>
