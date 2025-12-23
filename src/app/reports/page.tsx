@@ -8,7 +8,7 @@ import { useStore } from '@/store'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { FileText, Download, Calendar, Receipt } from 'lucide-react'
 import type { CustodyExpenseType } from '@/types'
-import { generateTaxReceiptDocx, generateCustodyReportDocx } from '@/lib/report-generator'
+import { generateTaxReceiptExcel, generateCustodyReportExcel } from '@/lib/excel-report-generator'
 
 const expenseTypeLabels: Record<CustodyExpenseType, string> = {
   child_support: 'Child Support',
@@ -186,12 +186,12 @@ export default function ReportsPage() {
     URL.revokeObjectURL(url)
   }
 
-  const downloadTaxReceiptReport = async () => {
-    await generateTaxReceiptDocx(filteredReceipts, startDate, endDate, includeLineItems)
+  const downloadTaxReceiptReport = () => {
+    generateTaxReceiptExcel(filteredReceipts, startDate, endDate, includeLineItems)
   }
 
-  const downloadCustodyReportDocxFile = async () => {
-    await generateCustodyReportDocx(filteredCustodyExpenses, startDate, endDate, custodyTotals)
+  const downloadCustodyReportDocxFile = () => {
+    generateCustodyReportExcel(filteredCustodyExpenses, startDate, endDate, custodyTotals)
   }
 
   return (
@@ -226,11 +226,11 @@ export default function ReportsPage() {
             <div className="flex gap-2">
               <Button onClick={downloadCustodyReportDocxFile} variant="outline">
                 <Download className="h-4 w-4 mr-2" />
-                Custody Report (.docx)
+                Custody Report (.xlsx)
               </Button>
               <Button onClick={downloadTaxReceiptReport}>
                 <Download className="h-4 w-4 mr-2" />
-                Tax Receipt Report (.docx)
+                Tax Receipt Report (.xlsx)
               </Button>
             </div>
           </div>
