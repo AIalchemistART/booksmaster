@@ -166,6 +166,10 @@ export async function performEnhancedOCR(
   // AI Categorization: Analyze vendor and amount to suggest type/category
   if (ocrResult.vendor && ocrResult.total) {
     try {
+      // Add delay before categorization call to avoid hitting rate limits
+      // OCR and categorization both use Gemini API, so space them out
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
       onProgress?.(95, 'AI categorizing...')
       const categorization = await categorizeTransaction(
         ocrResult.vendor,
