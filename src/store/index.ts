@@ -9,6 +9,25 @@ import {
   createFullBackup
 } from '@/lib/file-system-storage'
 
+// Debounce timer for file system saves
+let receiptSaveTimer: NodeJS.Timeout | null = null
+const RECEIPT_SAVE_DEBOUNCE_MS = 1000 // Wait 1 second after last receipt before saving
+
+// Debounced save function
+function debouncedSaveReceipts(receipts: Receipt[]) {
+  if (receiptSaveTimer) {
+    clearTimeout(receiptSaveTimer)
+  }
+  
+  receiptSaveTimer = setTimeout(() => {
+    console.log(`Debounced save: Saving ${receipts.length} receipts to file system`)
+    saveReceiptsToFileSystem(receipts).catch((error) => {
+      console.error('Debounced file system save failed, but receipts saved to memory:', error)
+    })
+    receiptSaveTimer = null
+  }, RECEIPT_SAVE_DEBOUNCE_MS)
+}
+
 interface AppState {
   // Business Info
   businessName: string
@@ -138,10 +157,8 @@ export const useStore = create<AppState>()(
       addReceipt: (receipt) =>
         set((state) => {
           const newReceipts = [...state.receipts, receipt]
-          // Save to file system asynchronously - don't block on failures
-          saveReceiptsToFileSystem(newReceipts).catch((error) => {
-            console.error('File system save failed, but receipt saved to memory:', error)
-          })
+          // Debounce file system saves to batch operations
+          debouncedSaveReceipts(newReceipts)
           return { receipts: newReceipts }
         }),
       updateReceipt: (id, updates) =>
@@ -149,13 +166,15 @@ export const useStore = create<AppState>()(
           const newReceipts = state.receipts.map((r) =>
             r.id === id ? { ...r, ...updates } : r
           )
-          saveReceiptsToFileSystem(newReceipts).catch(console.error)
+          // Debounce file system saves to batch operations
+          debouncedSaveReceipts(newReceipts)
           return { receipts: newReceipts }
         }),
       deleteReceipt: (id) =>
         set((state) => {
           const newReceipts = state.receipts.filter((r) => r.id !== id)
-          saveReceiptsToFileSystem(newReceipts).catch(console.error)
+          // Debounce file system saves to batch operations
+          debouncedSaveReceipts(newReceipts)
           return { receipts: newReceipts }
         }),
     }),
