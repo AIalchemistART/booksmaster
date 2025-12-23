@@ -149,6 +149,9 @@ export function FileSystemSetup() {
           <div className="bg-white border border-green-300 rounded px-3 py-2 mb-3">
             <p className="text-xs text-gray-500 mb-1">Selected Folder:</p>
             <p className="text-sm font-mono text-gray-900">{folderPath || 'No folder selected'}</p>
+            <p className="text-xs text-amber-600 mt-2">
+              ⚠️ Note: The browser only shows the folder name for security. Your files are saved to the folder you selected. To verify, open that folder directly in File Explorer.
+            </p>
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={handleBackupNow} disabled={backing}>

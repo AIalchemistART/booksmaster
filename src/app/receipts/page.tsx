@@ -8,12 +8,13 @@ import { Input } from '@/components/ui/Input'
 import { useStore, generateId } from '@/store'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Camera, Upload, Trash2, Link2, ExternalLink, Scan, Loader2, Layers } from 'lucide-react'
-import type { Receipt } from '@/types'
+import type { Receipt, TransactionType, ExpenseCategory } from '@/types'
 import type { ExtractedReceiptData } from '@/lib/receipt-processor'
 import { useFileSystemCheck } from '@/hooks/useFileSystemCheck'
 import { FileSystemRequiredModal } from '@/components/modals/FileSystemRequiredModal'
 import { useGeminiApiKeyCheck } from '@/hooks/useGeminiApiKeyCheck'
 import { GeminiApiKeyRequiredModal } from '@/components/modals/GeminiApiKeyRequiredModal'
+import { Select } from '@/components/ui/Select'
 
 // Dynamic import with SSR disabled to avoid ONNX runtime issues
 const BatchReceiptScanner = dynamic(
@@ -36,9 +37,10 @@ export default function ReceiptsPage() {
   const [showForm, setShowForm] = useState(false)
   const [showOCR, setShowOCR] = useState(false)
   const [searchVendor, setSearchVendor] = useState('')
-  const [minAmount, setMinAmount] = useState(0)
-  const [maxAmount, setMaxAmount] = useState(1000)
+  const [amountRange, setAmountRange] = useState<[number, number]>([0, 100000])
   const [selectedVendors, setSelectedVendors] = useState<string[]>([])
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [formData, setFormData] = useState({
     driveUrl: '',
     vendor: '',
@@ -154,11 +156,14 @@ export default function ReceiptsPage() {
   const filteredReceipts = receipts.filter(r => {
     const amount = r.ocrAmount || 0
     const vendor = (r.ocrVendor || 'Unknown').toLowerCase()
-    const matchesSearch = vendor.includes(searchVendor.toLowerCase())
-    const matchesAmount = amount >= minAmount && amount <= maxAmount
-    const matchesVendor = selectedVendors.length === 0 || selectedVendors.includes(r.ocrVendor || 'Unknown')
+    const receiptDate = r.ocrDate || r.createdAt
     
-    return matchesSearch && matchesAmount && matchesVendor
+    const matchesSearch = vendor.includes(searchVendor.toLowerCase())
+    const matchesAmount = amount >= amountRange[0] && amount <= amountRange[1]
+    const matchesVendor = selectedVendors.length === 0 || selectedVendors.includes(r.ocrVendor || 'Unknown')
+    const matchesDateRange = (!startDate || receiptDate >= startDate) && (!endDate || receiptDate <= endDate)
+    
+    return matchesSearch && matchesAmount && matchesVendor && matchesDateRange
   })
 
   const toggleVendorFilter = (vendor: string) => {
@@ -205,37 +210,80 @@ export default function ReceiptsPage() {
           <CardTitle>Search & Filter Receipts</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input
               label="Search by Vendor"
               placeholder="Type vendor name..."
               value={searchVendor}
               onChange={(e) => setSearchVendor(e.target.value)}
             />
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Amount Range: {formatCurrency(minAmount)} - {formatCurrency(maxAmount)}
-              </label>
-              <div className="flex gap-4 items-center">
-                <input
-                  type="range"
-                  min="0"
-                  max="1000"
-                  step="10"
-                  value={minAmount}
-                  onChange={(e) => setMinAmount(Number(e.target.value))}
-                  className="flex-1"
-                />
-                <input
-                  type="range"
-                  min="0"
-                  max="1000"
-                  step="10"
-                  value={maxAmount}
-                  onChange={(e) => setMaxAmount(Number(e.target.value))}
-                  className="flex-1"
+            <Input
+              label="Start Date"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <Input
+              label="End Date"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+
+          {/* Amount Range Slider */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Amount Range: {formatCurrency(amountRange[0])} - {formatCurrency(amountRange[1])}
+            </label>
+            <div className="relative pt-1 px-2">
+              <input
+                type="range"
+                min="0"
+                max="100000"
+                step="100"
+                value={amountRange[0]}
+                onChange={(e) => {
+                  const newMin = Number(e.target.value)
+                  if (newMin <= amountRange[1]) {
+                    setAmountRange([newMin, amountRange[1]])
+                  }
+                }}
+                className="absolute w-full h-2 bg-transparent appearance-none pointer-events-none"
+                style={{
+                  zIndex: amountRange[0] > amountRange[1] - 1000 ? 5 : 3
+                }}
+              />
+              <input
+                type="range"
+                min="0"
+                max="100000"
+                step="100"
+                value={amountRange[1]}
+                onChange={(e) => {
+                  const newMax = Number(e.target.value)
+                  if (newMax >= amountRange[0]) {
+                    setAmountRange([amountRange[0], newMax])
+                  }
+                }}
+                className="absolute w-full h-2 bg-transparent appearance-none pointer-events-none"
+                style={{
+                  zIndex: amountRange[0] > amountRange[1] - 1000 ? 3 : 5
+                }}
+              />
+              <div className="w-full h-2 bg-gray-200 rounded-full">
+                <div
+                  className="h-full bg-blue-600 rounded-full"
+                  style={{
+                    marginLeft: `${(amountRange[0] / 100000) * 100}%`,
+                    width: `${((amountRange[1] - amountRange[0]) / 100000) * 100}%`
+                  }}
                 />
               </div>
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 px-2">
+              <span>$0</span>
+              <span>$100,000</span>
             </div>
           </div>
 
@@ -269,15 +317,16 @@ export default function ReceiptsPage() {
             <p className="text-sm text-gray-600">
               Showing {filteredReceipts.length} of {receipts.length} receipts
             </p>
-            {(searchVendor || selectedVendors.length > 0 || minAmount > 0 || maxAmount < 1000) && (
+            {(searchVendor || selectedVendors.length > 0 || amountRange[0] > 0 || amountRange[1] < 100000 || startDate || endDate) && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
                   setSearchVendor('')
                   setSelectedVendors([])
-                  setMinAmount(0)
-                  setMaxAmount(1000)
+                  setAmountRange([0, 100000])
+                  setStartDate('')
+                  setEndDate('')
                 }}
               >
                 Clear Filters
@@ -465,6 +514,39 @@ export default function ReceiptsPage() {
                     </div>
                   )}
                   
+                  {/* AI Categorization - Editable */}
+                  {(receipt.transactionType || receipt.transactionCategory) && (
+                    <div className="bg-purple-50 border border-purple-200 rounded p-2 space-y-2">
+                      <p className="text-xs font-semibold text-purple-900">AI Categorization</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Select
+                          label="Type"
+                          options={[
+                            { value: 'expense', label: 'Expense' },
+                            { value: 'income', label: 'Income' }
+                          ]}
+                          value={receipt.transactionType || 'expense'}
+                          onChange={(e) => updateReceipt(receipt.id, { 
+                            transactionType: e.target.value as TransactionType 
+                          })}
+                        />
+                        <Input
+                          label="Category"
+                          value={receipt.transactionCategory || ''}
+                          onChange={(e) => updateReceipt(receipt.id, { 
+                            transactionCategory: e.target.value 
+                          })}
+                          placeholder="e.g., Materials"
+                        />
+                      </div>
+                      {receipt.categorizationConfidence && (
+                        <p className="text-xs text-purple-600">
+                          Confidence: {Math.round(receipt.categorizationConfidence * 100)}%
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Line items preview */}
                   {receipt.ocrLineItems && receipt.ocrLineItems.length > 0 && (
                     <details className="text-xs">

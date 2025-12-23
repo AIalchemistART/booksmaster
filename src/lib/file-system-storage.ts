@@ -314,5 +314,36 @@ export async function isFileSystemConfigured(): Promise<boolean> {
 export async function getConfiguredFolderPath(): Promise<string | null> {
   const handle = await loadDirectoryHandle()
   if (!handle) return null
+  
+  // Log for debugging - File System Access API doesn't expose full paths for security
+  console.log('Configured folder handle:', handle.name, handle.kind)
+  
   return handle.name
+}
+
+/**
+ * Verify folder is accessible and log structure
+ */
+export async function debugFolderStructure(): Promise<void> {
+  try {
+    const handle = await loadDirectoryHandle()
+    if (!handle) {
+      console.log('No folder configured')
+      return
+    }
+    
+    console.log('=== File System Debug ===')
+    console.log('Folder name:', handle.name)
+    console.log('Folder kind:', handle.kind)
+    
+    // List all subdirectories
+    const entries: string[] = []
+    for await (const entry of (handle as any).values()) {
+      entries.push(`${entry.kind === 'directory' ? '📁' : '📄'} ${entry.name}`)
+    }
+    console.log('Contents:', entries)
+    
+  } catch (error) {
+    console.error('Debug error:', error)
+  }
 }

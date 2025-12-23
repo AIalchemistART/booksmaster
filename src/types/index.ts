@@ -114,6 +114,10 @@ export interface Receipt {
   processedAt?: string
   linkedTransactionId?: string
   linkedCustodyExpenseId?: string
+  // AI-categorized fields for easier transaction conversion
+  transactionType?: TransactionType // 'income' or 'expense'
+  transactionCategory?: string // Category suggestion from AI
+  categorizationConfidence?: number // 0-1 confidence score
   createdAt: string
 }
 

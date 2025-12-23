@@ -28,6 +28,9 @@ export interface ExtractedReceiptData {
   storeId?: string
   transactionId?: string
   time?: string
+  transactionType?: 'income' | 'expense'
+  transactionCategory?: string
+  categorizationConfidence?: number
 }
 
 export interface ProcessingOptions {

@@ -13,6 +13,7 @@ import {
   extractMonetaryValue 
 } from './text-correction'
 import { extractReceiptWithGemini, getGeminiApiKey, GeminiReceiptData } from './gemini-vision'
+import { categorizeTransaction } from '../gemini-categorization'
 
 export interface EnhancedOCRResult {
   vendor?: string
@@ -103,29 +104,30 @@ async function runEnhancedTesseract(
 }
 
 /**
- * Main enhanced OCR function
+ * Main enhanced OCR function with AI categorization
  */
 export async function performEnhancedOCR(
   imageDataUrl: string,
   mode: OCRMode = 'auto',
   onProgress?: (progress: number, status: string) => void
-): Promise<EnhancedOCRResult> {
+): Promise<EnhancedOCRResult & { transactionType?: 'income' | 'expense', transactionCategory?: string, categorizationConfidence?: number }> {
   const geminiApiKey = getGeminiApiKey()
+  
+  let ocrResult: EnhancedOCRResult
   
   // Fast mode: Tesseract only
   if (mode === 'fast') {
     onProgress?.(0, 'Running Tesseract OCR...')
-    return await runEnhancedTesseract(imageDataUrl, onProgress)
+    ocrResult = await runEnhancedTesseract(imageDataUrl, onProgress)
   }
-  
   // Accurate mode: Gemini only (if available)
-  if (mode === 'accurate' && geminiApiKey) {
+  else if (mode === 'accurate' && geminiApiKey) {
     onProgress?.(0, 'Running Gemini Vision AI...')
     try {
       const geminiResult = await extractReceiptWithGemini(imageDataUrl, geminiApiKey)
-      onProgress?.(100, 'OCR complete!')
+      onProgress?.(90, 'OCR complete!')
       const { rawText, ...restGemini } = geminiResult
-      return {
+      ocrResult = {
         ...restGemini,
         method: 'gemini' as const,
         rawText: rawText || '',
@@ -133,34 +135,57 @@ export async function performEnhancedOCR(
     } catch (error) {
       console.warn('Gemini failed, falling back to Tesseract:', error)
       onProgress?.(0, 'Gemini failed, using Tesseract...')
-      return await runEnhancedTesseract(imageDataUrl, onProgress)
+      ocrResult = await runEnhancedTesseract(imageDataUrl, onProgress)
+    }
+  }
+  // Auto mode
+  else {
+    onProgress?.(0, 'Running Tesseract OCR...')
+    const tesseractResult = await runEnhancedTesseract(imageDataUrl, onProgress)
+    
+    if (tesseractResult.confidence > 0.7 || !geminiApiKey) {
+      ocrResult = tesseractResult
+    } else {
+      onProgress?.(50, 'Low confidence, trying Gemini Vision AI...')
+      try {
+        const geminiResult = await extractReceiptWithGemini(imageDataUrl, geminiApiKey)
+        onProgress?.(90, 'OCR complete!')
+        const { rawText, ...restGemini } = geminiResult
+        ocrResult = {
+          ...restGemini,
+          method: 'hybrid' as const,
+          rawText: rawText || '',
+        }
+      } catch (error) {
+        console.warn('Gemini failed, using Tesseract result:', error)
+        ocrResult = tesseractResult
+      }
     }
   }
   
-  // Auto mode: Try Tesseract first, use Gemini if confidence is low
-  onProgress?.(0, 'Running Tesseract OCR...')
-  const tesseractResult = await runEnhancedTesseract(imageDataUrl, onProgress)
-  
-  // If Tesseract confidence is high or Gemini not available, use Tesseract
-  if (tesseractResult.confidence > 0.7 || !geminiApiKey) {
-    return tesseractResult
-  }
-  
-  // Low confidence, try Gemini
-  onProgress?.(50, 'Low confidence, trying Gemini Vision AI...')
-  try {
-    const geminiResult = await extractReceiptWithGemini(imageDataUrl, geminiApiKey)
-    onProgress?.(100, 'OCR complete!')
-    const { rawText, ...restGemini } = geminiResult
-    return {
-      ...restGemini,
-      method: 'hybrid' as const,
-      rawText: rawText || '',
+  // AI Categorization: Analyze vendor and amount to suggest type/category
+  if (ocrResult.vendor && ocrResult.total) {
+    try {
+      onProgress?.(95, 'AI categorizing...')
+      const categorization = await categorizeTransaction(
+        ocrResult.vendor,
+        ocrResult.total,
+        ocrResult.vendor
+      )
+      
+      return {
+        ...ocrResult,
+        transactionType: categorization.type,
+        transactionCategory: categorization.category,
+        categorizationConfidence: categorization.confidence
+      }
+    } catch (error) {
+      console.warn('AI categorization failed:', error)
     }
-  } catch (error) {
-    console.warn('Gemini failed, using Tesseract result:', error)
-    return tesseractResult
   }
+  
+  onProgress?.(100, 'Complete!')
+  return ocrResult
 }
 
 // Helper functions for extracting data from text
