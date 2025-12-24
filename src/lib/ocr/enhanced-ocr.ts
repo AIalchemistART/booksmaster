@@ -168,8 +168,9 @@ export async function performEnhancedOCR(
     try {
       // Add delay before categorization call to avoid hitting rate limits
       // OCR and categorization both use Gemini API, so space them out
-      // 1.5 second delay ensures we stay well under 10 req/sec limit
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // 3 second delay gives Gemini API sufficient time to process OCR request
+      // before categorization request begins
+      await new Promise(resolve => setTimeout(resolve, 3000))
       
       onProgress?.(95, 'AI categorizing...')
       const categorization = await categorizeTransaction(
