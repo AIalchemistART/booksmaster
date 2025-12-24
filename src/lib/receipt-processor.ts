@@ -265,7 +265,7 @@ export class ReceiptProcessorQueue {
 
       console.log('[SAM] Calling detectAndCropReceipt...')
       const cropResult = await this.samModule.detectAndCropReceipt(
-        file,
+        fileUrl, // Use blob URL instead of File object for reliable access
         (progress, status) => {
           console.log(`[SAM] Progress: ${Math.round(progress * 100)}% - ${status}`)
           receipt.progress = 20 + Math.round(progress * 0.3)
