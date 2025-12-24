@@ -164,10 +164,11 @@ export class ReceiptProcessorQueue {
 
     this.onProgress?.(nextReceipt)
 
-    // Process next in queue - 500ms delay to stay well under Gemini API rate limits (10 req/sec)
-    // This gives us ~2 receipts/second with large buffer for Gemini categorization calls
-    // Even with processing time, this ensures Gemini calls stay under 10/sec
-    setTimeout(() => this.processNext(), 500)
+    // Process next in queue - 1000ms delay between receipts for Gemini rate limiting
+    // Combined with 1500ms delay between OCR and categorization calls within each receipt,
+    // this ensures we never exceed Gemini's 10 req/sec limit
+    // 95 receipts will take ~5-6 minutes, but will process reliably with full categorization
+    setTimeout(() => this.processNext(), 1000)
   }
 
   /**
