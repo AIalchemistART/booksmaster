@@ -121,8 +121,9 @@ Important rules:
 
 /**
  * Simple heuristic-based categorization fallback
+ * Exported for use in receipt processing to avoid Gemini rate limiting
  */
-function fallbackCategorization(
+export function fallbackCategorization(
   description: string,
   amount: number,
   vendor?: string

@@ -53,6 +53,11 @@ export interface Transaction {
   notes?: string
   createdAt: string
   updatedAt: string
+  // Categorization tracking for ML/heuristic improvement
+  originalType?: TransactionType // Type assigned by OCR/heuristic
+  originalCategory?: TransactionCategory // Category assigned by OCR/heuristic
+  wasManuallyEdited?: boolean // True if user changed type or category
+  editedAt?: string // Timestamp of last manual edit
 }
 
 // Custody-specific expense

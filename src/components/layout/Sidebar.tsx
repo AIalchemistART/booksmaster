@@ -11,7 +11,8 @@ import {
   Settings,
   TrendingUp,
   Camera,
-  Wrench
+  Wrench,
+  GitCompare
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Invoices', href: '/invoices', icon: FileText },
   { name: 'Receipts', href: '/receipts', icon: Camera },
   { name: 'Reports', href: '/reports', icon: TrendingUp },
+  { name: 'Categorization Changes', href: '/categorization-report', icon: GitCompare },
   { name: 'Bank Accounts', href: '/bank-accounts', icon: CreditCard },
   // { name: 'Tools', href: '/tools', icon: Wrench },
   { name: 'Settings', href: '/settings', icon: Settings },

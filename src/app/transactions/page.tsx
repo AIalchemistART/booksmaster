@@ -123,6 +123,12 @@ export default function TransactionsPage() {
     const now = new Date().toISOString()
 
     if (editingId) {
+      const existingTransaction = transactions.find(t => t.id === editingId)
+      
+      // Check if type or category was manually changed from original OCR/heuristic values
+      const typeChanged = existingTransaction?.originalType && formData.type !== existingTransaction.originalType
+      const categoryChanged = existingTransaction?.originalCategory && formData.category !== existingTransaction.originalCategory
+      
       updateTransaction(editingId, {
         date: formData.date,
         amount: parseFloat(formData.amount),
@@ -130,6 +136,10 @@ export default function TransactionsPage() {
         type: formData.type,
         category: formData.category,
         notes: formData.notes,
+        updatedAt: now,
+        // Track manual edits to improve categorization
+        wasManuallyEdited: typeChanged || categoryChanged || existingTransaction?.wasManuallyEdited,
+        editedAt: (typeChanged || categoryChanged) ? now : existingTransaction?.editedAt,
       })
     } else {
       const newTransaction: Transaction = {
@@ -142,6 +152,7 @@ export default function TransactionsPage() {
         notes: formData.notes,
         createdAt: now,
         updatedAt: now,
+        wasManuallyEdited: false,
       }
       addTransaction(newTransaction)
     }
@@ -188,6 +199,10 @@ export default function TransactionsPage() {
       receiptId: receipt.id,
       createdAt: now,
       updatedAt: now,
+      // Track original OCR/heuristic categorization for improvement
+      originalType: type,
+      originalCategory: category,
+      wasManuallyEdited: false,
     }
     
     addTransaction(newTransaction)
@@ -231,6 +246,10 @@ export default function TransactionsPage() {
         receiptId: receipt.id,
         createdAt: now,
         updatedAt: now,
+        // Track original categorization for improvement
+        originalType: categorization.type,
+        originalCategory: categorization.category.toLowerCase().replace(/\s+/g, '_') as TransactionCategory,
+        wasManuallyEdited: false,
       }
       
       addTransaction(newTransaction)

@@ -167,36 +167,29 @@ export async function performEnhancedOCR(
     }
   }
   
-  // AI Categorization: Analyze vendor and amount to suggest type/category
+  // AI Categorization: Use heuristic categorization during receipt processing
+  // Gemini categorization completely disabled in receipt flow due to persistent rate limiting
+  // Even with 90+ second delays between calls, Gemini returns 429 errors
+  // Heuristic categorization provides accurate results for contractor expenses (Materials, Permits, etc.)
+  // Gemini categorization can be added to transaction workflow later if needed
   if (ocrResult.vendor && ocrResult.total) {
-    try {
-      // Add delay before categorization call to avoid hitting rate limits
-      // OCR and categorization both use Gemini API, so space them out
-      // 20 second delay to ensure Gemini API fully processes OCR request
-      // and clears any rate limit windows before categorization begins
-      console.log(`[CATEGORIZATION] Waiting 20000ms before categorization call at ${new Date().toISOString()}`)
-      await new Promise(resolve => setTimeout(resolve, 20000))
-      console.log(`[CATEGORIZATION] Starting categorization call at ${new Date().toISOString()}`)
-      
-      onProgress?.(95, 'AI categorizing...')
-      const catStartTime = Date.now()
-      const categorization = await categorizeTransaction(
-        ocrResult.vendor,
-        ocrResult.total,
-        ocrResult.vendor
-      )
-      const catDuration = Date.now() - catStartTime
-      console.log(`[CATEGORIZATION] Completed in ${catDuration}ms at ${new Date().toISOString()}`)
-      
-      console.log(`[CATEGORIZATION] Success - Type: ${categorization.type}, Category: ${categorization.category}`)
-      return {
-        ...ocrResult,
-        transactionType: categorization.type,
-        transactionCategory: categorization.category,
-        categorizationConfidence: categorization.confidence
-      }
-    } catch (error) {
-      console.error(`[CATEGORIZATION] FAILED at ${new Date().toISOString()}:`, error)
+    onProgress?.(95, 'Categorizing...')
+    console.log(`[CATEGORIZATION] Using heuristic categorization only (Gemini skipped)`)
+    
+    // Call fallback categorization directly - no Gemini API calls
+    const { fallbackCategorization } = await import('../gemini-categorization')
+    const categorization = fallbackCategorization(
+      ocrResult.vendor,
+      ocrResult.total,
+      ocrResult.vendor
+    )
+    
+    console.log(`[CATEGORIZATION] Heuristic result - Type: ${categorization.type}, Category: ${categorization.category}`)
+    return {
+      ...ocrResult,
+      transactionType: categorization.type,
+      transactionCategory: categorization.category,
+      categorizationConfidence: categorization.confidence
     }
   }
   
