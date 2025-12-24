@@ -7,6 +7,7 @@ import { performEnhancedOCR } from './ocr/enhanced-ocr'
 export interface ProcessedReceipt {
   id: string
   originalFile: File
+  originalFileBlobUrl?: string // Blob URL created from originalFile for reliable access
   processedImageUrl: string
   extractedData: ExtractedReceiptData
   status: 'pending' | 'processing' | 'done' | 'error'
@@ -94,21 +95,28 @@ export class ReceiptProcessorQueue {
    * Add files to the processing queue
    */
   addFiles(files: File[]): ProcessedReceipt[] {
-    const newReceipts: ProcessedReceipt[] = files.map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      originalFile: file,
-      processedImageUrl: '',
-      extractedData: {
-        vendor: '',
-        amount: null,
-        date: '',
-        rawText: '',
-        imageData: '',
-      },
-      status: 'pending' as const,
-      progress: 0,
-      progressStatus: 'Waiting...',
-    }))
+    const newReceipts: ProcessedReceipt[] = files.map(file => {
+      // Create blob URL immediately to preserve file data
+      // File objects can become invalid after being read once
+      const blobUrl = URL.createObjectURL(file)
+      
+      return {
+        id: Math.random().toString(36).substr(2, 9),
+        originalFile: file,
+        originalFileBlobUrl: blobUrl, // Store blob URL for reliable access
+        processedImageUrl: '',
+        extractedData: {
+          vendor: '',
+          amount: null,
+          date: '',
+          rawText: '',
+          imageData: '',
+        },
+        status: 'pending' as const,
+        progress: 0,
+        progressStatus: 'Waiting...',
+      }
+    })
 
     this.queue.push(...newReceipts)
     
@@ -187,6 +195,14 @@ export class ReceiptProcessorQueue {
    * Process a single receipt through the full pipeline
    */
   private async processReceipt(receipt: ProcessedReceipt) {
+    // Use blob URL if available (more reliable than File object which can become invalid)
+    // If no blob URL, create one now from the File object
+    let fileUrl = receipt.originalFileBlobUrl
+    if (!fileUrl) {
+      fileUrl = URL.createObjectURL(receipt.originalFile)
+      receipt.originalFileBlobUrl = fileUrl
+    }
+    
     let file = receipt.originalFile
 
     // Step 0: Convert HEIC to JPEG if needed (SAM requires web-compatible formats)
