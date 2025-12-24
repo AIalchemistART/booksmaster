@@ -141,6 +141,7 @@ export class ReceiptProcessorQueue {
     const nextReceipt = this.queue.find(r => r.status === 'pending')
     if (!nextReceipt) {
       this.isProcessing = false
+      console.log('[PROCESSOR] Queue empty, processing stopped')
       return
     }
 
@@ -150,26 +151,36 @@ export class ReceiptProcessorQueue {
     nextReceipt.progressStatus = 'Starting...'
     this.onProgress?.(nextReceipt)
 
+    const receiptStartTime = Date.now()
+    console.log(`[PROCESSOR] ===== Starting receipt ${nextReceipt.id} at ${new Date().toISOString()} =====`)
+
     try {
       await this.processReceipt(nextReceipt)
+      const receiptDuration = Date.now() - receiptStartTime
       nextReceipt.status = 'done'
       nextReceipt.progress = 100
       nextReceipt.progressStatus = 'Complete!'
+      console.log(`[PROCESSOR] ===== Receipt ${nextReceipt.id} COMPLETED in ${receiptDuration}ms =====`)
       this.onComplete?.(nextReceipt)
     } catch (error) {
+      const receiptDuration = Date.now() - receiptStartTime
       nextReceipt.status = 'error'
       nextReceipt.error = error instanceof Error ? error.message : 'Processing failed'
       nextReceipt.progressStatus = 'Failed'
+      console.error(`[PROCESSOR] ===== Receipt ${nextReceipt.id} FAILED after ${receiptDuration}ms =====`, error)
     }
 
     this.onProgress?.(nextReceipt)
 
-    // Process next in queue - 6000ms delay between receipts for Gemini rate limiting
-    // Combined with 3000ms delay between OCR and categorization calls within each receipt,
+    // Process next in queue - 4000ms delay between receipts for Gemini rate limiting
+    // Combined with 20000ms delay between OCR and categorization calls within each receipt,
     // this gives Gemini API sufficient processing time before starting next receipt
-    // 95 receipts will take ~20-25 minutes, but will process reliably with full categorization
-    // Quality over speed - API calls need adequate time to complete
-    setTimeout(() => this.processNext(), 6000)
+    // 95 receipts will take ~40-50 minutes, prioritizing accuracy over speed
+    console.log(`[PROCESSOR] Waiting 4000ms before next receipt at ${new Date().toISOString()}`)
+    setTimeout(() => {
+      console.log(`[PROCESSOR] Delay complete, processing next receipt at ${new Date().toISOString()}`)
+      this.processNext()
+    }, 4000)
   }
 
   /**

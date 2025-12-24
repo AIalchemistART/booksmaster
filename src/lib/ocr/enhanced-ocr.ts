@@ -124,7 +124,11 @@ export async function performEnhancedOCR(
   else if (mode === 'accurate' && geminiApiKey) {
     onProgress?.(0, 'Running Gemini Vision AI...')
     try {
+      const ocrStartTime = Date.now()
+      console.log(`[OCR] Starting Gemini OCR call at ${new Date().toISOString()}`)
       const geminiResult = await extractReceiptWithGemini(imageDataUrl, geminiApiKey)
+      const ocrDuration = Date.now() - ocrStartTime
+      console.log(`[OCR] Gemini OCR completed in ${ocrDuration}ms at ${new Date().toISOString()}`)
       onProgress?.(90, 'OCR complete!')
       const { rawText, ...restGemini } = geminiResult
       ocrResult = {
@@ -168,17 +172,23 @@ export async function performEnhancedOCR(
     try {
       // Add delay before categorization call to avoid hitting rate limits
       // OCR and categorization both use Gemini API, so space them out
-      // 3 second delay gives Gemini API sufficient time to process OCR request
-      // before categorization request begins
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      // 20 second delay to ensure Gemini API fully processes OCR request
+      // and clears any rate limit windows before categorization begins
+      console.log(`[CATEGORIZATION] Waiting 20000ms before categorization call at ${new Date().toISOString()}`)
+      await new Promise(resolve => setTimeout(resolve, 20000))
+      console.log(`[CATEGORIZATION] Starting categorization call at ${new Date().toISOString()}`)
       
       onProgress?.(95, 'AI categorizing...')
+      const catStartTime = Date.now()
       const categorization = await categorizeTransaction(
         ocrResult.vendor,
         ocrResult.total,
         ocrResult.vendor
       )
+      const catDuration = Date.now() - catStartTime
+      console.log(`[CATEGORIZATION] Completed in ${catDuration}ms at ${new Date().toISOString()}`)
       
+      console.log(`[CATEGORIZATION] Success - Type: ${categorization.type}, Category: ${categorization.category}`)
       return {
         ...ocrResult,
         transactionType: categorization.type,
@@ -186,7 +196,7 @@ export async function performEnhancedOCR(
         categorizationConfidence: categorization.confidence
       }
     } catch (error) {
-      console.warn('AI categorization failed:', error)
+      console.error(`[CATEGORIZATION] FAILED at ${new Date().toISOString()}:`, error)
     }
   }
   
