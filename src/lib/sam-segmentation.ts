@@ -354,7 +354,9 @@ export async function detectAndCropReceipt(
   imageSource: string | File,
   onProgress?: (progress: number, status: string) => void
 ): Promise<ReceiptCropResult | null> {
-  console.log('[SAM-DETECT] detectAndCropReceipt called with:', imageSource instanceof File ? imageSource.name : 'data URL')
+  const sourceType = imageSource instanceof File ? 'File' : (imageSource.startsWith('blob:') ? 'blob URL' : 'data URL')
+  const sourceInfo = imageSource instanceof File ? imageSource.name : imageSource.substring(0, 50) + '...'
+  console.log(`[SAM-DETECT] detectAndCropReceipt called with ${sourceType}: ${sourceInfo}`)
   
   // Ensure model is loaded
   console.log('[SAM-DETECT] Loading SAM model...')
@@ -366,25 +368,44 @@ export async function detectAndCropReceipt(
   // Convert File to data URL if needed
   let imageUrl: string
   if (imageSource instanceof File) {
-    console.log('[SAM-DETECT] Converting File to data URL...')
-    imageUrl = await new Promise<string>((resolve) => {
+    console.log(`[SAM-DETECT] Input is File (${imageSource.name}), converting to data URL...`)
+    imageUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader()
-      reader.onload = (e) => resolve(e.target?.result as string)
+      reader.onload = (e) => {
+        console.log('[SAM-DETECT] FileReader onload success')
+        resolve(e.target?.result as string)
+      }
+      reader.onerror = (e) => {
+        console.error('[SAM-DETECT] FileReader error:', e)
+        reject(new Error('FileReader failed'))
+      }
       reader.readAsDataURL(imageSource)
     })
     console.log('[SAM-DETECT] File converted to data URL, length:', imageUrl.length)
   } else {
     imageUrl = imageSource
-    console.log('[SAM-DETECT] Using provided data URL, length:', imageUrl.length)
+    const urlType = imageUrl.startsWith('blob:') ? 'blob URL' : 'data URL'
+    console.log(`[SAM-DETECT] Input is ${urlType}, length: ${imageUrl.length}`)
   }
   
   // Load image using dynamic import
-  console.log('[SAM-DETECT] Loading image with RawImage...')
+  console.log(`[SAM-DETECT] Loading image with RawImage from URL: ${imageUrl.substring(0, 50)}...`)
+  try {
+    const { RawImage } = await getTransformers()
+    console.log('[SAM-DETECT] RawImage class loaded, calling RawImage.read()...')
+    let rawImage = await RawImage.read(imageUrl)
+    const originalWidth = rawImage.width
+    const originalHeight = rawImage.height
+    console.log('[SAM-DETECT] RawImage.read() SUCCESS - dimensions:', originalWidth, 'x', originalHeight)
+  } catch (error) {
+    console.error('[SAM-DETECT] RawImage.read() FAILED:', error)
+    throw error
+  }
+  
   const { RawImage } = await getTransformers()
   let rawImage = await RawImage.read(imageUrl)
   const originalWidth = rawImage.width
   const originalHeight = rawImage.height
-  console.log('[SAM-DETECT] Image loaded, dimensions:', originalWidth, 'x', originalHeight)
   
   // Resize large images for better SAM performance (SAM works best with ~1024-2048px images)
   const MAX_DIMENSION = 1536

@@ -99,6 +99,7 @@ export class ReceiptProcessorQueue {
       // Create blob URL immediately to preserve file data
       // File objects can become invalid after being read once
       const blobUrl = URL.createObjectURL(file)
+      console.log(`[BLOB] Created blob URL for ${file.name}: ${blobUrl.substring(0, 50)}...`)
       
       return {
         id: Math.random().toString(36).substr(2, 9),
@@ -198,12 +199,17 @@ export class ReceiptProcessorQueue {
     // Use blob URL if available (more reliable than File object which can become invalid)
     // If no blob URL, create one now from the File object
     let fileUrl = receipt.originalFileBlobUrl
+    console.log(`[BLOB] Receipt ${receipt.id} - originalFileBlobUrl: ${fileUrl ? fileUrl.substring(0, 50) + '...' : 'NULL'}`)
     if (!fileUrl) {
+      console.log(`[BLOB] No blob URL found, creating one for ${receipt.originalFile.name}`)
       fileUrl = URL.createObjectURL(receipt.originalFile)
       receipt.originalFileBlobUrl = fileUrl
+      console.log(`[BLOB] Created fallback blob URL: ${fileUrl.substring(0, 50)}...`)
     }
+    console.log(`[BLOB] Using blob URL for processing: ${fileUrl.substring(0, 50)}...`)
     
     let file = receipt.originalFile
+    console.log(`[FILE] File object: name=${file.name}, type=${file.type}, size=${file.size}`)
 
     // Step 0: Convert HEIC to JPEG if needed (SAM requires web-compatible formats)
     // Check if file type is already browser-compatible
@@ -263,7 +269,7 @@ export class ReceiptProcessorQueue {
       receipt.progress = 20
       this.onProgress?.(receipt)
 
-      console.log('[SAM] Calling detectAndCropReceipt...')
+      console.log(`[SAM] Calling detectAndCropReceipt with blob URL: ${fileUrl.substring(0, 50)}...`)
       const cropResult = await this.samModule.detectAndCropReceipt(
         fileUrl, // Use blob URL instead of File object for reliable access
         (progress, status) => {
