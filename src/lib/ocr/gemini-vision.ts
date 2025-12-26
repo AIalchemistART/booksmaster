@@ -147,24 +147,26 @@ Important rules:
  * Check if Gemini API key is configured
  */
 export function isGeminiConfigured(): boolean {
-  if (typeof window === 'undefined') return false
-  
-  // Check localStorage or environment variable
-  const apiKey = localStorage.getItem('gemini_api_key') || process.env.NEXT_PUBLIC_GEMINI_API_KEY
-  return !!apiKey && apiKey.length > 0
+  const key = getGeminiApiKey()
+  return key !== null && key.trim() !== ''
 }
 
+// Re-export from persistent-storage for convenience
+export { getGeminiApiKey as getGeminiApiKeyPersistent, setGeminiApiKey as setGeminiApiKeyPersistent, isGeminiConfigured as isGeminiConfiguredPersistent } from '@/lib/persistent-storage'
+
 /**
- * Get Gemini API key from storage or environment
+ * Get Gemini API key - synchronous wrapper for backward compatibility
+ * For new code, import from @/lib/persistent-storage instead
  */
 export function getGeminiApiKey(): string | null {
   if (typeof window === 'undefined') return process.env.NEXT_PUBLIC_GEMINI_API_KEY || null
-  
+  // Try localStorage for immediate access (backward compatibility)
   return localStorage.getItem('gemini_api_key') || process.env.NEXT_PUBLIC_GEMINI_API_KEY || null
 }
 
 /**
- * Set Gemini API key in localStorage
+ * Set Gemini API key - synchronous wrapper for backward compatibility
+ * For new code, import from @/lib/persistent-storage instead
  */
 export function setGeminiApiKey(apiKey: string): void {
   if (typeof window === 'undefined') return

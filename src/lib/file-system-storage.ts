@@ -160,6 +160,56 @@ async function getRootDirectory(): Promise<FileSystemDirectoryHandle | null> {
 }
 
 /**
+ * Load receipt images from file system
+ * Returns a map of receipt ID to image data URL
+ */
+export async function loadReceiptImagesFromFileSystem(): Promise<Map<string, string>> {
+  const imageMap = new Map<string, string>()
+  
+  try {
+    const rootDir = await getRootDirectory()
+    if (!rootDir) {
+      console.warn('No root directory configured - cannot load receipt images')
+      return imageMap
+    }
+
+    const receiptsDir = await rootDir.getDirectoryHandle('receipts', { create: false })
+    const imagesDir = await receiptsDir.getDirectoryHandle('images', { create: false })
+    
+    // Iterate through all image files
+    for await (const entry of (imagesDir as any).values()) {
+      if (entry.kind === 'file' && entry.name.startsWith('receipt-') && entry.name.endsWith('.jpg')) {
+        try {
+          // Extract receipt ID from filename (receipt-{id}.jpg)
+          const receiptId = entry.name.replace('receipt-', '').replace('.jpg', '')
+          
+          const fileHandle = await imagesDir.getFileHandle(entry.name, { create: false })
+          const file = await fileHandle.getFile()
+          
+          // Convert file to data URL
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(file)
+          })
+          
+          imageMap.set(receiptId, dataUrl)
+        } catch (error) {
+          console.warn(`Could not load image for ${entry.name}:`, error)
+        }
+      }
+    }
+    
+    console.log(`[FILE SYSTEM] Loaded ${imageMap.size} receipt images from file system`)
+    return imageMap
+  } catch (error) {
+    console.error('Error loading receipt images from file system:', error)
+    return imageMap
+  }
+}
+
+/**
  * Save receipts data to file system
  */
 export async function saveReceiptsToFileSystem(receipts: any[]): Promise<boolean> {
@@ -220,7 +270,7 @@ export async function saveReceiptsToFileSystem(receipts: any[]): Promise<boolean
       }
     }
 
-    console.log(`Saved ${successCount} receipts successfully, ${failCount} failed`)
+    console.log(`[FILE SYSTEM] Saved ${successCount} receipt images, ${failCount} failed`)
     return true
   } catch (error) {
     console.error('Error saving receipts to file system:', error)

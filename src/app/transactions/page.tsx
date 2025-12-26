@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { useStore, generateId } from '@/store'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Plus, Trash2, Edit2, X, Check, Receipt, ArrowRight, Sparkles } from 'lucide-react'
+import { Plus, Trash2, Edit2, X, Check, Receipt, ArrowRight, Sparkles, Image as ImageIcon } from 'lucide-react'
 import type { Receipt as ReceiptType, Transaction, TransactionType, TransactionCategory, ExpenseCategory, IncomeCategory } from '@/types'
 import { useFileSystemCheck } from '@/hooks/useFileSystemCheck'
 import { FileSystemRequiredModal } from '@/components/modals/FileSystemRequiredModal'
@@ -52,6 +52,7 @@ export default function TransactionsPage() {
   const [categorizing, setCategorizing] = useState(false)
   const [converting, setConverting] = useState(false)
   const [convertingAll, setConvertingAll] = useState(false)
+  const [viewingReceiptImage, setViewingReceiptImage] = useState<string | null>(null)
   
   // Get unlinked receipts (receipts not yet converted to transactions)
   const unlinkedReceipts = receipts.filter(r => !r.linkedTransactionId && r.ocrAmount)
@@ -524,6 +525,7 @@ export default function TransactionsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Receipt</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Date</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Description</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Category</th>
@@ -533,9 +535,33 @@ export default function TransactionsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTransactions.map((transaction) => (
+                  {filteredTransactions.map((transaction) => {
+                    const linkedReceipt = transaction.receiptId ? receipts.find(r => r.id === transaction.receiptId) : null
+                    return (
                     <>
                       <tr key={transaction.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          {linkedReceipt?.imageData ? (
+                            <button
+                              onClick={() => setViewingReceiptImage(linkedReceipt.imageData!)}
+                              className="relative group"
+                              title="View receipt image"
+                            >
+                              <img
+                                src={linkedReceipt.imageData}
+                                alt="Receipt thumbnail"
+                                className="w-12 h-12 object-cover rounded border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded flex items-center justify-center transition-opacity">
+                                <ImageIcon className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            </button>
+                          ) : (
+                            <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded border border-gray-300">
+                              <Receipt className="h-5 w-5 text-gray-400" />
+                            </div>
+                          )}
+                        </td>
                         <td className="py-3 px-4">{formatDate(transaction.date)}</td>
                         <td className="py-3 px-4">
                           <div>
@@ -586,7 +612,7 @@ export default function TransactionsPage() {
                       {/* Inline Edit Form */}
                       {editingId === transaction.id && (
                         <tr key={`edit-${transaction.id}`}>
-                          <td colSpan={6} className="p-4 bg-blue-50 border-b-2 border-blue-200">
+                          <td colSpan={7} className="p-4 bg-blue-50 border-b-2 border-blue-200">
                             <form onSubmit={handleSubmit} className="space-y-4">
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <Input
@@ -671,13 +697,37 @@ export default function TransactionsPage() {
                         </tr>
                       )}
                     </>
-                  ))}
+                  )})}
                 </tbody>
               </table>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Receipt Image Modal */}
+      {viewingReceiptImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+          onClick={() => setViewingReceiptImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <button
+              onClick={() => setViewingReceiptImage(null)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300 flex items-center gap-2"
+            >
+              <X className="h-6 w-6" />
+              <span className="text-sm">Close (ESC)</span>
+            </button>
+            <img
+              src={viewingReceiptImage}
+              alt="Receipt"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
 
       {/* File System Setup Modal */}
       {showModal && (

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getGeminiApiKey, setGeminiApiKey, isGeminiConfigured } from '@/lib/ocr/gemini-vision'
+import { getGeminiApiKey, setGeminiApiKey, clearGeminiApiKey, isGeminiConfigured } from '@/lib/persistent-storage'
 
 export function GeminiApiKeySettings() {
   const [apiKey, setApiKeyState] = useState('')
@@ -10,24 +10,27 @@ export function GeminiApiKeySettings() {
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    const key = getGeminiApiKey()
-    if (key) {
-      setApiKeyState(key)
-      setIsConfigured(true)
+    const loadKey = async () => {
+      const key = await getGeminiApiKey()
+      if (key) {
+        setApiKeyState(key)
+        setIsConfigured(true)
+      }
     }
+    loadKey()
   }, [])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (apiKey.trim()) {
-      setGeminiApiKey(apiKey.trim())
+      await setGeminiApiKey(apiKey.trim())
       setIsConfigured(true)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     }
   }
 
-  const handleClear = () => {
-    setGeminiApiKey('')
+  const handleClear = async () => {
+    await clearGeminiApiKey()
     setApiKeyState('')
     setIsConfigured(false)
   }

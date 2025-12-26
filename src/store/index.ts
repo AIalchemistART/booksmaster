@@ -6,7 +6,8 @@ import {
   saveInvoicesToFileSystem,
   saveTransactionsToFileSystem,
   saveCustodyExpensesToFileSystem,
-  createFullBackup
+  createFullBackup,
+  loadReceiptImagesFromFileSystem
 } from '@/lib/file-system-storage'
 
 // Debounce timer for file system saves
@@ -63,6 +64,7 @@ interface AppState {
   addReceipt: (receipt: Receipt) => void
   updateReceipt: (id: string, updates: Partial<Receipt>) => void
   deleteReceipt: (id: string) => void
+  restoreReceiptImages: () => Promise<void>
 }
 
 export const useStore = create<AppState>()(
@@ -177,6 +179,37 @@ export const useStore = create<AppState>()(
           debouncedSaveReceipts(newReceipts)
           return { receipts: newReceipts }
         }),
+      
+      // Restore receipt images from file system
+      restoreReceiptImages: async () => {
+        try {
+          console.log('[STORE] Restoring receipt images from file system...')
+          const imageMap = await loadReceiptImagesFromFileSystem()
+          
+          if (imageMap.size === 0) {
+            console.log('[STORE] No receipt images found in file system')
+            return
+          }
+          
+          set((state) => {
+            const updatedReceipts = state.receipts.map(receipt => {
+              const imageData = imageMap.get(receipt.id)
+              if (imageData && !receipt.imageData) {
+                console.log(`[STORE] Restored image for receipt ${receipt.id}`)
+                return { ...receipt, imageData }
+              }
+              return receipt
+            })
+            
+            const restoredCount = updatedReceipts.filter(r => r.imageData).length
+            console.log(`[STORE] Restored ${restoredCount} receipt images from file system`)
+            
+            return { receipts: updatedReceipts }
+          })
+        } catch (error) {
+          console.error('[STORE] Error restoring receipt images:', error)
+        }
+      },
     }),
     {
       name: 'thomas-books-storage',
@@ -185,9 +218,19 @@ export const useStore = create<AppState>()(
         custodyExpenses: state.custodyExpenses,
         invoices: state.invoices,
         bankAccounts: state.bankAccounts,
+        businessName: state.businessName,
+        businessType: state.businessType,
         // Exclude imageData from receipts to prevent localStorage quota exceeded
+        // Images are stored in file system and restored on load
         receipts: state.receipts.map(({ imageData, ...receipt }) => receipt),
       }),
+      onRehydrateStorage: () => (state) => {
+        // After store is rehydrated from localStorage, restore images from file system
+        if (state) {
+          console.log('[STORE] Store rehydrated, restoring receipt images...')
+          state.restoreReceiptImages()
+        }
+      },
     }
   )
 )

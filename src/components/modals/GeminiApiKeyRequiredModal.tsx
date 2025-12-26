@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
-import { setGeminiApiKey } from '@/lib/ocr/gemini-vision'
+import { setGeminiApiKey } from '@/lib/persistent-storage'
 import { Cpu, AlertCircle, X, Check } from 'lucide-react'
 
 interface GeminiApiKeyRequiredModalProps {
@@ -14,10 +14,10 @@ export function GeminiApiKeyRequiredModal({ onSetupComplete, onSkip }: GeminiApi
   const [apiKey, setApiKeyState] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (apiKey.trim()) {
       setSaving(true)
-      setGeminiApiKey(apiKey.trim())
+      await setGeminiApiKey(apiKey.trim())
       setSaving(false)
       onSetupComplete()
     }
