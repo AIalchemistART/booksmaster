@@ -113,11 +113,13 @@ export async function getGeminiApiKey(): Promise<string | null> {
 
 /**
  * Set Gemini API Key in persistent storage (IndexedDB)
+ * Also writes to localStorage for backward compatibility with synchronous reads
  */
 export async function setGeminiApiKey(apiKey: string): Promise<void> {
   if (typeof window === 'undefined') return
   await setPersistentValue('gemini_api_key', apiKey)
-  console.log('[PERSISTENT] Gemini API key saved to IndexedDB')
+  localStorage.setItem('gemini_api_key', apiKey) // Backward compatibility
+  console.log('[PERSISTENT] Gemini API key saved to IndexedDB and localStorage')
 }
 
 /**

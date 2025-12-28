@@ -113,16 +113,32 @@ export async function loadDirectoryHandle(): Promise<FileSystemDirectoryHandle |
     })
     
     if (handle) {
-      // Verify we still have permission
-      const permission = await (handle as any).queryPermission({ mode: 'readwrite' })
+      console.log('[FILE SYSTEM] Found stored directory handle, checking permissions...')
+      
+      // Check current permission state
+      let permission = await (handle as any).queryPermission({ mode: 'readwrite' })
+      console.log('[FILE SYSTEM] Permission state:', permission)
+      
+      // If permission is 'prompt', request it automatically
+      if (permission === 'prompt') {
+        console.log('[FILE SYSTEM] Permission not granted, requesting...')
+        permission = await (handle as any).requestPermission({ mode: 'readwrite' })
+        console.log('[FILE SYSTEM] Permission after request:', permission)
+      }
+      
       if (permission === 'granted') {
+        console.log('[FILE SYSTEM] Permission granted, directory handle ready')
         rootDirHandle = handle
         return handle
+      } else {
+        console.warn('[FILE SYSTEM] Permission denied, cannot access directory')
       }
+    } else {
+      console.log('[FILE SYSTEM] No stored directory handle found')
     }
     return null
   } catch (error) {
-    console.error('Error loading directory handle:', error)
+    console.error('[FILE SYSTEM] Error loading directory handle:', error)
     return null
   }
 }

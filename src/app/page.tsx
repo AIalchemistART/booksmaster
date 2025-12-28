@@ -1,6 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
 import { useStore } from '@/store'
 import { formatCurrency } from '@/lib/utils'
 import { 
@@ -9,7 +10,8 @@ import {
   DollarSign, 
   Users,
   Receipt,
-  FileText
+  FileText,
+  Download
 } from 'lucide-react'
 import type { ExpenseCategory } from '@/types'
 
@@ -100,9 +102,17 @@ export default function Dashboard() {
 
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Welcome back, Thomas</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 mt-1">Welcome back, Thomas</p>
+        </div>
+        <a href="/ThomasBooksSetup.exe" download>
+          <Button variant="outline" className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Download Desktop App
+          </Button>
+        </a>
       </div>
 
       {/* Stats Grid */}

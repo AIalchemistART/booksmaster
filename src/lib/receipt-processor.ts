@@ -508,23 +508,49 @@ export class ReceiptProcessorQueue {
       /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2}),?\s+(\d{4})/i,
     ]
 
-    for (const pattern of datePatterns) {
+    for (let i = 0; i < datePatterns.length; i++) {
+      const pattern = datePatterns[i]
       const match = text.match(pattern)
       if (match) {
         try {
-          const parsed = new Date(match[0])
-          if (!isNaN(parsed.getTime())) {
-            date = parsed.toISOString().split('T')[0]
-            break
+          let year: string, month: string, day: string
+          
+          // Pattern 0: MM/DD/YYYY or MM-DD-YYYY
+          if (i === 0) {
+            month = match[1]
+            day = match[2]
+            year = match[3]
           }
-        } catch {
-          if (match[3] && match[3].length === 4) {
-            date = `${match[3]}-${match[1].padStart(2, '0')}-${match[2].padStart(2, '0')}`
-          } else if (match[1] && match[1].length === 4) {
-            date = `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`
+          // Pattern 1: YYYY/MM/DD or YYYY-MM-DD
+          else if (i === 1) {
+            year = match[1]
+            month = match[2]
+            day = match[3]
           }
+          // Pattern 2: Month name format (e.g., "Jan 25, 2024")
+          else if (i === 2) {
+            const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+            const monthIndex = monthNames.indexOf(match[1].toLowerCase().substring(0, 3))
+            month = String(monthIndex + 1)
+            day = match[2]
+            year = match[3]
+          } else {
+            continue
+          }
+          
+          // Convert 2-digit year to 4-digit
+          if (year.length === 2) {
+            const yearNum = parseInt(year)
+            year = yearNum > 50 ? `19${year}` : `20${year}`
+          }
+          
+          // Format as YYYY-MM-DD (pad with zeros)
+          date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+          break
+        } catch (error) {
+          console.warn('Error parsing date:', error)
+          continue
         }
-        break
       }
     }
 

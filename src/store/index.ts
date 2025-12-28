@@ -8,7 +8,7 @@ import {
   saveCustodyExpensesToFileSystem,
   createFullBackup,
   loadReceiptImagesFromFileSystem
-} from '@/lib/file-system-storage'
+} from '@/lib/file-system-adapter'
 
 // Debounce timer for file system saves
 let receiptSaveTimer: NodeJS.Timeout | null = null

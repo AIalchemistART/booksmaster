@@ -6,9 +6,10 @@ import {
   setupFileSystemStorage, 
   isFileSystemAccessSupported,
   isFileSystemConfigured,
-  getConfiguredFolderPath,
-  createFullBackup
-} from '@/lib/file-system-storage'
+  getRootDirectoryPath,
+  createFullBackup,
+  isElectron
+} from '@/lib/file-system-adapter'
 import { useStore } from '@/store'
 import { FolderOpen, Check, AlertCircle, Download } from 'lucide-react'
 
@@ -31,7 +32,7 @@ export function FileSystemSetup() {
     const isConfigured = await isFileSystemConfigured()
     setConfigured(isConfigured)
     if (isConfigured) {
-      const path = await getConfiguredFolderPath()
+      const path = await getRootDirectoryPath()
       setFolderPath(path)
     }
     setChecking(false)
