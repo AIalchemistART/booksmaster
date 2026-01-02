@@ -394,19 +394,12 @@ export default function TransactionsPage() {
     
     setConverting(true)
     try {
-      // Get AI categorization with timeout
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('AI categorization timeout')), 15000)
+      // Get AI categorization
+      const categorization = await categorizeTransaction(
+        receipt.ocrVendor,
+        receipt.ocrAmount,
+        receipt.ocrVendor
       )
-      
-      const categorization = await Promise.race([
-        categorizeTransaction(
-          receipt.ocrVendor,
-          receipt.ocrAmount,
-          receipt.ocrVendor
-        ),
-        timeoutPromise
-      ])
       
       // Apply learned payment type if card number is known
       let finalPaymentMethod = receipt.ocrPaymentMethod
@@ -462,9 +455,8 @@ export default function TransactionsPage() {
         unlockAchievement('duplicate_detective')
       }
     } catch (error) {
-      console.error('[CONVERSION] AI categorization failed:', error)
-      // Re-throw to trigger fallback in bulk conversion
-      throw error
+      console.error('Failed to categorize and convert:', error)
+      alert('AI categorization failed. Please try again or use regular convert.')
     } finally {
       setConverting(false)
     }
@@ -480,55 +472,18 @@ export default function TransactionsPage() {
   // Convert all with AI categorization
   const convertAllWithCategorization = async () => {
     setConvertingAll(true)
-    let successCount = 0
-    let failCount = 0
-    const failedReceipts: string[] = []
-    
     try {
-      console.log(`[BULK CONVERT] Starting conversion of ${unlinkedReceipts.length} receipts`)
-      
-      for (let i = 0; i < unlinkedReceipts.length; i++) {
-        const receipt = unlinkedReceipts[i]
-        
-        try {
-          if (receipt.ocrVendor && receipt.ocrAmount) {
-            await convertWithCategorization(receipt)
-          } else {
-            // Fallback to basic conversion if no vendor/amount
-            await convertReceiptToTransaction(receipt)
-          }
-          successCount++
-          console.log(`[BULK CONVERT] Progress: ${successCount}/${unlinkedReceipts.length}`)
-        } catch (error) {
-          console.error(`[BULK CONVERT] Failed to convert receipt ${receipt.id}:`, error)
-          failCount++
-          failedReceipts.push(receipt.ocrVendor || receipt.id)
-          
-          // Critical: Fall back to basic conversion so receipt isn't lost
-          try {
-            console.log(`[BULK CONVERT] Attempting fallback conversion for ${receipt.id}`)
-            await convertReceiptToTransaction(receipt)
-            successCount++
-            failCount-- // Recovered from failure
-          } catch (fallbackError) {
-            console.error(`[BULK CONVERT] Fallback also failed for ${receipt.id}:`, fallbackError)
-          }
+      for (const receipt of unlinkedReceipts) {
+        if (receipt.ocrVendor && receipt.ocrAmount) {
+          await convertWithCategorization(receipt)
+        } else {
+          // Fallback to basic conversion if no vendor/amount
+          convertReceiptToTransaction(receipt)
         }
-        
-        // Add delay between conversions to avoid rate limiting (100ms)
-        if (i < unlinkedReceipts.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100))
-        }
-      }
-      
-      console.log(`[BULK CONVERT] Complete: ${successCount} succeeded, ${failCount} failed`)
-      
-      if (failCount > 0) {
-        alert(`Converted ${successCount} receipts.\n${failCount} had issues: ${failedReceipts.join(', ')}`)
       }
     } catch (error) {
-      console.error('[BULK CONVERT] Critical error:', error)
-      alert(`Batch conversion encountered errors. ${successCount} receipts were converted successfully.`)
+      console.error('Batch conversion failed:', error)
+      alert('Some receipts failed to convert. Please check and try again.')
     } finally {
       setConvertingAll(false)
     }
