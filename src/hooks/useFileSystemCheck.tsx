@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { isFileSystemConfigured } from '@/lib/file-system-storage'
+import { isFileSystemConfigured } from '@/lib/file-system-adapter'
 
 export function useFileSystemCheck() {
   const [isConfigured, setIsConfigured] = useState<boolean | null>(null)

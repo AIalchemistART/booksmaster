@@ -1,9 +1,51 @@
 import { getGeminiApiKey } from './ocr/gemini-vision'
+import { loadCorrectionsFromFileSystem } from './file-system-adapter'
+import { useStore } from '@/store'
+import type { CategorizationCorrection } from '@/types'
 
 export interface CategorizationResult {
   type: 'income' | 'expense'
   category: string
   confidence: number
+}
+
+/**
+ * Format corrections into context string for Gemini
+ */
+function formatCorrectionsContext(corrections: CategorizationCorrection[]): string {
+  if (corrections.length === 0) return ''
+  
+  // Group corrections by vendor for better pattern recognition
+  const vendorCorrections = new Map<string, CategorizationCorrection[]>()
+  corrections.forEach(c => {
+    const vendor = c.vendor.toLowerCase()
+    if (!vendorCorrections.has(vendor)) {
+      vendorCorrections.set(vendor, [])
+    }
+    vendorCorrections.get(vendor)!.push(c)
+  })
+  
+  let context = '\n\n**USER CORRECTION HISTORY (Learn from these patterns):**\n'
+  
+  vendorCorrections.forEach((vendorCorrectionsList, vendor) => {
+    const latest = vendorCorrectionsList[vendorCorrectionsList.length - 1]
+    
+    if (latest.changes.type || latest.changes.category) {
+      context += `\n- ${vendor.toUpperCase()}:\n`
+      
+      if (latest.changes.type) {
+        context += `  * Was incorrectly categorized as ${latest.changes.type.from}, should be ${latest.changes.type.to}\n`
+      }
+      if (latest.changes.category) {
+        context += `  * Correct category is ${latest.changes.category.to}\n`
+      }
+      if (latest.userNotes) {
+        context += `  * User's reasoning: "${latest.userNotes}"\n`
+      }
+    }
+  })
+  
+  return context
 }
 
 const EXPENSE_CATEGORIES = [
@@ -38,6 +80,19 @@ export async function categorizeTransaction(
   amount: number,
   vendor?: string
 ): Promise<CategorizationResult> {
+  // Check vendor defaults first for instant categorization
+  const normalizedVendor = (vendor || description).toLowerCase().trim()
+  const vendorDefault = useStore.getState().getVendorDefault(normalizedVendor)
+  
+  if (vendorDefault) {
+    console.log(`[CATEGORIZATION] Using vendor default for "${normalizedVendor}":`, vendorDefault)
+    return {
+      type: vendorDefault.type,
+      category: vendorDefault.category,
+      confidence: 0.95 // High confidence for user-defined rules
+    }
+  }
+  
   const apiKey = getGeminiApiKey()
   
   if (!apiKey) {
@@ -46,11 +101,18 @@ export async function categorizeTransaction(
   }
 
   try {
+    // Load user corrections for self-improving categorization
+    const corrections = await loadCorrectionsFromFileSystem()
+    const correctionsContext = formatCorrectionsContext(corrections)
+    
+    console.log(`[CATEGORIZATION] Using ${corrections.length} correction patterns for improved accuracy`)
+
     const prompt = `You are a financial categorization assistant for a residential contracting LLC business.
 
 Analyze this transaction and determine:
 1. Is it INCOME or EXPENSE?
 2. What category does it belong to?
+3. CRITICAL: Identify if this is a potential duplicate (check vs deposit, invoice vs payment)
 
 Transaction Details:
 - Description: ${description}
@@ -59,19 +121,34 @@ ${vendor ? `- Vendor: ${vendor}` : ''}
 
 Available EXPENSE categories: ${EXPENSE_CATEGORIES.join(', ')}
 Available INCOME categories: ${INCOME_CATEGORIES.join(', ')}
+${correctionsContext}
 
 Respond ONLY with valid JSON in this exact format:
 {
   "type": "income" or "expense",
   "category": "one of the categories from the lists above",
-  "confidence": 0.0 to 1.0
+  "confidence": 0.0 to 1.0,
+  "incomeSource": "check" | "cash" | "bank_transfer" | "deposit" | "card" | "other" (ONLY for income),
+  "duplicateRisk": "high" | "medium" | "low" | "none",
+  "duplicateReasonning": "explanation if duplicateRisk is high or medium"
 }
 
 Important rules:
+- **LEARN FROM USER CORRECTIONS ABOVE** - if this vendor appears in the correction history, use that pattern
 - If the description mentions payment received, completed job, invoice paid, deposit, it's INCOME
 - If it's a purchase, payment to vendor, bill, subscription, it's EXPENSE
 - Choose the most specific category that matches
-- Confidence should be high (>0.8) only if very certain`
+- Confidence should be high (>0.8) only if very certain
+- User corrections represent real-world patterns - prioritize them over general rules
+
+**DUPLICATE DETECTION INTELLIGENCE:**
+- If description contains "check" or "check #" → incomeSource: "check", duplicateRisk: "high" (likely has matching deposit)
+- If description contains "deposit" or "bank deposit" → incomeSource: "deposit", duplicateRisk: "high" (likely has matching check/cash)
+- If description contains "cash" → incomeSource: "cash", duplicateRisk: "medium" (may have deposit)
+- If description contains "wire" or "transfer" → incomeSource: "bank_transfer", duplicateRisk: "low"
+- If description contains "card" or "credit card" → incomeSource: "card", duplicateRisk: "none"
+- Check amounts like $1000, $5000, $10000 (round numbers) have higher duplicate risk
+- Provide clear reasoning in duplicateReasonning field to help user understand the risk`
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1alpha/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
@@ -97,13 +174,22 @@ Important rules:
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text
     
     if (!text) {
+      console.warn('[CATEGORIZATION] No text in Gemini response')
       return fallbackCategorization(description, amount, vendor)
     }
 
-    const result = JSON.parse(text)
+    let result
+    try {
+      result = JSON.parse(text)
+    } catch (parseError) {
+      console.error('[CATEGORIZATION] Failed to parse Gemini response:', text)
+      console.error('[CATEGORIZATION] Parse error:', parseError)
+      return fallbackCategorization(description, amount, vendor)
+    }
     
     // Validate result
     if (!result.type || !result.category) {
+      console.warn('[CATEGORIZATION] Invalid result structure:', result)
       return fallbackCategorization(description, amount, vendor)
     }
 

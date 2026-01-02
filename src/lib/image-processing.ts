@@ -273,20 +273,18 @@ export async function canvasToFile(canvas: HTMLCanvasElement, filename: string, 
 /**
  * Full receipt preprocessing pipeline:
  * 1. Load image
- * 2. Detect receipt bounds (crop negative space)
- * 3. Enhance contrast for better OCR
+ * 2. Enhance contrast for better OCR
+ * Note: Auto-crop removed - only useful with SAM segmenter which is disabled
  */
 export async function preprocessReceipt(
   file: File,
   options: {
-    autoCrop?: boolean
     enhanceContrast?: boolean
     maxWidth?: number
     maxHeight?: number
   } = {}
 ): Promise<ProcessedImage> {
   const {
-    autoCrop = true,
     enhanceContrast: doEnhance = true,
     maxWidth = 2000,
     maxHeight = 3000
@@ -294,12 +292,6 @@ export async function preprocessReceipt(
 
   // Load image
   let canvas = await loadImageToCanvas(file)
-
-  // Auto-crop to remove negative space
-  if (autoCrop) {
-    const bounds = detectReceiptBounds(canvas)
-    canvas = cropImage(canvas, bounds, { maxWidth, maxHeight })
-  }
 
   // Enhance contrast
   if (doEnhance) {

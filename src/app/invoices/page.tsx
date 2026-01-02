@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { useStore, generateId } from '@/store'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Plus, Trash2, Edit2, X, Check, FileText } from 'lucide-react'
+import { Plus, Trash2, Edit2, X, Check, FileText, DollarSign, AlertCircle, CheckCircle, Printer } from 'lucide-react'
 import type { Invoice } from '@/types'
 import { useFileSystemCheck } from '@/hooks/useFileSystemCheck'
 import { FileSystemRequiredModal } from '@/components/modals/FileSystemRequiredModal'
+import { FirstVisitIntro, useFirstVisit } from '@/components/gamification/FirstVisitIntro'
 
 const statusOptions = [
   { value: 'draft', label: 'Draft' },
@@ -20,8 +21,9 @@ const statusOptions = [
 ]
 
 export default function InvoicesPage() {
-  const { invoices, addInvoice, updateInvoice, deleteInvoice, addTransaction } = useStore()
+  const { invoices, addInvoice, updateInvoice, deleteInvoice, addTransaction, completeAction } = useStore()
   const { showModal, requireFileSystem, handleSetupComplete, handleCancel } = useFileSystemCheck()
+  const { showIntro, closeIntro } = useFirstVisit('invoices')
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
@@ -51,7 +53,7 @@ export default function InvoicesPage() {
     setEditingId(null)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const now = new Date().toISOString()
 
@@ -81,6 +83,9 @@ export default function InvoicesPage() {
         updatedAt: now,
       }
       addInvoice(newInvoice)
+      
+      // Award XP for invoice creation
+      completeAction('createInvoice')
     }
     resetForm()
   }
@@ -120,6 +125,82 @@ export default function InvoicesPage() {
     })
   }
 
+  const printInvoice = (invoice: Invoice) => {
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Invoice - ${invoice.clientName}</title>
+        <style>
+          body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #333; }
+          .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
+          .invoice-title { font-size: 32px; font-weight: bold; color: #1a1a1a; }
+          .invoice-number { color: #666; margin-top: 5px; }
+          .dates { text-align: right; }
+          .date-row { margin: 5px 0; }
+          .label { color: #666; }
+          .section { margin: 30px 0; }
+          .section-title { font-size: 14px; font-weight: bold; color: #666; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+          .client-info { font-size: 16px; }
+          .description { background: #f9f9f9; padding: 20px; border-radius: 4px; margin: 20px 0; }
+          .amount-section { text-align: right; margin-top: 40px; padding-top: 20px; border-top: 2px solid #333; }
+          .amount { font-size: 28px; font-weight: bold; }
+          .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+          .status-paid { background: #d4edda; color: #155724; }
+          .status-sent { background: #cce5ff; color: #004085; }
+          .status-draft { background: #e2e3e5; color: #383d41; }
+          .status-overdue { background: #f8d7da; color: #721c24; }
+          .notes { margin-top: 30px; padding: 15px; background: #fff3cd; border-radius: 4px; font-size: 14px; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="invoice-title">INVOICE</div>
+            <div class="invoice-number">#${invoice.id.slice(0, 8).toUpperCase()}</div>
+          </div>
+          <div class="dates">
+            <div class="date-row"><span class="label">Issue Date:</span> ${formatDate(invoice.issueDate)}</div>
+            <div class="date-row"><span class="label">Due Date:</span> ${formatDate(invoice.dueDate)}</div>
+            <div class="date-row" style="margin-top: 10px;">
+              <span class="status status-${invoice.status}">${invoice.status}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="section">
+          <div class="section-title">Bill To</div>
+          <div class="client-info">
+            <strong>${invoice.clientName}</strong>
+            ${invoice.clientEmail ? `<br>${invoice.clientEmail}` : ''}
+          </div>
+        </div>
+        
+        <div class="section">
+          <div class="section-title">Description</div>
+          <div class="description">${invoice.description}</div>
+        </div>
+        
+        <div class="amount-section">
+          <div class="label">Amount Due</div>
+          <div class="amount">${formatCurrency(invoice.amount)}</div>
+        </div>
+        
+        ${invoice.notes ? `<div class="notes"><strong>Notes:</strong> ${invoice.notes}</div>` : ''}
+      </body>
+      </html>
+    `
+    
+    printWindow.document.write(html)
+    printWindow.document.close()
+    printWindow.focus()
+    setTimeout(() => printWindow.print(), 250)
+  }
+
   const sortedInvoices = [...invoices].sort(
     (a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime()
   )
@@ -130,6 +211,8 @@ export default function InvoicesPage() {
 
   return (
     <div className="p-8">
+      <FirstVisitIntro tabId="invoices" isVisible={showIntro} onClose={closeIntro} />
+      
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
@@ -141,20 +224,84 @@ export default function InvoicesPage() {
         </Button>
       </div>
 
-      {/* Summary */}
-      <Card className="mb-8">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-purple-100">
-              <FileText className="h-6 w-6 text-purple-600" />
+      {/* Invoice Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Invoices</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{invoices.length}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {invoices.filter(i => i.status === 'paid').length} paid
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-gray-100 dark:bg-gray-800">
+                <FileText className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">Pending Invoices Total</p>
-              <p className="text-2xl font-bold text-purple-600">{formatCurrency(totalPending)}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Outstanding</p>
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{formatCurrency(totalPending)}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {invoices.filter(i => i.status === 'sent' || i.status === 'overdue').length} pending
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">
+                <DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Overdue</p>
+                <p className={`text-2xl font-bold ${invoices.filter(i => i.status === 'overdue').length > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                  {invoices.filter(i => i.status === 'overdue').length}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {invoices.filter(i => i.status === 'overdue').length > 0 
+                    ? formatCurrency(invoices.filter(i => i.status === 'overdue').reduce((sum, i) => sum + i.amount, 0))
+                    : 'None overdue!'}
+                </p>
+              </div>
+              <div className={`p-3 rounded-full ${invoices.filter(i => i.status === 'overdue').length > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-green-100 dark:bg-green-900/30'}`}>
+                <AlertCircle className={`h-6 w-6 ${invoices.filter(i => i.status === 'overdue').length > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Collected This Year</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {formatCurrency(invoices
+                    .filter(i => i.status === 'paid' && i.paidDate && new Date(i.paidDate).getFullYear() === new Date().getFullYear())
+                    .reduce((sum, i) => sum + i.amount, 0))}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {invoices.filter(i => i.status === 'paid' && i.paidDate && new Date(i.paidDate).getFullYear() === new Date().getFullYear()).length} invoices
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30">
+                <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Add/Edit Form */}
       {showForm && (
@@ -265,7 +412,7 @@ export default function InvoicesPage() {
                 </thead>
                 <tbody>
                   {sortedInvoices.map((invoice) => (
-                    <tr key={invoice.id} className="border-b hover:bg-gray-50">
+                    <tr key={invoice.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="py-3 px-4">
                         <div>
                           <p className="font-medium">{invoice.clientName}</p>
@@ -298,14 +445,21 @@ export default function InvoicesPage() {
                             </Button>
                           )}
                           <button
+                            onClick={() => printInvoice(invoice)}
+                            className="p-1 text-gray-500 hover:text-green-600 dark:hover:text-green-400"
+                            title="Print Invoice"
+                          >
+                            <Printer className="h-4 w-4" />
+                          </button>
+                          <button
                             onClick={() => handleEdit(invoice)}
-                            className="p-1 text-gray-500 hover:text-blue-600"
+                            className="p-1 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400"
                           >
                             <Edit2 className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => deleteInvoice(invoice.id)}
-                            className="p-1 text-gray-500 hover:text-red-600"
+                            className="p-1 text-gray-500 hover:text-red-600 dark:hover:text-red-400"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

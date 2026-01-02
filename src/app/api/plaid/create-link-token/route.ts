@@ -24,7 +24,7 @@ export async function POST() {
 
     const response = await plaidClient.linkTokenCreate({
       user: { client_user_id: 'thomas-user-1' },
-      client_name: 'Thomas Books',
+      client_name: 'Booksmaster',
       products: [Products.Transactions],
       country_codes: [CountryCode.Us],
       language: 'en',

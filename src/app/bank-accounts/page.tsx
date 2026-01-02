@@ -79,15 +79,15 @@ export default function BankAccountsPage() {
       )}
 
       {/* Plaid Setup Instructions */}
-      <Card className="mb-8 bg-blue-50 border-blue-200">
+      <Card className="mb-8 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
         <CardContent className="pt-6">
-          <h3 className="font-semibold text-blue-900 mb-2">Plaid Bank Integration</h3>
-          <p className="text-blue-800 text-sm mb-3">
+          <h3 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">Plaid Bank Integration</h3>
+          <p className="text-blue-800 dark:text-blue-200 text-sm mb-3">
             Connect your bank accounts securely via Plaid to automatically import transactions.
           </p>
           <details className="text-sm">
-            <summary className="text-blue-700 cursor-pointer font-medium">Setup Instructions</summary>
-            <ol className="list-decimal list-inside mt-2 space-y-1 text-blue-800">
+            <summary className="text-blue-700 dark:text-blue-300 cursor-pointer font-medium">Setup Instructions</summary>
+            <ol className="list-decimal list-inside mt-2 space-y-1 text-blue-800 dark:text-blue-200">
               <li>Sign up for a free Plaid account at <a href="https://dashboard.plaid.com/signup" target="_blank" rel="noopener" className="underline">dashboard.plaid.com</a></li>
               <li>Get your Client ID and Sandbox Secret from the Keys section</li>
               <li>Add them to the <code className="bg-blue-100 px-1 rounded">.env.local</code> file</li>
@@ -109,9 +109,9 @@ export default function BankAccountsPage() {
         <CardContent>
           {bankAccounts.length === 0 ? (
             <div className="text-center py-8">
-              <CreditCard className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No accounts connected</h3>
-              <p className="text-gray-500 mb-4">
+              <CreditCard className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No accounts connected</h3>
+              <p className="text-gray-500 dark:text-gray-300 mb-4">
                 Connect your bank accounts to automatically import transactions.
               </p>
               <PlaidLinkButton onSuccess={handlePlaidSuccess} onError={handlePlaidError} />
@@ -165,22 +165,22 @@ export default function BankAccountsPage() {
           <CardTitle>Manual Transaction Entry</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
             You can also manually track your transactions:
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h4 className="font-medium mb-2">Business Transactions</h4>
-              <p className="text-sm text-gray-600 mb-2">
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Business Transactions</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                 Track income and expenses for your contracting business.
               </p>
               <Button variant="outline" size="sm" onClick={() => window.location.href = '/transactions'}>
                 Go to Transactions
               </Button>
             </div>
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h4 className="font-medium mb-2">Receipt Photos</h4>
-              <p className="text-sm text-gray-600 mb-2">
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Receipt Photos</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                 Upload receipt photos and use OCR to extract data.
               </p>
               <Button variant="outline" size="sm" onClick={() => window.location.href = '/receipts'}>

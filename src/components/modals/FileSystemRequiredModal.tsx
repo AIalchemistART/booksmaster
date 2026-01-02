@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
-import { setupFileSystemStorage } from '@/lib/file-system-storage'
+import { setupFileSystemStorage } from '@/lib/file-system-adapter'
 import { FolderOpen, AlertCircle, X } from 'lucide-react'
 
 interface FileSystemRequiredModalProps {
@@ -38,7 +38,7 @@ export function FileSystemRequiredModal({ onSetupComplete, onCancel }: FileSyste
                 Setup Local Storage Folder
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Before you can save data, you need to choose a folder on your computer where Thomas Books will store all your files.
+                Before you can save data, you need to choose a folder on your computer where Booksmaster will store all your files.
               </p>
               
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">

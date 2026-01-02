@@ -1,13 +1,13 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Sidebar } from '@/components/layout/Sidebar'
+import { LayoutClient } from './layout-client'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Thomas Books - Contractor Bookkeeping',
-  description: 'Bookkeeping and custody accounting for residential contractors',
+  title: 'Booksmaster - Contractor Bookkeeping',
+  description: 'AI-powered bookkeeping and receipt management for contractors',
 }
 
 export default function RootLayout({
@@ -18,12 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="flex h-screen">
-          <Sidebar />
-          <main className="flex-1 overflow-auto bg-gray-50">
-            {children}
-          </main>
-        </div>
+        <LayoutClient>{children}</LayoutClient>
       </body>
     </html>
   )

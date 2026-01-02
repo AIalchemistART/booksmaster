@@ -9,19 +9,19 @@ export default function DownloadPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-8">
       <Card className="max-w-2xl w-full p-12">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4">📚 Thomas Books</h1>
+          <h1 className="text-4xl font-bold mb-4">📚 Booksmaster</h1>
           <p className="text-xl text-muted-foreground mb-8">
             Contractor Bookkeeping Made Simple
           </p>
 
-          <a href="/ThomasBooksSetup.exe" download>
+          <a href="/BooksmasterSetup.exe" download>
             <Button size="lg" className="text-lg px-12 py-6 mb-4">
               <Download className="mr-2 h-5 w-5" />
               Download for Windows
             </Button>
           </a>
 
-          <p className="text-sm text-muted-foreground mb-12">Version 0.1.0</p>
+          <p className="text-sm text-muted-foreground mb-12">Version 0.2.0</p>
 
           <div className="text-left">
             <h2 className="text-2xl font-semibold mb-6 text-center">Features</h2>

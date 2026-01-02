@@ -13,9 +13,13 @@ const configPath = path.join(userDataPath, 'config.json')
 // Load saved configuration
 function loadConfig() {
   try {
+    console.log('[ELECTRON] Loading config from:', configPath)
     if (fsSync.existsSync(configPath)) {
       const config = JSON.parse(fsSync.readFileSync(configPath, 'utf-8'))
       rootDirPath = config.rootDirPath
+      console.log('[ELECTRON] Config loaded - rootDirPath:', rootDirPath)
+    } else {
+      console.log('[ELECTRON] No config file found - first run')
     }
   } catch (error) {
     console.error('[ELECTRON] Error loading config:', error)
@@ -34,8 +38,10 @@ function saveConfig() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
+    title: 'Booksmaster - Contractor Bookkeeping',
     width: 1400,
     height: 900,
+    autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -64,7 +70,13 @@ function createWindow() {
       const match = url.match(/\/C:\/([^/?]+)/)
       const route = match ? match[1] : ''
       
-      if (route) {
+      // Handle root route (dashboard)
+      if (!route || route === '') {
+        const dashboardPath = path.join(process.resourcesPath, 'app', 'out', 'index.html')
+        if (fsSync.existsSync(dashboardPath)) {
+          mainWindow.loadFile(dashboardPath)
+        }
+      } else {
         const routePath = path.join(process.resourcesPath, 'app', 'out', route, 'index.html')
         if (fsSync.existsSync(routePath)) {
           mainWindow.loadFile(routePath)
@@ -263,6 +275,36 @@ ipcMain.handle('fs-delete-file', async (event, filePath) => {
     return { success: true }
   } catch (error) {
     console.error('[ELECTRON] Error deleting file:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+// Clear all app data (localStorage, session, cache)
+ipcMain.handle('clear-all-app-data', async () => {
+  try {
+    console.log('[ELECTRON] Clearing all app data...')
+    
+    // Clear session storage (includes localStorage)
+    if (mainWindow && mainWindow.webContents) {
+      const session = mainWindow.webContents.session
+      await session.clearStorageData({
+        storages: ['localstorage', 'indexdb', 'cachestorage', 'websql']
+      })
+      console.log('[ELECTRON] Session storage cleared')
+    }
+    
+    // Reset the root directory config
+    rootDirPath = null
+    try {
+      await fs.unlink(configPath)
+      console.log('[ELECTRON] Config file deleted')
+    } catch (e) {
+      // Config file may not exist
+    }
+    
+    return { success: true }
+  } catch (error) {
+    console.error('[ELECTRON] Error clearing app data:', error)
     return { success: false, error: error.message }
   }
 })

@@ -18,7 +18,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
               variant === 'primary',
             'bg-secondary text-secondary-foreground hover:bg-secondary/80 focus:ring-secondary':
               variant === 'secondary',
-            'border border-input bg-transparent hover:bg-accent hover:text-accent-foreground focus:ring-accent':
+            'border border-input dark:border-gray-600 bg-transparent dark:text-gray-200 hover:bg-accent dark:hover:bg-gray-700 hover:text-accent-foreground focus:ring-accent':
               variant === 'outline',
             'hover:bg-accent hover:text-accent-foreground focus:ring-accent':
               variant === 'ghost',

@@ -20,7 +20,7 @@ export function isFileSystemAccessSupported(): boolean {
 }
 
 /**
- * Prompt user to select the root Thomas Books folder
+ * Prompt user to select the root Booksmaster folder
  */
 export async function setupFileSystemStorage(): Promise<boolean> {
   try {
@@ -353,6 +353,179 @@ export async function saveCustodyExpensesToFileSystem(expenses: any[]): Promise<
     return true
   } catch (error) {
     console.error('Error saving custody expenses to file system:', error)
+    return false
+  }
+}
+
+/**
+ * Save categorization corrections to file system
+ */
+export async function saveCorrectionsToFileSystem(corrections: any[]): Promise<boolean> {
+  try {
+    const rootDir = await getRootDirectory()
+    if (!rootDir) return false
+
+    const aiLearningDir = await rootDir.getDirectoryHandle('ai-learning', { create: true })
+    const file = await aiLearningDir.getFileHandle('categorization-corrections.json', { create: true })
+    const writable = await file.createWritable()
+    await writable.write(JSON.stringify(corrections, null, 2))
+    await writable.close()
+
+    console.log(`Saved ${corrections.length} categorization corrections to file system`)
+    return true
+  } catch (error) {
+    console.error('Error saving corrections to file system:', error)
+    return false
+  }
+}
+
+/**
+ * Load categorization corrections from file system
+ */
+export async function loadCorrectionsFromFileSystem(): Promise<any[]> {
+  try {
+    const rootDir = await getRootDirectory()
+    if (!rootDir) return []
+
+    const aiLearningDir = await rootDir.getDirectoryHandle('ai-learning', { create: true })
+    
+    try {
+      const file = await aiLearningDir.getFileHandle('categorization-corrections.json')
+      const fileData = await file.getFile()
+      const text = await fileData.text()
+      const corrections = JSON.parse(text)
+      console.log(`Loaded ${corrections.length} categorization corrections from file system`)
+      return corrections
+    } catch (error) {
+      console.log('No corrections file found, returning empty array')
+      return []
+    }
+  } catch (error) {
+    console.error('Error loading corrections from file system:', error)
+    return []
+  }
+}
+
+/**
+ * Save card payment type mappings to file system
+ */
+export async function saveCardPaymentMappingsToFileSystem(mappings: any[]): Promise<boolean> {
+  try {
+    const rootDir = await getRootDirectory()
+    if (!rootDir) return false
+
+    const aiLearningDir = await rootDir.getDirectoryHandle('ai-learning', { create: true })
+    const file = await aiLearningDir.getFileHandle('card-payment-mappings.json', { create: true })
+    const writable = await file.createWritable()
+    await writable.write(JSON.stringify(mappings, null, 2))
+    await writable.close()
+
+    console.log(`Saved ${mappings.length} card payment type mappings to file system`)
+    return true
+  } catch (error) {
+    console.error('Error saving card payment mappings to file system:', error)
+    return false
+  }
+}
+
+/**
+ * Load card payment type mappings from file system
+ */
+export async function loadCardPaymentMappingsFromFileSystem(): Promise<any[]> {
+  try {
+    const rootDir = await getRootDirectory()
+    if (!rootDir) return []
+
+    const aiLearningDir = await rootDir.getDirectoryHandle('ai-learning', { create: true })
+    
+    try {
+      const file = await aiLearningDir.getFileHandle('card-payment-mappings.json')
+      const fileData = await file.getFile()
+      const text = await fileData.text()
+      const mappings = JSON.parse(text)
+      console.log(`Loaded ${mappings.length} card payment type mappings from file system`)
+      return mappings
+    } catch (error) {
+      console.log('No card payment mappings file found, returning empty array')
+      return []
+    }
+  } catch (error) {
+    console.error('Error loading card payment mappings from file system:', error)
+    return []
+  }
+}
+
+/**
+ * Delete all data files from file system
+ */
+export async function deleteAllFiles(): Promise<boolean> {
+  try {
+    const rootDir = await getRootDirectory()
+    if (!rootDir) return false
+
+    console.log('[WEB FS] Deleting all data files...')
+
+    // Delete data files
+    const dataFiles = [
+      { dir: 'receipts/data', file: 'receipts.json' },
+      { dir: 'invoices/data', file: 'invoices.json' },
+      { dir: 'transactions', file: 'transactions.json' },
+      { dir: 'custody-expenses', file: 'custody-expenses.json' },
+      { dir: 'ai-learning', file: 'categorization-corrections.json' }
+    ]
+
+    for (const { dir, file } of dataFiles) {
+      try {
+        const parts = dir.split('/')
+        let currentDir = rootDir
+        for (const part of parts) {
+          currentDir = await currentDir.getDirectoryHandle(part, { create: false })
+        }
+        await currentDir.removeEntry(file)
+        console.log(`[WEB FS] Deleted ${dir}/${file}`)
+      } catch (error) {
+        console.warn(`[WEB FS] Could not delete ${dir}/${file}:`, error)
+      }
+    }
+
+    // Delete receipt images
+    try {
+      const receiptsDir = await rootDir.getDirectoryHandle('receipts', { create: false })
+      const imagesDir = await receiptsDir.getDirectoryHandle('images', { create: false })
+      
+      let deleteCount = 0
+      for await (const entry of (imagesDir as any).values()) {
+        if (entry.kind === 'file') {
+          await imagesDir.removeEntry(entry.name)
+          deleteCount++
+        }
+      }
+      console.log(`[WEB FS] Deleted ${deleteCount} receipt images`)
+    } catch (error) {
+      console.warn('[WEB FS] Could not delete receipt images:', error)
+    }
+
+    // Delete invoice images
+    try {
+      const invoicesDir = await rootDir.getDirectoryHandle('invoices', { create: false })
+      const imagesDir = await invoicesDir.getDirectoryHandle('images', { create: false })
+      
+      let deleteCount = 0
+      for await (const entry of (imagesDir as any).values()) {
+        if (entry.kind === 'file') {
+          await imagesDir.removeEntry(entry.name)
+          deleteCount++
+        }
+      }
+      console.log(`[WEB FS] Deleted ${deleteCount} invoice images`)
+    } catch (error) {
+      console.warn('[WEB FS] Could not delete invoice images:', error)
+    }
+
+    console.log('[WEB FS] All data files deleted successfully')
+    return true
+  } catch (error) {
+    console.error('[WEB FS] Error deleting files:', error)
     return false
   }
 }

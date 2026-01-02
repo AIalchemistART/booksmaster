@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support & Contact - Booksmaster</title>
+    <meta name="description" content="Get help with Booksmaster or join our mailing list for updates.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--gold:#D4AF37;--purple:#2D1B4E;--blue:#4A5899;--parchment:#F4ECD8;--silver:#C0C0C0;--green:#50C878;--red:#DC143C}
+        html{scroll-behavior:smooth}
+        body{font-family:'Inter',sans-serif;background:var(--purple);color:var(--parchment);line-height:1.7;min-height:100vh}
+        
+        nav{position:fixed;top:0;width:100%;background:rgba(45,27,78,0.98);backdrop-filter:blur(10px);z-index:1000;border-bottom:2px solid var(--gold)}
+        .nav-container{max-width:1400px;margin:0 auto;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center}
+        .logo{font-family:'Cinzel',serif;font-size:1.5rem;font-weight:700;color:var(--gold);text-decoration:none}
+        .nav-links{display:flex;gap:1.5rem;list-style:none;align-items:center}
+        .nav-links a{color:var(--parchment);text-decoration:none;font-weight:500;font-size:0.9rem;transition:color 0.3s}
+        .nav-links a:hover{color:var(--gold)}
+        .nav-cta{background:var(--gold);color:var(--purple)!important;padding:0.6rem 1.5rem;border-radius:25px;font-weight:600}
+        
+        main{padding-top:100px;padding-bottom:4rem;min-height:calc(100vh - 200px)}
+        .container{max-width:900px;margin:0 auto;padding:0 2rem}
+        .page-header{text-align:center;margin-bottom:3rem}
+        .page-header h1{font-family:'Cinzel',serif;font-size:2.5rem;color:var(--gold);margin-bottom:1rem}
+        .page-header p{font-size:1.1rem;color:var(--silver)}
+        
+        .content-box{background:rgba(244,236,216,0.08);border:2px solid rgba(212,175,55,0.3);border-radius:20px;padding:2.5rem;margin-bottom:2rem}
+        .content-box h2{font-family:'Cinzel',serif;color:var(--gold);font-size:1.8rem;margin-bottom:1.5rem}
+        .content-box h3{color:var(--gold);font-size:1.2rem;margin:1.5rem 0 0.75rem}
+        .content-box p{color:var(--silver);margin-bottom:1rem;line-height:1.8}
+        .content-box ul{margin:1rem 0 1rem 2rem;color:var(--silver)}
+        .content-box li{margin-bottom:0.5rem}
+        .content-box a{color:var(--gold);text-decoration:none;border-bottom:1px solid transparent;transition:border-color 0.3s}
+        .content-box a:hover{border-bottom-color:var(--gold)}
+        
+        .form-group{margin-bottom:1.5rem}
+        .form-group label{display:block;color:var(--gold);font-weight:600;margin-bottom:0.5rem}
+        .form-group input,.form-group textarea{width:100%;padding:0.75rem;background:rgba(244,236,216,0.1);border:2px solid rgba(212,175,55,0.3);border-radius:10px;color:var(--parchment);font-family:'Inter',sans-serif;font-size:1rem;transition:border-color 0.3s}
+        .form-group input:focus,.form-group textarea:focus{outline:none;border-color:var(--gold)}
+        .form-group textarea{resize:vertical;min-height:150px}
+        
+        .btn{padding:1rem 2.5rem;border-radius:50px;text-decoration:none;font-weight:600;font-size:1.1rem;transition:all 0.3s;border:none;cursor:pointer;display:inline-block;text-align:center}
+        .btn-primary{background:linear-gradient(135deg,var(--gold) 0%,#F4D03F 100%);color:var(--purple);box-shadow:0 4px 20px rgba(212,175,55,0.4)}
+        .btn-primary:hover{transform:translateY(-3px);box-shadow:0 6px 30px rgba(212,175,55,0.6)}
+        
+        .faq-section{margin-top:2rem}
+        .faq-item{margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid rgba(212,175,55,0.2)}
+        .faq-item:last-child{border-bottom:none}
+        .faq-item h4{color:var(--green);margin-bottom:0.5rem;font-size:1.1rem}
+        
+        footer{background:rgba(0,0,0,0.5);padding:3rem 2rem;border-top:2px solid var(--gold);text-align:center}
+        footer h3{font-family:'Cinzel',serif;color:var(--gold);font-size:1.3rem;margin-bottom:1rem}
+        footer p{color:var(--silver);font-size:0.9rem;margin-bottom:0.5rem}
+        .footer-links{display:flex;gap:2rem;justify-content:center;margin-top:1rem}
+        .footer-links a{color:var(--silver);text-decoration:none;font-size:0.9rem}
+        .footer-links a:hover{color:var(--gold)}
+        
+        @media(max-width:768px){.nav-links{display:none}.page-header h1{font-size:2rem}.content-box{padding:1.5rem}}
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="logo">📖 Booksmaster</a>
+            <ul class="nav-links">
+                <li><a href="index.html#why">Why Us</a></li>
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="index.html#compare">Compare</a></li>
+                <li><a href="index.html#pricing">Pricing</a></li>
+                <li><a href="index.html#faq">FAQ</a></li>
+                <li><a href="support.html">Support</a></li>
+                <li><a href="BooksmasterSetup.exe" class="nav-cta" download>⚔️ Download</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <div class="container">
+            <div class="page-header">
+                <h1>Support & Contact</h1>
+                <p>Get help with Booksmaster or stay updated with the latest features</p>
+            </div>
+
+            <div class="content-box">
+                <h2>📧 Join Our Mailing List</h2>
+                <p>Stay informed about new features, updates, and the upcoming mobile app launch. We'll notify you when macOS, Linux, and mobile versions become available.</p>
+                
+                <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" required placeholder="contractor@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="name">Name (Optional)</label>
+                        <input type="text" id="name" name="name" placeholder="Your name">
+                    </div>
+                    <div class="form-group">
+                        <label for="interests">Interested In (Optional)</label>
+                        <input type="text" id="interests" name="interests" placeholder="Mobile app, macOS version, etc.">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Subscribe to Updates</button>
+                </form>
+            </div>
+
+            <div class="content-box">
+                <h2>💬 Contact Support</h2>
+                <p>Need help with Booksmaster? We're here to assist you with any questions or issues.</p>
+                
+                <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+                    <div class="form-group">
+                        <label for="contact-email">Email Address</label>
+                        <input type="email" id="contact-email" name="email" required placeholder="your@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" name="subject" required placeholder="Brief description of your issue">
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" name="message" required placeholder="Please describe your issue or question in detail..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </form>
+                
+                <p style="margin-top:2rem;font-size:0.9rem;color:var(--silver);">
+                    <strong>Response Time:</strong> We typically respond within 24-48 hours on business days.
+                </p>
+            </div>
+
+            <div class="content-box">
+                <h2>❓ Common Questions</h2>
+                <div class="faq-section">
+                    <div class="faq-item">
+                        <h4>How do I get a Google AI key?</h4>
+                        <p>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a> to generate a free API key. The Gemini API offers generous free tier limits suitable for most contractors.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Installation issues on Windows</h4>
+                        <p>If you see a SmartScreen warning, click "More info" then "Run anyway". Booksmaster is safe but not yet code-signed. Requires Windows 10 or newer (64-bit).</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Receipt scanning not working</h4>
+                        <p>Ensure you've entered your Google AI key in Settings. Check your internet connection—AI features require online access. For offline use, Tesseract OCR fallback is available but less accurate.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Data backup recommendations</h4>
+                        <p>Your data is stored locally in your user directory. We recommend regular backups to external drives or cloud storage. Export your data via Settings → Export Data for safekeeping.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>When will mobile/cloud version launch?</h4>
+                        <p>The $70/year cloud version with mobile apps is planned for Q2-Q3 2026. Join our mailing list above to be notified when it launches.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-box">
+                <h2>💼 Tax Preparers & Accountants</h2>
+                <p><strong>Free Access for Licensed Tax Professionals</strong></p>
+                <p>Are you a licensed tax preparer, CPA, or enrolled agent looking to recommend Booksmaster to your clients? We offer complimentary access during the 2026 tax year to help you evaluate the software.</p>
+                
+                <h3>Eligibility Requirements</h3>
+                <ul>
+                    <li>Valid license (CPA, EA, PTIN, or state tax preparer license)</li>
+                    <li>Professional email address or business website</li>
+                    <li>Intent to recommend to contractor clients</li>
+                </ul>
+                
+                <p style="margin-top:1.5rem;"><strong>To apply for free access:</strong> Contact us with your license number and professional credentials. We'll verify and provide you with full access to evaluate Booksmaster for your contractor clients.</p>
+                
+                <p style="font-size:0.9rem;color:var(--silver);margin-top:1rem;">Note: This program is designed to help tax professionals evaluate Booksmaster for their clients. General users should purchase the Founding Member ($70 lifetime) or Standard Offline ($200 lifetime) license.</p>
+            </div>
+
+            <div class="content-box">
+                <h2>📖 Additional Resources</h2>
+                <ul>
+                    <li><a href="index.html#faq">Frequently Asked Questions</a></li>
+                    <li><a href="privacy.html">Privacy Policy</a></li>
+                    <li><a href="terms.html">Terms of Service</a></li>
+                    <li><a href="index.html#download">Download Booksmaster</a></li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <h3>📖 Booksmaster</h3>
+        <p>&copy; 2026 Booksmaster. All rights reserved.</p>
+        <p style="font-style:italic;color:var(--gold);margin-top:1rem">"Master your books, master your realm."</p>
+        <div class="footer-links">
+            <a href="privacy.html">Privacy Policy</a>
+            <a href="terms.html">Terms of Service</a>
+            <a href="support.html">Support</a>
+        </div>
+    </footer>
+</body>
+</html>

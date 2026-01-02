@@ -27,6 +27,26 @@ export function FileSystemSetup() {
     checkConfiguration()
   }, [])
 
+  // Re-check configuration when component becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkConfiguration()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
+
+  // Also re-check after a short delay (in case wizard just completed)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      checkConfiguration()
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [])
+
   const checkConfiguration = async () => {
     setChecking(true)
     const isConfigured = await isFileSystemConfigured()
@@ -74,23 +94,23 @@ export function FileSystemSetup() {
 
   if (checking) {
     return (
-      <div className="p-4 bg-white rounded-lg border border-gray-200">
-        <p className="text-sm text-gray-600">Checking file system configuration...</p>
+      <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <p className="text-sm text-gray-600 dark:text-gray-400">Checking file system configuration...</p>
       </div>
     )
   }
 
   if (!supported) {
     return (
-      <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+      <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
         <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5" />
           <div>
-            <h3 className="text-sm font-semibold text-yellow-900">File System Access Not Supported</h3>
-            <p className="text-sm text-yellow-800 mt-1">
+            <h3 className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">File System Access Not Supported</h3>
+            <p className="text-sm text-yellow-800 dark:text-yellow-200 mt-1">
               Your browser doesn&apos;t support the File System Access API. Please use a Chromium-based browser (Chrome, Edge, Brave) for local file system storage.
             </p>
-            <p className="text-xs text-yellow-700 mt-2">
+            <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-2">
               Data will continue to be saved to browser localStorage as a fallback.
             </p>
           </div>
@@ -100,16 +120,16 @@ export function FileSystemSetup() {
   }
 
   return (
-    <div className="space-y-4 p-4 bg-white rounded-lg border border-gray-200">
+    <div className="space-y-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Local File System Storage</h3>
-          <p className="text-sm text-gray-600">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Local File System Storage</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             Automatically save all data to a local folder on your computer
           </p>
         </div>
         {configured && (
-          <span className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded">
+          <span className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-green-800 dark:text-green-200 bg-green-100 dark:bg-green-900/30 rounded">
             <Check className="h-3 w-3" />
             Configured
           </span>
@@ -117,16 +137,16 @@ export function FileSystemSetup() {
       </div>
 
       {!configured ? (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-blue-900 mb-2">Setup Required</h4>
-          <p className="text-sm text-blue-800 mb-3">
-            Choose a folder on your computer where Thomas Books will save all your data. 
-            We recommend creating a new folder like <code className="bg-blue-100 px-1 rounded">C:\Users\YourName\Documents\Thomas-Books</code>
+        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">Setup Required</h4>
+          <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+            Choose a folder on your computer where Booksmaster will save all your data. 
+            We recommend creating a new folder like <code className="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">C:\Users\YourName\Documents\Booksmaster</code>
           </p>
-          <p className="text-xs text-blue-700 mb-4">
+          <p className="text-xs text-blue-700 dark:text-blue-300 mb-4">
             The following folder structure will be created:
           </p>
-          <ul className="text-xs text-blue-700 space-y-1 mb-4 font-mono bg-blue-100 p-3 rounded">
+          <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1 mb-4 font-mono bg-blue-100 dark:bg-blue-900/50 p-3 rounded">
             <li>📁 receipts/</li>
             <li className="ml-4">📁 images/ (receipt photos)</li>
             <li className="ml-4">📁 data/ (receipt metadata)</li>
@@ -142,15 +162,15 @@ export function FileSystemSetup() {
           </Button>
         </div>
       ) : (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-green-900 mb-2">File System Connected</h4>
-          <p className="text-sm text-green-800 mb-3">
+        <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-2">File System Connected</h4>
+          <p className="text-sm text-green-800 dark:text-green-200 mb-3">
             All changes are automatically saved to your local file system in real-time.
           </p>
-          <div className="bg-white border border-green-300 rounded px-3 py-2 mb-3">
-            <p className="text-xs text-gray-500 mb-1">Selected Folder:</p>
-            <p className="text-sm font-mono text-gray-900">{folderPath || 'No folder selected'}</p>
-            <p className="text-xs text-amber-600 mt-2">
+          <div className="bg-white dark:bg-gray-900 border border-green-300 dark:border-green-800 rounded px-3 py-2 mb-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Selected Folder:</p>
+            <p className="text-sm font-mono text-gray-900 dark:text-gray-100">{folderPath || 'No folder selected'}</p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
               ⚠️ Note: The browser only shows the folder name for security. Your files are saved to the folder you selected. To verify, open that folder directly in File Explorer.
             </p>
           </div>
@@ -167,7 +187,7 @@ export function FileSystemSetup() {
         </div>
       )}
 
-      <div className="text-xs text-gray-500 space-y-1 border-t pt-3">
+      <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 border-t dark:border-gray-700 pt-3">
         <p><strong>How it works:</strong></p>
         <ul className="list-disc list-inside space-y-1 ml-2">
           <li>Every receipt, invoice, and transaction is automatically saved to your chosen folder</li>

@@ -25,28 +25,36 @@ import {
   ExtractedReceiptData,
   ProcessingOptions 
 } from '@/lib/receipt-processor'
+import { getGlobalReceiptProcessor } from '@/lib/global-receipt-processor'
 
 interface BatchReceiptScannerProps {
   onReceiptProcessed: (data: ExtractedReceiptData) => void
+  onBatchComplete?: (count: number) => void  // Called when "Use All" completes
 }
 
-export function BatchReceiptScanner({ onReceiptProcessed }: BatchReceiptScannerProps) {
+export function BatchReceiptScanner({ onReceiptProcessed, onBatchComplete }: BatchReceiptScannerProps) {
   const [queue, setQueue] = useState<ProcessedReceipt[]>([])
   const [stats, setStats] = useState({ pending: 0, processing: 0, done: 0, error: 0, total: 0 })
   const [showSettings, setShowSettings] = useState(false)
   const [expandedReceipt, setExpandedReceipt] = useState<string | null>(null)
   const [options, setOptions] = useState<ProcessingOptions>({
     useSAM: false, // Disabled: too aggressive, crops out important receipt content
-    enhanceContrast: true,
-    autoCrop: true,
+    enhanceContrast: true, // Always enabled automatically for better OCR results
     ocrMode: 'accurate', // Always use Gemini 3 Flash for best results
   })
   
   const processorRef = useRef<ReceiptProcessorQueue | null>(null)
 
-  // Initialize processor
+  // Initialize processor - use global singleton that persists across navigation
   useEffect(() => {
-    processorRef.current = new ReceiptProcessorQueue(options)
+    processorRef.current = getGlobalReceiptProcessor()
+    
+    // Update options if needed
+    processorRef.current.setOptions(options)
+    
+    // Restore current state from processor
+    setQueue(processorRef.current.getQueue())
+    setStats(processorRef.current.getStats())
     
     processorRef.current.setOnProgress((receipt) => {
       setQueue(processorRef.current!.getQueue())
@@ -58,8 +66,9 @@ export function BatchReceiptScanner({ onReceiptProcessed }: BatchReceiptScannerP
       setStats(processorRef.current!.getStats())
     })
 
+    // Don't destroy processor on unmount - let it continue in background
     return () => {
-      processorRef.current = null
+      console.log('[BATCH SCANNER] Component unmounting, processor continues in background')
     }
   }, [])
 
@@ -151,7 +160,14 @@ export function BatchReceiptScanner({ onReceiptProcessed }: BatchReceiptScannerP
       }
     }
     
-    console.log('All receipts processed')
+    const totalProcessed = successfulReceipts.length + failedReceipts.length
+    console.log(`All ${totalProcessed} receipts processed`)
+    
+    // Notify parent about batch completion for XP award
+    if (onBatchComplete && totalProcessed > 0) {
+      onBatchComplete(totalProcessed)
+    }
+    
     handleClearCompleted()
   }
 
@@ -164,78 +180,19 @@ export function BatchReceiptScanner({ onReceiptProcessed }: BatchReceiptScannerP
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Camera className="h-5 w-5" />
-            Batch Receipt Scanner
-          </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowSettings(!showSettings)}
-          >
-            <Settings className="h-4 w-4 mr-1" />
-            Settings
-          </Button>
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <Camera className="h-5 w-5" />
+          Batch Receipt Scanner
+          <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-2">
+            (Auto-contrast enabled)
+          </span>
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Settings Panel */}
-        {showSettings && (
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <h4 className="font-medium text-sm text-gray-700">Processing Options</h4>
-            
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={options.useSAM}
-                onChange={(e) => setOptions(prev => ({ ...prev, useSAM: e.target.checked }))}
-                className="w-4 h-4 rounded"
-              />
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-purple-500" />
-                <div>
-                  <span className="text-sm font-medium">SAM AI Border Detection</span>
-                  <p className="text-xs text-gray-500">Use AI to detect and crop receipt boundaries (slower but more accurate)</p>
-                </div>
-              </div>
-            </label>
-
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={options.enhanceContrast}
-                onChange={(e) => setOptions(prev => ({ ...prev, enhanceContrast: e.target.checked }))}
-                className="w-4 h-4 rounded"
-              />
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-yellow-500" />
-                <div>
-                  <span className="text-sm font-medium">Enhance Contrast</span>
-                  <p className="text-xs text-gray-500">Improve text clarity (darker text, whiter background)</p>
-                </div>
-              </div>
-            </label>
-
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={options.autoCrop}
-                onChange={(e) => setOptions(prev => ({ ...prev, autoCrop: e.target.checked }))}
-                className="w-4 h-4 rounded"
-              />
-              <div>
-                <span className="text-sm font-medium">Auto-Crop</span>
-                <p className="text-xs text-gray-500">Remove empty space around receipts</p>
-              </div>
-            </label>
-
-          </div>
-        )}
 
         {/* Upload Area */}
         <div 
-          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
+          className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer dark:bg-gray-800/50"
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onClick={() => document.getElementById('batch-receipt-upload')?.click()}
@@ -248,17 +205,17 @@ export function BatchReceiptScanner({ onReceiptProcessed }: BatchReceiptScannerP
             className="hidden"
             id="batch-receipt-upload"
           />
-          <Upload className="h-10 w-10 mx-auto text-gray-400 mb-2" />
-          <p className="text-gray-600 font-medium">Drop receipt images here</p>
-          <p className="text-sm text-gray-400 mt-1">or click to select files (batch supported)</p>
+          <Upload className="h-10 w-10 mx-auto text-gray-400 dark:text-gray-500 mb-2" />
+          <p className="text-gray-600 dark:text-gray-300 font-medium">Drop receipt images here</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">or click to select files (batch supported)</p>
         </div>
 
         {/* Stats Bar */}
         {stats.total > 0 && (
-          <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+          <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
             <div className="flex items-center gap-4 text-sm">
               {stats.pending > 0 && (
-                <span className="text-gray-600">{stats.pending} pending</span>
+                <span className="text-gray-600 dark:text-gray-400">{stats.pending} pending</span>
               )}
               {stats.processing > 0 && (
                 <span className="text-blue-600 flex items-center gap-1">
@@ -295,16 +252,16 @@ export function BatchReceiptScanner({ onReceiptProcessed }: BatchReceiptScannerP
               <div 
                 key={receipt.id}
                 className={`border rounded-lg overflow-hidden transition-all ${
-                  receipt.status === 'done' ? 'border-green-200 bg-green-50' :
-                  receipt.status === 'error' ? 'border-red-200 bg-red-50' :
-                  receipt.status === 'processing' ? 'border-blue-200 bg-blue-50' :
-                  'border-gray-200 bg-gray-50'
+                  receipt.status === 'done' ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20' :
+                  receipt.status === 'error' ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20' :
+                  receipt.status === 'processing' ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20' :
+                  'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'
                 }`}
               >
                 {/* Header */}
                 <div className="flex items-center gap-3 p-3">
                   {/* Thumbnail */}
-                  <div className="w-12 h-12 rounded bg-white border flex-shrink-0 overflow-hidden">
+                  <div className="w-12 h-12 rounded bg-white dark:bg-gray-700 border dark:border-gray-600 flex-shrink-0 overflow-hidden">
                     {receipt.processedImageUrl ? (
                       <img 
                         src={receipt.processedImageUrl} 
@@ -313,15 +270,15 @@ export function BatchReceiptScanner({ onReceiptProcessed }: BatchReceiptScannerP
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <ImageIcon className="h-6 w-6 text-gray-300" />
+                        <ImageIcon className="h-6 w-6 text-gray-300 dark:text-gray-500" />
                       </div>
                     )}
                   </div>
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{receipt.originalFile.name}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="font-medium text-sm truncate text-gray-900 dark:text-gray-100">{receipt.originalFile.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {formatFileSize(receipt.originalFile.size)}
                       {receipt.status === 'done' && receipt.extractedData.vendor && (
                         <span className="ml-2">• {receipt.extractedData.vendor}</span>
@@ -329,19 +286,19 @@ export function BatchReceiptScanner({ onReceiptProcessed }: BatchReceiptScannerP
                     </p>
                     {receipt.status === 'processing' && (
                       <div className="mt-1">
-                        <div className="flex items-center gap-2 text-xs text-blue-600">
+                        <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
                           <span>{receipt.progressStatus}</span>
                         </div>
-                        <div className="h-1 bg-blue-200 rounded-full mt-1 overflow-hidden">
+                        <div className="h-1 bg-blue-200 dark:bg-blue-900 rounded-full mt-1 overflow-hidden">
                           <div 
-                            className="h-full bg-blue-500 rounded-full transition-all"
+                            className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all"
                             style={{ width: `${receipt.progress}%` }}
                           />
                         </div>
                       </div>
                     )}
                     {receipt.status === 'error' && (
-                      <p className="text-xs text-red-600 mt-1">{receipt.error}</p>
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-1">{receipt.error}</p>
                     )}
                   </div>
 
@@ -392,7 +349,7 @@ export function BatchReceiptScanner({ onReceiptProcessed }: BatchReceiptScannerP
 
                 {/* Expanded Details */}
                 {expandedReceipt === receipt.id && receipt.status === 'done' && (
-                  <div className="border-t border-green-200 p-4 bg-white">
+                  <div className="border-t border-green-200 dark:border-green-800 p-4 bg-white dark:bg-gray-900">
                     <div className="grid grid-cols-2 gap-4">
                       {/* Processed Image */}
                       <div>
@@ -472,7 +429,7 @@ export function BatchReceiptScanner({ onReceiptProcessed }: BatchReceiptScannerP
 
         {/* Empty State */}
         {queue.length === 0 && (
-          <p className="text-center text-gray-400 text-sm py-4">
+          <p className="text-center text-gray-400 dark:text-gray-300 text-sm py-4">
             No receipts in queue. Upload images to get started.
           </p>
         )}

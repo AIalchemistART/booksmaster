@@ -112,7 +112,7 @@ export async function exportCompleteProject(data: ProjectData): Promise<void> {
   zip.file('project-metadata.json', JSON.stringify(metadata, null, 2))
   
   // 7. Create README
-  const readme = `Thomas Books Project Export
+  const readme = `Booksmaster Project Export
 ===========================
 
 Export Date: ${data.exportDate}
@@ -131,13 +131,22 @@ Folder Structure:
 📄 bank-accounts.json
 📄 project-metadata.json
 
+Receipt Data Includes:
+----------------------
+- OCR data (vendor, amount, date, line items)
+- Document classification (itemized_receipt, payment_receipt, manifest, invoice)
+- Document linking information (linked receipts, supplemental docs)
+- Duplicate detection data (source filename, duplicate flags)
+- Transaction identifiers (transaction #, order #, invoice #, account #)
+- All receipt images
+
 To restore this data:
-1. Open Thomas Books application
+1. Open Booksmaster application
 2. Go to Settings
 3. Click "Import Project"
 4. Select this zip file
 
-All data will be restored including receipt images.
+All data will be restored including receipt images and document relationships.
 `
   zip.file('README.txt', readme)
   

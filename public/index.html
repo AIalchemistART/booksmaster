@@ -3,128 +3,385 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thomas Books - Download Desktop App</title>
+    <title>Booksmaster - AI-Powered Bookkeeping for Contractors</title>
+    <meta name="description" content="The first bookkeeping software with gamification, self-learning AI, and contractor-focused simplicity. Just $70/year.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--gold:#D4AF37;--purple:#2D1B4E;--blue:#4A5899;--parchment:#F4ECD8;--silver:#C0C0C0;--green:#50C878;--red:#DC143C}
+        html{scroll-behavior:smooth}
+        body{font-family:'Inter',sans-serif;background:var(--purple);color:var(--parchment);line-height:1.7}
         
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+        nav{position:fixed;top:0;width:100%;background:rgba(45,27,78,0.98);backdrop-filter:blur(10px);z-index:1000;border-bottom:2px solid var(--gold)}
+        .nav-container{max-width:1400px;margin:0 auto;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center}
+        .logo{font-family:'Cinzel',serif;font-size:1.5rem;font-weight:700;color:var(--gold);text-decoration:none}
+        .nav-links{display:flex;gap:1.5rem;list-style:none;align-items:center}
+        .nav-links a{color:var(--parchment);text-decoration:none;font-weight:500;font-size:0.9rem;transition:color 0.3s}
+        .nav-links a:hover{color:var(--gold)}
+        .nav-cta{background:var(--gold);color:var(--purple)!important;padding:0.6rem 1.5rem;border-radius:25px;font-weight:600}
         
-        .container {
-            background: white;
-            border-radius: 20px;
-            padding: 60px 40px;
-            max-width: 600px;
-            width: 100%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            text-align: center;
-        }
+        .btn{padding:1rem 2.5rem;border-radius:50px;text-decoration:none;font-weight:600;font-size:1.1rem;transition:all 0.3s;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:0.5rem}
+        .btn-primary{background:linear-gradient(135deg,var(--gold) 0%,#F4D03F 100%);color:var(--purple);box-shadow:0 4px 20px rgba(212,175,55,0.4)}
+        .btn-primary:hover{transform:translateY(-3px);box-shadow:0 6px 30px rgba(212,175,55,0.6)}
+        .btn-secondary{background:transparent;color:var(--parchment);border:2px solid var(--parchment)}
+        .btn-secondary:hover{background:var(--parchment);color:var(--purple)}
+        .btn-large{padding:1.3rem 3.5rem;font-size:1.25rem}
         
-        h1 {
-            color: #333;
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            font-weight: 700;
-        }
+        section{padding:5rem 2rem}
+        .container{max-width:1200px;margin:0 auto}
+        .section-header{text-align:center;margin-bottom:4rem}
+        .section-header h2{font-family:'Cinzel',serif;font-size:2.5rem;color:var(--gold);margin-bottom:1rem}
+        .section-header p{font-size:1.1rem;color:var(--silver);max-width:700px;margin:0 auto}
+        .badge{display:inline-block;background:var(--green);color:white;padding:0.3rem 1rem;border-radius:20px;font-size:0.85rem;font-weight:600;margin-bottom:1.5rem;margin-top:1rem}
+        .badge-gold{background:var(--gold);color:var(--purple)}
         
-        p {
-            color: #666;
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 40px;
-        }
+        #hero{min-height:100vh;display:flex;align-items:center;padding-top:80px;background:radial-gradient(circle at 20% 30%,rgba(212,175,55,0.15) 0%,transparent 40%),radial-gradient(circle at 80% 70%,rgba(74,88,153,0.25) 0%,transparent 40%),var(--purple)}
+        .hero-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:4rem;align-items:center}
+        .hero-text h1{font-family:'Cinzel',serif;font-size:3.2rem;font-weight:700;margin-bottom:1rem;line-height:1.15}
+        .hero-text h1 span{color:var(--gold)}
+        .hero-text .subtitle{font-family:'Lora',serif;font-size:1.3rem;color:var(--gold);font-style:italic;margin-bottom:1.5rem}
+        .hero-text>p{font-size:1.1rem;margin-bottom:2rem;color:var(--silver)}
+        .hero-buttons{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2rem}
+        .hero-stats{display:flex;gap:2rem;margin-top:2rem;padding-top:2rem;border-top:1px solid rgba(212,175,55,0.3)}
+        .hero-stat .number{font-family:'Cinzel',serif;font-size:1.8rem;color:var(--gold);font-weight:700}
+        .hero-stat .label{font-size:0.85rem;color:var(--silver)}
+        .hero-card{background:rgba(244,236,216,0.1);border:2px solid var(--gold);border-radius:20px;padding:2rem;transform:rotate(2deg)}
+        .hero-card h3{font-family:'Cinzel',serif;color:var(--gold);margin-bottom:1rem}
+        .hero-card ul{list-style:none}
+        .hero-card li{padding:0.5rem 0;display:flex;align-items:center;gap:0.5rem}
+        .hero-card li::before{content:"✦";color:var(--green)}
         
-        .download-btn {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 18px 48px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-size: 1.2rem;
-            font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
+        .alt-bg{background:linear-gradient(180deg,var(--purple) 0%,var(--blue) 50%,var(--purple) 100%)}
+        .dark-bg{background:rgba(0,0,0,0.3)}
         
-        .download-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-        }
+        .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:2rem}
+        .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:2rem}
+        .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem}
         
-        .version {
-            margin-top: 30px;
-            color: #999;
-            font-size: 0.9rem;
-        }
+        .card{background:rgba(244,236,216,0.08);border:2px solid rgba(212,175,55,0.3);border-radius:20px;padding:2rem;transition:all 0.3s}
+        .card:hover{border-color:var(--gold);transform:translateY(-5px)}
+        .card.green{border-color:var(--green);background:rgba(80,200,120,0.08)}
+        .card.red{border-color:var(--red);background:rgba(220,20,60,0.08)}
+        .card h3{font-family:'Cinzel',serif;color:var(--gold);font-size:1.2rem;margin-bottom:0.75rem}
+        .card.green h3{color:var(--green)}
+        .card.red h3{color:var(--red)}
+        .card p{color:var(--silver);font-size:0.95rem}
+        .card-icon{font-size:2.5rem;margin-bottom:1rem}
         
-        .features {
-            margin-top: 50px;
-            text-align: left;
-        }
+        .comparison-table{width:100%;border-collapse:collapse;margin-top:2rem;font-size:0.9rem}
+        .comparison-table th,.comparison-table td{padding:1rem;text-align:center;border-bottom:1px solid rgba(212,175,55,0.2)}
+        .comparison-table th{background:rgba(212,175,55,0.1);color:var(--gold);font-family:'Cinzel',serif}
+        .comparison-table th:first-child,.comparison-table td:first-child{text-align:left}
+        .comparison-table td:last-child{background:rgba(80,200,120,0.1);color:var(--green);font-weight:600}
+        .comparison-table th:last-child{background:rgba(80,200,120,0.2)}
+        .check{color:var(--green)}
+        .cross{color:var(--red)}
         
-        .features h2 {
-            color: #333;
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            text-align: center;
-        }
+        .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;position:relative}
+        .steps::before{content:'';position:absolute;top:35px;left:10%;right:10%;height:3px;background:linear-gradient(90deg,var(--gold),var(--green));z-index:0}
+        .step{text-align:center;position:relative;z-index:1}
+        .step-num{width:70px;height:70px;background:linear-gradient(135deg,var(--gold),#F4D03F);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.8rem;font-weight:700;color:var(--purple);margin:0 auto 1.5rem;box-shadow:0 4px 20px rgba(212,175,55,0.4)}
+        .step h3{font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;margin-bottom:0.5rem}
+        .step p{color:var(--silver);font-size:0.9rem}
         
-        .features ul {
-            list-style: none;
-            padding: 0;
-        }
+        .pricing-grid{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:2rem;align-items:center}
+        .price-card{background:rgba(244,236,216,0.08);border:2px solid rgba(212,175,55,0.3);border-radius:25px;padding:2.5rem;text-align:center}
+        .price-card.featured{background:rgba(80,200,120,0.08);border:3px solid var(--green);padding:3rem 2.5rem;position:relative}
+        .price-badge{position:absolute;top:-15px;left:50%;transform:translateX(-50%);background:var(--green);color:white;padding:0.5rem 1.5rem;border-radius:20px;font-weight:600;font-size:0.9rem;white-space:nowrap}
+        .price-card h3{font-family:'Cinzel',serif;color:var(--gold);font-size:1.4rem;margin-bottom:0.5rem}
+        .price{font-size:3.5rem;font-weight:700;color:var(--parchment);margin:1rem 0}
+        .price span{font-size:1.1rem;color:var(--silver)}
+        .price-features{list-style:none;text-align:left;margin:1.5rem 0}
+        .price-features li{padding:0.5rem 0;padding-left:1.5rem;position:relative;color:var(--silver);font-size:0.95rem}
+        .price-features li::before{content:"✦";position:absolute;left:0;color:var(--gold)}
         
-        .features li {
-            color: #666;
-            padding: 10px 0;
-            padding-left: 30px;
-            position: relative;
-        }
+        .faq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(450px,1fr));gap:1.5rem}
+        .faq-item{background:rgba(244,236,216,0.05);border:1px solid rgba(212,175,55,0.2);border-radius:15px;padding:1.5rem 2rem}
+        .faq-item h3{color:var(--gold);font-size:1rem;margin-bottom:0.75rem}
+        .faq-item p{color:var(--silver);font-size:0.9rem}
         
-        .features li:before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: #667eea;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
+        .download-box{background:rgba(244,236,216,0.08);border:3px solid var(--gold);border-radius:30px;padding:4rem;text-align:center;max-width:900px;margin:0 auto}
+        .download-box h3{font-family:'Cinzel',serif;color:var(--gold);font-size:2rem;margin-bottom:1rem}
+        .version{display:inline-block;background:var(--blue);color:var(--parchment);padding:0.5rem 1.5rem;border-radius:20px;font-weight:600;margin-bottom:2rem}
+        .sys-req{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-top:2rem;text-align:left}
+        .sys-req span{display:flex;align-items:center;gap:0.5rem;color:var(--silver);font-size:0.9rem}
+        .sys-req span::before{content:"✓";color:var(--green);font-weight:bold}
+        
+        footer{background:rgba(0,0,0,0.5);padding:3rem 2rem;border-top:2px solid var(--gold);text-align:center}
+        footer h3{font-family:'Cinzel',serif;color:var(--gold);font-size:1.3rem;margin-bottom:1rem}
+        footer p{color:var(--silver);font-size:0.9rem;margin-bottom:0.5rem}
+        .footer-links{display:flex;gap:2rem;justify-content:center;margin-top:1rem}
+        .footer-links a{color:var(--silver);text-decoration:none;font-size:0.9rem}
+        .footer-links a:hover{color:var(--gold)}
+        
+        @media(max-width:1024px){.hero-grid{grid-template-columns:1fr}.hero-card{display:none}.pricing-grid{grid-template-columns:1fr;max-width:400px;margin:0 auto}.steps{grid-template-columns:repeat(2,1fr)}.steps::before{display:none}.grid-4{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:768px){.nav-links{display:none}.hero-text h1{font-size:2.3rem}.section-header h2{font-size:2rem}.steps{grid-template-columns:1fr}.grid-4{grid-template-columns:1fr}.faq-grid{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📚 Thomas Books</h1>
-        <p>Contractor Bookkeeping Made Simple</p>
-        
-        <a href="ThomasBooksSetup.exe" class="download-btn" download>
-            Download for Windows
-        </a>
-        
-        <p class="version">Version 0.1.0</p>
-        
-        <div class="features">
-            <h2>Features</h2>
-            <ul>
-                <li>Track income and expenses</li>
-                <li>Manage receipts with AI-powered OCR</li>
-                <li>Generate categorization reports</li>
-                <li>Monitor custody balance</li>
-                <li>Create invoices and manage transactions</li>
-                <li>All your data stored locally</li>
+    <nav>
+        <div class="nav-container">
+            <a href="#hero" class="logo">📖 Booksmaster</a>
+            <ul class="nav-links">
+                <li><a href="#why">Why Us</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#compare">Compare</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#faq">FAQ</a></li>
+                <li><a href="support.html">Support</a></li>
+                <li><a href="BooksmasterSetup.exe" class="nav-cta" download>⚔️ Download</a></li>
             </ul>
         </div>
-    </div>
+    </nav>
+
+    <section id="hero">
+        <div class="container">
+            <div class="hero-grid">
+                <div class="hero-text">
+                    <span class="badge badge-gold">🏆 Industry-First Gamification</span>
+                    <h1>Master Your <span>Financial Realm</span></h1>
+                    <p class="subtitle">AI-Powered Bookkeeping for Independent Contractors</p>
+                    <p>Transform bookkeeping from a chore into an engaging quest. Booksmaster combines cutting-edge AI receipt scanning, self-learning categorization, and the industry's first gamification system—all for just <strong>$70/year</strong>.</p>
+                    <div class="hero-buttons">
+                        <a href="BooksmasterSetup.exe" class="btn btn-primary btn-large" download>⚔️ Free Download</a>
+                        <a href="#features" class="btn btn-secondary">🔮 Explore Features</a>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="hero-stat"><div class="number">40M+*</div><div class="label">US Contractors</div></div>
+                        <div class="hero-stat"><div class="number">5x*</div><div class="label">Faster Parsing</div></div>
+                        <div class="hero-stat"><div class="number">6x*</div><div class="label">More Accurate</div></div>
+                        <div class="hero-stat"><div class="number">$70</div><div class="label">Lifetime</div></div>
+                    </div>
+                    <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid rgba(212,175,55,0.2)">
+                        <p style="font-size:0.75rem;color:var(--silver);line-height:1.4">
+                            <strong>*40M+:</strong> Estimated independent contractors in the US who could benefit from Booksmaster<br>
+                            <strong>*5x Faster:</strong> AI: 8 sec/receipt vs Traditional OCR: 40 sec/receipt (tested on hundreds of real receipts)<br>
+                            <strong>*6x More Accurate:</strong> AI: 93% field accuracy vs OCR: 14% (Tesseract baseline)
+                        </p>
+                    </div>
+                </div>
+                <div class="hero-card">
+                    <h3>🏆 Level 6: Master</h3>
+                    <p style="color:var(--silver);font-size:0.9rem;margin-bottom:1rem">1,400 / 1,500 XP</p>
+                    <ul>
+                        <li>Receipt scanned: +15 XP</li>
+                        <li>Category corrected: +25 XP</li>
+                        <li>Quarterly review: +100 XP</li>
+                        <li>Achievement unlocked! 🏆</li>
+                    </ul>
+                    <div style="margin-top:1rem;padding:1rem;background:rgba(80,200,120,0.2);border-radius:10px">
+                        <strong style="color:var(--green)">🎯 Next unlock:</strong> Advanced Tax Reports
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="why" class="alt-bg">
+        <div class="container">
+            <div class="section-header">
+                <span class="badge">The Problem & Solution</span>
+                <h2>Why Contractors Choose Booksmaster</h2>
+                <p>We understand the pain of bookkeeping. Here's what we solve.</p>
+            </div>
+            <div class="grid-2">
+                <div class="card red"><h3>❌ Tedious Receipt Entry</h3><p>Manual receipt entry takes 10 minutes per receipt. Traditional OCR doesn't intelligently read receipts, forcing you to re-type nearly everything.</p></div>
+                <div class="card green"><h3>✅ AI Vision That Actually Works</h3><p>Gemini Vision API reads damaged, faded, and crumpled receipts with <strong>6x better accuracy</strong> than traditional OCR (93% vs 14% field accuracy). Plus it's <strong>5x faster</strong>—process entire stacks in minutes, not hours.</p></div>
+                <div class="card red"><h3>❌ AI That Never Learns</h3><p>Other software makes the same mistakes repeatedly. You correct "Home Depot" to "Materials" a hundred times—it still doesn't remember.</p></div>
+                <div class="card green"><h3>✅ Self-Improving Intelligence</h3><p>Our AI learns from every correction. After 50 interactions, expect <strong>90%+ categorization accuracy</strong>. Truly personal AI.</p></div>
+                <div class="card red"><h3>❌ Income Double-Counting</h3><p>Recording the same income twice (check + deposit) is the #1 IRS audit trigger. No competitor addresses this problem.</p></div>
+                <div class="card green"><h3>✅ Smart Duplicate Detection</h3><p>AI automatically detects when a check matches a deposit. One-click linking prevents double-counting. <strong>Industry-first feature.</strong></p></div>
+                <div class="card red"><h3>❌ Too Expensive & Complex</h3><p>QuickBooks starts at $360/year. Designed for accounting teams, not independent contractors who especially need better receipt tracking.</p></div>
+                <div class="card green"><h3>✅ Simple & Affordable</h3><p><strong>Just $70/year</strong>—under the $75 expense threshold. Contractor-focused UI means you're productive in minutes.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="dark-bg">
+        <div class="container">
+            <div class="section-header">
+                <span class="badge badge-gold">Complete Feature Set</span>
+                <h2>Mystical Powers at Your Command</h2>
+                <p>Every tool a contractor needs to conquer their financial realm</p>
+            </div>
+            <h3 style="color:var(--green);margin-bottom:1.5rem;font-family:'Cinzel',serif">🥇 Industry Firsts</h3>
+            <div class="grid-3" style="margin-bottom:3rem">
+                <div class="card green"><div class="card-icon">🔮</div><h3>LLM-Based Receipt Parsing</h3><p>First bookkeeping software using Google Gemini Vision API. <strong>6x more accurate</strong> and <strong>5x faster</strong> than traditional OCR (Tesseract). Tested on hundreds of real contractor receipts—AI achieved 93% field accuracy vs OCR's 14%.</p></div>
+                <div class="card green"><div class="card-icon">🧠</div><h3>Self-Learning AI</h3><p>Learns from every correction. Vendor normalization, category patterns, payment methods. Gets smarter over time.</p></div>
+                <div class="card green"><div class="card-icon">🔍</div><h3>Duplicate Detection</h3><p>AI-powered check-to-deposit matching with confidence scoring. Prevents IRS audit triggers automatically.</p></div>
+            </div>
+            <h3 style="color:var(--gold);margin-bottom:1.5rem;font-family:'Cinzel',serif">⚡ Core Powers</h3>
+            <div class="grid-3">
+                <div class="card"><div class="card-icon">🔮</div><h3>AI Vision Oracle</h3><p>Gemini-powered receipt scanning: 93% field accuracy, processes receipts in 8 seconds each. Traditional OCR: 14% accuracy, 40+ seconds per receipt. The difference is night and day.</p></div>
+                <div class="card"><div class="card-icon">📜</div><h3>Auto Categorization</h3><p>13 expense categories. Materials, Tools, Fuel, Subcontractors—learns your business taxonomy.</p></div>
+                <div class="card"><div class="card-icon">⚡</div><h3>Batch Processing</h3><p>Process entire stacks of receipts simultaneously. One spell, dozens of organized documents.</p></div>
+                <div class="card"><div class="card-icon">📊</div><h3>Tax Reports</h3><p>Schedule C exports, QuickBooks IIF, Excel, PDF archives. Ready for tax season in one click.</p></div>
+                <div class="card"><div class="card-icon">🚗</div><h3>Mileage Tracking</h3><p>Trip logging with IRS standard rates. Business/personal/commute classification.</p></div>
+                <div class="card"><div class="card-icon">🏰</div><h3>Local Fortress</h3><p>Your data stays on your computer. No cloud dependency. Complete privacy, absolute control.</p></div>
+                <div class="card"><div class="card-icon">📋</div><h3>Document Linking</h3><p>Link manifests and itemized receipts to payments. Complete audit trail for complex purchases.</p></div>
+                <div class="card"><div class="card-icon">💰</div><h3>Tax Estimates</h3><p>Quarterly tax calculator with Schedule SE. Deadline tracking with countdown timers.</p></div>
+                <div class="card"><div class="card-icon">📝</div><h3>Invoicing</h3><p>Create and track invoices. Earn XP for staying on top of accounts receivable.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="compare" class="alt-bg">
+        <div class="container">
+            <div class="section-header">
+                <span class="badge">See The Difference</span>
+                <h2>How We Compare</h2>
+                <p>Feature-by-feature comparison with major competitors</p>
+            </div>
+            <div style="overflow-x:auto">
+                <table class="comparison-table">
+                    <tr><th>Feature</th><th>QuickBooks</th><th>FreshBooks</th><th>Expensify</th><th>Booksmaster</th></tr>
+                    <tr><td><strong>Price/Year</strong></td><td>$360-2400</td><td>$228-720</td><td>$60-216</td><td><strong>$70</strong></td></tr>
+                    <tr><td>Batch Scanning</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✓ Basic OCR</td><td class="check">✓ Gemini AI</td></tr>
+                    <tr><td>LLM/AI Parsing</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✓ Gemini</td></tr>
+                    <tr><td>Gamification</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✓ FIRST</td></tr>
+                    <tr><td>Self-Learning AI</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">⚠️ Basic</td><td class="check">✓ Advanced</td></tr>
+                    <tr><td>Duplicate Detection</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✓ FIRST</td></tr>
+                    <tr><td>Mileage Tracking</td><td class="check">✓</td><td class="cross">❌</td><td class="check">✓</td><td class="check">✓</td></tr>
+                    <tr><td>Tax Estimates</td><td>⚠️ Add-on</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✓</td></tr>
+                    <tr><td>Offline-First</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✓</td></tr>
+                    <tr><td>Complexity</td><td>Very High</td><td>Medium</td><td>Low</td><td><strong>Very Low</strong></td></tr>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <span class="badge badge-gold">Simple Process</span>
+                <h2>The Sacred Ritual</h2>
+                <p>Four steps to financial enlightenment</p>
+            </div>
+            <div class="steps">
+                <div class="step"><div class="step-num">1</div><h3>Download</h3><p>Install Booksmaster on Windows. No arcane configuration needed.</p></div>
+                <div class="step"><div class="step-num">2</div><h3>Scan</h3><p>Import receipt images or use your camera. Batch process entire stacks at once.</p></div>
+                <div class="step"><div class="step-num">3</div><h3>Review</h3><p>AI presents findings. Approve, adjust, or override. Your judgment is supreme.</p></div>
+                <div class="step"><div class="step-num">4</div><h3>Export</h3><p>Generate tax-ready reports. Face the IRS with confidence and documentation.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" class="dark-bg">
+        <div class="container">
+            <div class="section-header">
+                <span class="badge">Transparent Pricing</span>
+                <h2>Choose Your Quest</h2>
+                <p>Simple, affordable pricing for contractors who value their time</p>
+            </div>
+            <div class="pricing-grid">
+                <div class="price-card featured">
+                    <div class="price-badge">⭐ Best Value</div>
+                    <h3>Founding Member</h3>
+                    <div class="price">$70<span> lifetime</span></div>
+                    <p style="color:var(--gold);font-size:0.9rem;margin-bottom:1rem">First 500 users only</p>
+                    <ul class="price-features">
+                        <li>Windows offline app</li>
+                        <li>Unlimited receipt processing</li>
+                        <li>All AI features</li>
+                        <li>Bring your own Google AI key</li>
+                        <li>Lifetime updates</li>
+                        <li>One-time payment</li>
+                    </ul>
+                    <a href="BooksmasterSetup.exe" class="btn btn-primary" download>Claim Spot</a>
+                </div>
+                <div class="price-card">
+                    <h3>Online Edition</h3>
+                    <div class="price">$70<span>/year</span></div>
+                    <p style="color:var(--silver);font-size:0.9rem;margin-bottom:1rem">Coming Q2 2026</p>
+                    <ul class="price-features">
+                        <li>Cloud sync across devices</li>
+                        <li>Mobile apps (iOS/Android)</li>
+                        <li>Hosted AI (no key needed)</li>
+                        <li>All desktop features</li>
+                        <li>Automatic updates</li>
+                        <li>Priority support</li>
+                    </ul>
+                    <a href="support.html" class="btn btn-secondary">Join Waitlist</a>
+                </div>
+                <div class="price-card">
+                    <h3>Standard Offline</h3>
+                    <div class="price">$200<span> lifetime</span></div>
+                    <p style="color:var(--silver);font-size:0.9rem;margin-bottom:1rem">After founding 500</p>
+                    <ul class="price-features">
+                        <li>Windows offline app</li>
+                        <li>All features included</li>
+                        <li>Bring your own Google AI key</li>
+                        <li>Lifetime updates</li>
+                        <li>One-time payment</li>
+                        <li>No subscription ever</li>
+                    </ul>
+                    <a href="BooksmasterSetup.exe" class="btn btn-secondary" download>Download Now</a>
+                </div>
+            </div>
+            <div style="text-align:center;margin-top:3rem;padding:2rem;background:rgba(212,175,55,0.1);border-radius:20px;max-width:800px;margin-left:auto;margin-right:auto">
+                <h3 style="color:var(--gold);margin-bottom:1rem">💰 The Math: Why $70 is a Steal</h3>
+                <p style="color:var(--silver)">Manual receipt entry: 10 min/receipt → 30 sec with AI = <strong>30 hours saved/year</strong><br>
+                At $50/hr contractor rate = <strong>$1,500+ value</strong><br>
+                Plus: Lower tax prep fees ($300+), avoid software costs ($285+)<br>
+                <strong style="color:var(--green)">Total value: $2,000-5,000/year. You pay: $70.</strong></p>
+            </div>
+        </div>
+    </section>
+
+    <section id="faq" class="alt-bg">
+        <div class="container">
+            <div class="section-header">
+                <span class="badge">Questions Answered</span>
+                <h2>Frequently Asked Questions</h2>
+            </div>
+            <div class="faq-grid">
+                <div class="faq-item"><h3>🔒 Is my data safe?</h3><p>Absolutely. Booksmaster is local-first—your data stays on your computer. No cloud storage, no data sharing. Your financial information never leaves your fortress.</p></div>
+                <div class="faq-item"><h3>🌐 Do I need internet?</h3><p>Only for AI features (receipt scanning). Once scanned, everything works offline. You can use Tesseract OCR fallback without internet.</p></div>
+                <div class="faq-item"><h3>📱 Is there a mobile app?</h3><p>Coming Q2 2026! Currently Windows desktop only. macOS and Linux also planned. Sign up to be notified.</p></div>
+                <div class="faq-item"><h3>🎮 What's this gamification thing?</h3><p>Earn XP for every action—scanning receipts, correcting categories, reviewing quarterly taxes. Level up from Apprentice to Master Contractor and unlock features as you progress.</p></div>
+                <div class="faq-item"><h3>🔄 Can I import from QuickBooks?</h3><p>We export TO QuickBooks format (IIF), making migration easy. Import from QB coming in future updates.</p></div>
+                <div class="faq-item"><h3>📊 What reports can I export?</h3><p>Schedule C CSV, QuickBooks IIF, Excel with formatting, PDF receipt archives. Everything you need for tax season.</p></div>
+                <div class="faq-item"><h3>💼 Free access for tax preparers?</h3><p>Yes! Licensed tax preparers, CPAs, and enrolled agents can request complimentary access to evaluate Booksmaster for their contractor clients. <a href="support.html#tax-preparers" style="color:var(--gold);text-decoration:underline">Contact us with your credentials</a>.</p></div>
+                <div class="faq-item"><h3>🤖 How accurate is the AI?</h3><p>Gemini Vision API achieves 90%+ accuracy on receipt parsing. The self-learning system improves with every correction you make, becoming personalized to your business.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="download">
+        <div class="container">
+            <div class="section-header">
+                <h2>Begin Your Quest</h2>
+                <p>Download Booksmaster and master your financial realm</p>
+            </div>
+            <div class="download-box">
+                <span class="version">📌 Version 1.0.0</span>
+                <h3>Windows Desktop Application</h3>
+                <p style="color:var(--silver);margin-bottom:2rem">Complete suite: AI receipt scanning, gamification, self-learning categorization, tax reports, and more.</p>
+                <a href="BooksmasterSetup.exe" class="btn btn-primary btn-large" download>⚔️ Download for Windows (93 MB)</a>
+                <div class="sys-req">
+                    <span>Windows 10+ (64-bit)</span>
+                    <span>4GB RAM minimum</span>
+                    <span>500MB disk space</span>
+                    <span>Internet for AI features</span>
+                    <span>Google AI key required</span>
+                    <span>No subscription needed</span>
+                </div>
+                <p style="color:var(--silver);margin-top:2rem;font-size:0.9rem">macOS and Linux coming 2026. <a href="support.html" style="color:var(--gold)">Join mailing list</a> to be notified.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <h3>📖 Booksmaster</h3>
+        <p>&copy; 2026 Booksmaster. All rights reserved.</p>
+        <p style="font-style:italic;color:var(--gold);margin-top:1rem">"Master your books, master your realm."</p>
+        <div class="footer-links">
+            <a href="privacy.html">Privacy Policy</a>
+            <a href="terms.html">Terms of Service</a>
+            <a href="support.html">Support</a>
+        </div>
+    </footer>
 </body>
 </html>

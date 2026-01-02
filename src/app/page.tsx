@@ -11,9 +11,20 @@ import {
   Users,
   Receipt,
   FileText,
-  Download
+  Camera,
+  Shield,
+  BarChart3,
+  Sparkles,
+  ChevronRight
 } from 'lucide-react'
 import type { ExpenseCategory } from '@/types'
+import { IncomeVerificationSummary } from '@/components/dashboard/IncomeVerificationSummary'
+import { AIConfidenceScore } from '@/components/dashboard/AIConfidenceScore'
+import { AIAccuracyCard } from '@/components/dashboard/AIAccuracyCard'
+import { TaxDeadlineReminder } from '@/components/dashboard/TaxDeadlineReminder'
+import { LevelProgressCard } from '@/components/dashboard/LevelProgressCard'
+import { AchievementsDisplay } from '@/components/dashboard/AchievementsDisplay'
+import { FirstVisitIntro, useFirstVisit } from '@/components/gamification/FirstVisitIntro'
 
 const categoryLabels: Record<ExpenseCategory, string> = {
   materials: 'Materials',
@@ -32,37 +43,70 @@ const categoryLabels: Record<ExpenseCategory, string> = {
 }
 
 export default function Dashboard() {
-  const { transactions, custodyExpenses, invoices, receipts } = useStore()
+  const { transactions, invoices, receipts, userProgress, manualLevelUp } = useStore()
+  const { showIntro, closeIntro } = useFirstVisit('dashboard')
 
   // Calculate business stats
   const totalIncome = transactions
-    .filter((t) => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0)
+    .filter((t: any) => t.type === 'income' && !t.isDuplicateOfLinked)
+    .reduce((sum: number, t: any) => sum + t.amount, 0)
 
   const totalExpenses = transactions
-    .filter((t) => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0)
+    .filter((t: any) => t.type === 'expense')
+    .reduce((sum: number, t: any) => sum + t.amount, 0)
 
   const netProfit = totalIncome - totalExpenses
 
-  // Calculate custody balance (positive = other parent owes Thomas)
-  const custodyBalance = custodyExpenses.reduce((balance, expense) => {
-    if (expense.paidBy === 'thomas') {
-      return balance + expense.otherParentOwes
-    } else {
-      return balance - expense.thomasOwes
-    }
-  }, 0)
+  // Enhanced metrics calculations
+  const linkedReceipts = receipts.filter((r: any) => r.linkedTransactionId).length
+  const receiptLinkageRate = receipts.length > 0 ? (linkedReceipts / receipts.length) * 100 : 0
+  
+  // Get current month's receipt count
+  const now = new Date()
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const receiptsThisMonth = receipts.filter((r: any) => {
+    const receiptDate = new Date(r.ocrDate || r.createdAt)
+    return receiptDate >= currentMonthStart
+  }).length
+
+  // Income verification quality
+  const incomeTransactions = transactions.filter((t: any) => t.type === 'income' && !t.isDuplicateOfLinked)
+  const strongVerified = incomeTransactions.filter((t: any) => t.verificationLevel === 'strong').length
+  const bankVerified = incomeTransactions.filter((t: any) => t.verificationLevel === 'bank').length
+  const selfReported = incomeTransactions.filter((t: any) => t.verificationLevel === 'self' || !t.verificationLevel).length
+  const verificationScore = incomeTransactions.length > 0 
+    ? Math.round(((strongVerified * 100 + bankVerified * 70 + selfReported * 30) / incomeTransactions.length))
+    : 0
+
+  // Average transaction amount
+  const avgTransaction = transactions.length > 0 
+    ? transactions.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0) / transactions.length
+    : 0
+
+  // Largest expense
+  const expenses = transactions.filter((t: any) => t.type === 'expense')
+  const largestExpense = expenses.length > 0 
+    ? Math.max(...expenses.map((t: any) => t.amount))
+    : 0
+
+  // CUSTODY BALANCE COMMENTED OUT - Too niche for general market
+  // const custodyBalance = custodyExpenses.reduce((balance: number, expense: any) => {
+  //   if (expense.paidBy === 'thomas') {
+  //     return balance + expense.otherParentOwes
+  //   } else {
+  //     return balance - expense.thomasOwes
+  //   }
+  // }, 0)
 
   // Pending invoices
   const pendingInvoices = invoices.filter(
-    (i) => i.status === 'sent' || i.status === 'overdue'
+    (i: any) => i.status === 'sent' || i.status === 'overdue'
   ).length
 
   // Expenses by category
   const expensesByCategory = transactions
-    .filter((t) => t.type === 'expense')
-    .reduce((acc, t) => {
+    .filter((t: any) => t.type === 'expense')
+    .reduce((acc: any, t: any) => {
       const cat = t.category as ExpenseCategory
       acc[cat] = (acc[cat] || 0) + t.amount
       return acc
@@ -90,33 +134,52 @@ export default function Dashboard() {
       color: netProfit >= 0 ? 'text-green-600' : 'text-red-600',
       bgColor: netProfit >= 0 ? 'bg-green-100' : 'bg-red-100',
     },
-    {
-      title: 'Custody Balance',
-      value: formatCurrency(Math.abs(custodyBalance)),
-      subtitle: custodyBalance >= 0 ? 'Owed to Thomas' : 'Thomas owes',
-      icon: Users,
-      color: custodyBalance >= 0 ? 'text-blue-600' : 'text-orange-600',
-      bgColor: custodyBalance >= 0 ? 'bg-blue-100' : 'bg-orange-100',
-    },
+    // CUSTODY STAT COMMENTED OUT
+    // {
+    //   title: 'Custody Balance',
+    //   value: formatCurrency(Math.abs(custodyBalance)),
+    //   subtitle: custodyBalance >= 0 ? 'Owed to Thomas' : 'Thomas owes',
+    //   icon: Users,
+    //   color: custodyBalance >= 0 ? 'text-blue-600' : 'text-orange-500',
+    //   bgColor: custodyBalance >= 0 ? 'bg-blue-100' : 'bg-orange-100',
+    // },
   ]
 
   return (
     <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back, Thomas</p>
-        </div>
-        <a href="/ThomasBooksSetup.exe" download>
-          <Button variant="outline" className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            Download Desktop App
-          </Button>
-        </a>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-600 mt-1">Your business at a glance</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Your Progress - Level 2 Unlock Card */}
+      {userProgress.currentLevel === 1 && (
+        <Card className="mb-8 border-2 border-purple-300 dark:border-purple-700 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-4 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 text-white">
+                  <Sparkles className="h-8 w-8" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Ready to Start?</h3>
+                  <p className="text-gray-600 dark:text-gray-400">Click here to unlock Receipt Scanning and begin your bookkeeping journey!</p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => manualLevelUp(2)}
+                className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-6 py-3"
+              >
+                <span className="mr-2">Start Scanning</span>
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Primary Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {stats.map((stat) => (
           <Card key={stat.title}>
             <CardContent className="pt-6">
@@ -124,9 +187,6 @@ export default function Dashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">{stat.title}</p>
                   <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-                  {stat.subtitle && (
-                    <p className="text-xs text-gray-500 mt-1">{stat.subtitle}</p>
-                  )}
                 </div>
                 <div className={`p-3 rounded-full ${stat.bgColor}`}>
                   <stat.icon className={`h-6 w-6 ${stat.color}`} />
@@ -137,8 +197,92 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Enhanced Activity Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Receipts This Month</p>
+                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{receiptsThisMonth}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{receipts.length} total</p>
+              </div>
+              <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                <Camera className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Receipt Linkage</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{receiptLinkageRate.toFixed(0)}%</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{linkedReceipts} of {receipts.length} linked</p>
+              </div>
+              <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                <Receipt className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Income Verification</p>
+                <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{verificationScore}%</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {strongVerified} strong, {bankVerified} bank
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-indigo-100 dark:bg-indigo-900/30">
+                <Shield className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Transaction</p>
+                <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">{formatCurrency(avgTransaction)}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Largest: {formatCurrency(largestExpense)}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-cyan-100 dark:bg-cyan-900/30">
+                <BarChart3 className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Income Verification, AI Confidence & AI Learning Progress */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <IncomeVerificationSummary />
+        <AIConfidenceScore />
+        <AIAccuracyCard />
+      </div>
+
+      {/* Level Progress */}
+      <div className="mb-8">
+        <LevelProgressCard />
+      </div>
+
+      {/* Tax Deadline Reminder */}
+      <div className="col-span-full lg:col-span-1 mb-8">
+        <TaxDeadlineReminder />
+      </div>
+
       {/* Secondary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -164,7 +308,7 @@ export default function Dashboard() {
                 <p className="text-2xl font-bold text-amber-600">{receipts.length}</p>
                 {receipts.length > 0 && (
                   <p className="text-xs text-gray-500">
-                    {formatCurrency(receipts.reduce((sum, r) => sum + (r.ocrAmount || 0), 0))} total
+                    {formatCurrency(receipts.reduce((sum: number, r: any) => sum + (r.ocrAmount || 0), 0))} total
                   </p>
                 )}
               </div>
@@ -236,7 +380,7 @@ export default function Dashboard() {
               </p>
             ) : (
               <div className="space-y-3">
-                {receipts.slice(0, 5).map((receipt) => (
+                {receipts.slice(0, 5).map((receipt: any) => (
                   <div key={receipt.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
                     {receipt.imageData ? (
                       <img 
@@ -263,6 +407,14 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Achievements Section */}
+      <div className="mt-8">
+        <AchievementsDisplay />
+      </div>
+      
+      {/* First visit intro modal */}
+      <FirstVisitIntro tabId="dashboard" isVisible={showIntro} onClose={closeIntro} />
     </div>
   )
 }

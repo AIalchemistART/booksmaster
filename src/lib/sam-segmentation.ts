@@ -6,6 +6,9 @@ let transformersModule: any = null
 const getTransformers = async () => {
   if (!transformersModule) {
     transformersModule = await import('@xenova/transformers')
+    // Configure to use HuggingFace CDN instead of local files
+    transformersModule.env.allowLocalModels = false
+    transformersModule.env.useBrowserCache = true
   }
   return transformersModule
 }

@@ -2,7 +2,7 @@
  * Unified file system adapter that works in both web and Electron environments
  */
 
-import type { Receipt, Invoice, Transaction, CustodyExpense } from '@/types'
+import type { Receipt, Invoice, Transaction, CustodyExpense, CategorizationCorrection, CardPaymentTypeMapping } from '@/types'
 
 // Import both implementations
 import * as webFS from './file-system-storage'
@@ -124,6 +124,64 @@ export async function createFullBackup(allData?: any): Promise<boolean> {
 }
 
 /**
+ * Save categorization corrections to file system
+ */
+export async function saveCorrectionsToFileSystem(corrections: CategorizationCorrection[]): Promise<boolean> {
+  if (isElectron()) {
+    await electronFS.saveCorrectionsToFileSystem(corrections)
+    return true
+  } else {
+    return webFS.saveCorrectionsToFileSystem(corrections)
+  }
+}
+
+/**
+ * Load categorization corrections from file system
+ */
+export async function loadCorrectionsFromFileSystem(): Promise<CategorizationCorrection[]> {
+  if (isElectron()) {
+    return electronFS.loadCorrectionsFromFileSystem()
+  } else {
+    return webFS.loadCorrectionsFromFileSystem()
+  }
+}
+
+/**
+ * Save card payment type mappings to file system
+ */
+export async function saveCardPaymentMappingsToFileSystem(mappings: CardPaymentTypeMapping[]): Promise<boolean> {
+  if (isElectron()) {
+    await electronFS.saveCardPaymentMappingsToFileSystem(mappings)
+    return true
+  } else {
+    return webFS.saveCardPaymentMappingsToFileSystem(mappings)
+  }
+}
+
+/**
+ * Load card payment type mappings from file system
+ */
+export async function loadCardPaymentMappingsFromFileSystem(): Promise<CardPaymentTypeMapping[]> {
+  if (isElectron()) {
+    return electronFS.loadCardPaymentMappingsFromFileSystem()
+  } else {
+    return webFS.loadCardPaymentMappingsFromFileSystem()
+  }
+}
+
+/**
+ * Delete all data files from file system
+ */
+export async function deleteAllFiles(): Promise<boolean> {
+  if (isElectron()) {
+    await electronFS.deleteAllFiles()
+    return true
+  } else {
+    return webFS.deleteAllFiles()
+  }
+}
+
+/**
  * Check if File System Access API is supported (web only)
  */
 export function isFileSystemAccessSupported(): boolean {
@@ -132,4 +190,16 @@ export function isFileSystemAccessSupported(): boolean {
   } else {
     return webFS.isFileSystemAccessSupported()
   }
+}
+
+/**
+ * Clear all app data (Electron only - clears localStorage via session)
+ */
+export async function clearAllAppData(): Promise<boolean> {
+  if (isElectron()) {
+    await electronFS.clearAllAppData()
+    return true
+  }
+  // Web version doesn't need this - localStorage.removeItem works directly
+  return false
 }

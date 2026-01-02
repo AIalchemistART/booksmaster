@@ -7,132 +7,106 @@ import { Input } from '@/components/ui/Input'
 import { useStore } from '@/store'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { FileText, Download, Calendar, Receipt } from 'lucide-react'
-import type { CustodyExpenseType } from '@/types'
-import { generateTaxReceiptExcel, generateCustodyReportExcel } from '@/lib/excel-report-generator'
+import type { Transaction, Receipt as ReceiptType } from '@/types'
+// CUSTODY FEATURES COMMENTED OUT - Too niche for general market offering
+// import type { CustodyExpenseType } from '@/types'
+import { generateTaxReceiptExcel } from '@/lib/excel-report-generator'
+import { FirstVisitIntro, useFirstVisit } from '@/components/gamification/FirstVisitIntro'
 
-const expenseTypeLabels: Record<CustodyExpenseType, string> = {
-  child_support: 'Child Support',
-  medical: 'Medical',
-  education: 'Education',
-  childcare: 'Childcare',
-  activities: 'Activities',
-  clothing: 'Clothing',
-  food: 'Food',
-  other: 'Other',
-}
+// const expenseTypeLabels: Record<CustodyExpenseType, string> = {
+//   child_support: 'Child Support',
+//   medical: 'Medical',
+//   education: 'Education',
+//   childcare: 'Childcare',
+//   activities: 'Activities',
+//   clothing: 'Clothing',
+//   food: 'Food',
+//   other: 'Other',
+// }
 
 export default function ReportsPage() {
-  const { custodyExpenses, transactions, receipts } = useStore()
-  const [startDate, setStartDate] = useState(() => {
-    const d = new Date()
-    d.setMonth(0) // January (0-indexed)
-    d.setDate(1)  // 1st day of the month
-    return d.toISOString().split('T')[0]
-  })
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0])
+  const { transactions, receipts } = useStore() // custodyExpenses removed
+  const { showIntro, closeIntro } = useFirstVisit('reports')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [includeLineItems, setIncludeLineItems] = useState(false)
 
-  // Filter custody expenses by date range
-  const filteredCustodyExpenses = custodyExpenses.filter((e) => {
-    const date = new Date(e.date)
-    return date >= new Date(startDate) && date <= new Date(endDate)
-  })
+  // CUSTODY FILTERING COMMENTED OUT
+  // const filteredCustodyExpenses = custodyExpenses.filter((e) => {
+  //   if (!startDate && !endDate) return true // Show all if no dates set
+  //   const date = new Date(e.date)
+  //   if (startDate && !endDate) return date >= new Date(startDate)
+  //   if (!startDate && endDate) return date <= new Date(endDate)
+  //   return date >= new Date(startDate) && date <= new Date(endDate)
+  // })
 
-  // Filter business transactions by date range
-  const filteredTransactions = transactions.filter((t) => {
+  // Filter business transactions by date range (only if dates are set)
+  const filteredTransactions = transactions.filter((t: Transaction) => {
+    if (!startDate && !endDate) return true // Show all if no dates set
     const date = new Date(t.date)
+    if (startDate && !endDate) return date >= new Date(startDate)
+    if (!startDate && endDate) return date <= new Date(endDate)
     return date >= new Date(startDate) && date <= new Date(endDate)
   })
 
-  // Filter receipts by date range (use ocrDate if available, otherwise createdAt)
-  // Include all receipts even if date parsing fails
-  const filteredReceipts = receipts.filter((r) => {
+  // Filter receipts by date range (only if dates are set)
+  const filteredReceipts = receipts.filter((r: ReceiptType) => {
+    if (!startDate && !endDate) return true // Show all if no dates set
+    
     const dateStr = r.ocrDate || r.createdAt
-    if (!dateStr) return true // Include receipts without dates (likely failed OCR)
+    if (!dateStr) return true // Include receipts without dates
     
     try {
       const date = new Date(dateStr)
-      // Check if date is valid
       if (isNaN(date.getTime())) return true // Include invalid dates
+      
+      if (startDate && !endDate) return date >= new Date(startDate)
+      if (!startDate && endDate) return date <= new Date(endDate)
       return date >= new Date(startDate) && date <= new Date(endDate)
     } catch {
       return true // Include receipts with unparseable dates
     }
   })
 
-  // Calculate custody totals
-  const custodyTotals = {
-    totalThomasOwes: filteredCustodyExpenses.reduce((sum, e) => sum + e.thomasOwes, 0),
-    totalOtherParentOwes: filteredCustodyExpenses.reduce((sum, e) => sum + e.otherParentOwes, 0),
-    totalAmount: filteredCustodyExpenses.reduce((sum, e) => sum + e.amount, 0),
-    byType: filteredCustodyExpenses.reduce((acc, e) => {
-      acc[e.expenseType] = (acc[e.expenseType] || 0) + e.amount
-      return acc
-    }, {} as Record<CustodyExpenseType, number>),
-  }
+  // CUSTODY TOTALS COMMENTED OUT
+  // const custodyTotals = {
+  //   totalThomasOwes: filteredCustodyExpenses.reduce((sum, e) => sum + e.thomasOwes, 0),
+  //   totalOtherParentOwes: filteredCustodyExpenses.reduce((sum, e) => sum + e.otherParentOwes, 0),
+  //   totalAmount: filteredCustodyExpenses.reduce((sum, e) => sum + e.amount, 0),
+  //   byType: filteredCustodyExpenses.reduce((acc, e) => {
+  //     acc[e.expenseType] = (acc[e.expenseType] || 0) + e.amount
+  //     return acc
+  //   }, {} as Record<CustodyExpenseType, number>),
+  // }
 
   // Calculate business totals
   const businessTotals = {
-    totalIncome: filteredTransactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
-    totalExpenses: filteredTransactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0),
+    totalIncome: filteredTransactions.filter((t: Transaction) => t.type === 'income' && !t.isDuplicateOfLinked).reduce((sum: number, t: Transaction) => sum + t.amount, 0),
+    totalExpenses: filteredTransactions.filter((t: Transaction) => t.type === 'expense').reduce((sum: number, t: Transaction) => sum + t.amount, 0),
   }
 
   // Calculate receipt totals
   const receiptTotals = {
     count: filteredReceipts.length,
-    totalAmount: filteredReceipts.reduce((sum, r) => sum + (r.ocrAmount || 0), 0),
-    totalTax: filteredReceipts.reduce((sum, r) => sum + (r.ocrTax || 0), 0),
-    linkedCount: filteredReceipts.filter(r => r.linkedTransactionId).length,
-    byVendor: filteredReceipts.reduce((acc, r) => {
+    totalAmount: filteredReceipts.reduce((sum: number, r: ReceiptType) => sum + (r.ocrAmount || 0), 0),
+    totalTax: filteredReceipts.reduce((sum: number, r: ReceiptType) => sum + (r.ocrTax || 0), 0),
+    linkedCount: filteredReceipts.filter((r: ReceiptType) => r.linkedTransactionId).length,
+    byVendor: filteredReceipts.reduce((acc: Record<string, number>, r: ReceiptType) => {
       const vendor = r.ocrVendor || 'Unknown'
       acc[vendor] = (acc[vendor] || 0) + (r.ocrAmount || 0)
       return acc
     }, {} as Record<string, number>),
   }
 
-  const generateCustodyReport = () => {
-    let report = `CUSTODY EXPENSE REPORT\n`
-    report += `Period: ${formatDate(startDate)} - ${formatDate(endDate)}\n`
-    report += `Generated: ${formatDate(new Date())}\n`
-    report += `${'='.repeat(60)}\n\n`
-
-    report += `SUMMARY\n`
-    report += `${'-'.repeat(40)}\n`
-    report += `Total Expenses: ${formatCurrency(custodyTotals.totalAmount)}\n`
-    report += `Thomas Owes: ${formatCurrency(custodyTotals.totalThomasOwes)}\n`
-    report += `Other Parent Owes: ${formatCurrency(custodyTotals.totalOtherParentOwes)}\n`
-    report += `Net Balance: ${formatCurrency(custodyTotals.totalOtherParentOwes - custodyTotals.totalThomasOwes)}\n`
-    report += `(Positive = Owed to Thomas)\n\n`
-
-    report += `EXPENSES BY CATEGORY\n`
-    report += `${'-'.repeat(40)}\n`
-    Object.entries(custodyTotals.byType).forEach(([type, amount]) => {
-      report += `${expenseTypeLabels[type as CustodyExpenseType]}: ${formatCurrency(amount)}\n`
-    })
-    report += `\n`
-
-    report += `DETAILED TRANSACTIONS\n`
-    report += `${'-'.repeat(40)}\n`
-    filteredCustodyExpenses
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .forEach((e) => {
-        report += `${formatDate(e.date)} | ${e.description}\n`
-        report += `  Type: ${expenseTypeLabels[e.expenseType]}\n`
-        report += `  Amount: ${formatCurrency(e.amount)} | Paid by: ${e.paidBy === 'thomas' ? 'Thomas' : 'Other Parent'}\n`
-        report += `  Split: ${e.splitPercentage}% Thomas\n`
-        if (e.paidBy === 'thomas') {
-          report += `  Other Parent Owes: ${formatCurrency(e.otherParentOwes)}\n`
-        } else {
-          report += `  Thomas Owes: ${formatCurrency(e.thomasOwes)}\n`
-        }
-        if (e.notes) {
-          report += `  Notes: ${e.notes}\n`
-        }
-        report += `\n`
-      })
-
-    return report
-  }
+  // CUSTODY REPORT GENERATION COMMENTED OUT
+  // const generateCustodyReport = () => {
+  //   let report = `CUSTODY EXPENSE REPORT\n`
+  //   report += `Period: ${formatDate(startDate)} - ${formatDate(endDate)}\n`
+  //   report += `Generated: ${formatDate(new Date())}\n`
+  //   report += `${'='.repeat(60)}\n\n`
+  //   ... (full function commented out for brevity)
+  //   return report
+  // }
 
   const generateTaxReceiptReport = () => {
     let report = `TAX RECEIPT REPORT\n`
@@ -144,20 +118,20 @@ export default function ReportsPage() {
     report += `${'-'.repeat(50)}\n`
     report += `Total Receipts: ${filteredReceipts.length}\n`
     report += `Total Amount: ${formatCurrency(receiptTotals.totalAmount)}\n`
-    const totalSubtotal = filteredReceipts.reduce((sum, r) => sum + (r.ocrSubtotal || 0), 0)
+    const totalSubtotal = filteredReceipts.reduce((sum: number, r: ReceiptType) => sum + (r.ocrSubtotal || 0), 0)
     report += `Total Subtotal: ${formatCurrency(totalSubtotal)}\n`
     report += `Total Tax: ${formatCurrency(receiptTotals.totalTax)}\n\n`
 
     report += `DETAILED RECEIPTS\n`
     report += `${'-'.repeat(50)}\n`
     
-    const sortedReceipts = filteredReceipts.sort((a, b) => {
+    const sortedReceipts = [...filteredReceipts].sort((a: ReceiptType, b: ReceiptType) => {
       const dateA = new Date(a.ocrDate || a.createdAt)
       const dateB = new Date(b.ocrDate || b.createdAt)
       return dateA.getTime() - dateB.getTime()
     })
 
-    sortedReceipts.forEach((r, index) => {
+    sortedReceipts.forEach((r: ReceiptType, index: number) => {
       report += `${index + 1}. ${formatDate(r.ocrDate || r.createdAt)} | ${r.ocrVendor || 'Unknown Vendor'}\n`
       report += `   Amount: ${formatCurrency(r.ocrAmount || 0)}`
       if (r.ocrSubtotal) report += ` (Subtotal: ${formatCurrency(r.ocrSubtotal)})`
@@ -181,32 +155,21 @@ export default function ReportsPage() {
     return report
   }
 
-  const downloadCustodyReport = () => {
-    const report = generateCustodyReport()
-    const blob = new Blob([report], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `custody-report-${startDate}-to-${endDate}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
+  // CUSTODY DOWNLOAD FUNCTIONS COMMENTED OUT
+  // const downloadCustodyReport = () => { ... }
+  // const downloadCustodyReportDocxFile = () => { ... }
 
   const downloadTaxReceiptReport = () => {
     generateTaxReceiptExcel(filteredReceipts, startDate, endDate, includeLineItems)
   }
 
-  const downloadCustodyReportDocxFile = () => {
-    generateCustodyReportExcel(filteredCustodyExpenses, startDate, endDate, custodyTotals)
-  }
-
   return (
     <div className="p-8">
+      <FirstVisitIntro tabId="reports" isVisible={showIntro} onClose={closeIntro} />
+      
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
-        <p className="text-gray-600 mt-1">Generate expense reports for court or personal records</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Reports</h1>
+        <p className="text-gray-600 dark:text-gray-300 mt-1">Generate business expense and tax reports</p>
       </div>
 
       {/* Date Range Selector */}
@@ -232,10 +195,12 @@ export default function ReportsPage() {
               onChange={(e) => setEndDate(e.target.value)}
             />
             <div className="flex gap-2">
+              {/* CUSTODY BUTTON COMMENTED OUT
               <Button onClick={downloadCustodyReportDocxFile} variant="outline">
                 <Download className="h-4 w-4 mr-2" />
                 Custody Report (.xlsx)
               </Button>
+              */}
               <Button onClick={downloadTaxReceiptReport}>
                 <Download className="h-4 w-4 mr-2" />
                 Tax Receipt Report (.xlsx)
@@ -243,12 +208,12 @@ export default function ReportsPage() {
             </div>
           </div>
           <div className="mt-4">
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <input
                 type="checkbox"
                 checked={includeLineItems}
                 onChange={(e) => setIncludeLineItems(e.target.checked)}
-                className="rounded border-gray-300"
+                className="rounded border-gray-300 dark:border-gray-600"
               />
               <span>Include itemized line items in tax report</span>
             </label>
@@ -256,7 +221,7 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
-      {/* Custody Summary */}
+      {/* CUSTODY SUMMARY CARD COMMENTED OUT - Too niche for general market
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -265,58 +230,10 @@ export default function ReportsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600">Total Expenses</p>
-              <p className="text-2xl font-bold">{formatCurrency(custodyTotals.totalAmount)}</p>
-            </div>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-gray-600">Thomas Owes</p>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(custodyTotals.totalThomasOwes)}</p>
-            </div>
-            <div className="p-4 bg-purple-50 rounded-lg">
-              <p className="text-sm text-gray-600">Other Parent Owes</p>
-              <p className="text-2xl font-bold text-purple-600">{formatCurrency(custodyTotals.totalOtherParentOwes)}</p>
-            </div>
-            <div className={`p-4 rounded-lg ${custodyTotals.totalOtherParentOwes - custodyTotals.totalThomasOwes >= 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
-              <p className="text-sm text-gray-600">Net Balance</p>
-              <p className={`text-2xl font-bold ${custodyTotals.totalOtherParentOwes - custodyTotals.totalThomasOwes >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
-                {formatCurrency(Math.abs(custodyTotals.totalOtherParentOwes - custodyTotals.totalThomasOwes))}
-              </p>
-              <p className="text-xs text-gray-500">
-                {custodyTotals.totalOtherParentOwes - custodyTotals.totalThomasOwes >= 0 ? 'Owed to Thomas' : 'Thomas owes'}
-              </p>
-            </div>
-          </div>
-
-          <h4 className="font-medium mb-3">Expenses by Category</h4>
-          {Object.keys(custodyTotals.byType).length === 0 ? (
-            <p className="text-gray-500">No expenses in this period.</p>
-          ) : (
-            <div className="space-y-2">
-              {(Object.entries(custodyTotals.byType) as [CustodyExpenseType, number][])
-                .sort((a, b) => b[1] - a[1])
-                .map(([type, amount]) => {
-                  const percentage = custodyTotals.totalAmount > 0 ? (amount / custodyTotals.totalAmount) * 100 : 0
-                  return (
-                    <div key={type}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>{expenseTypeLabels[type]}</span>
-                        <span className="text-gray-600">{formatCurrency(amount)}</span>
-                      </div>
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-blue-600 rounded-full"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          )}
+          ... (full card commented out for brevity)
         </CardContent>
       </Card>
+      */}
 
       {/* Business Summary */}
       <Card className="mb-8">
@@ -325,17 +242,17 @@ export default function ReportsPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-4 bg-green-50 rounded-lg">
-              <p className="text-sm text-gray-600">Total Income</p>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(businessTotals.totalIncome)}</p>
+            <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Income</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(businessTotals.totalIncome)}</p>
             </div>
-            <div className="p-4 bg-red-50 rounded-lg">
-              <p className="text-sm text-gray-600">Total Expenses</p>
-              <p className="text-2xl font-bold text-red-600">{formatCurrency(businessTotals.totalExpenses)}</p>
+            <div className="p-4 bg-red-50 dark:bg-red-950/30 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Expenses</p>
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400">{formatCurrency(businessTotals.totalExpenses)}</p>
             </div>
-            <div className={`p-4 rounded-lg ${businessTotals.totalIncome - businessTotals.totalExpenses >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-              <p className="text-sm text-gray-600">Net Profit</p>
-              <p className={`text-2xl font-bold ${businessTotals.totalIncome - businessTotals.totalExpenses >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`p-4 rounded-lg ${businessTotals.totalIncome - businessTotals.totalExpenses >= 0 ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Net Profit</p>
+              <p className={`text-2xl font-bold ${businessTotals.totalIncome - businessTotals.totalExpenses >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 {formatCurrency(businessTotals.totalIncome - businessTotals.totalExpenses)}
               </p>
             </div>
@@ -353,30 +270,30 @@ export default function ReportsPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <div className="p-4 bg-amber-50 rounded-lg">
-              <p className="text-sm text-gray-600">Receipts Scanned</p>
-              <p className="text-2xl font-bold text-amber-600">{receiptTotals.count}</p>
+            <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Receipts Scanned</p>
+              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{receiptTotals.count}</p>
             </div>
-            <div className="p-4 bg-green-50 rounded-lg">
-              <p className="text-sm text-gray-600">Total Amount</p>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(receiptTotals.totalAmount)}</p>
+            <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Amount</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(receiptTotals.totalAmount)}</p>
             </div>
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600">Total Tax</p>
-              <p className="text-2xl font-bold">{formatCurrency(receiptTotals.totalTax)}</p>
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Tax</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(receiptTotals.totalTax)}</p>
             </div>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-gray-600">Linked to Transactions</p>
-              <p className="text-2xl font-bold text-blue-600">{receiptTotals.linkedCount} / {receiptTotals.count}</p>
+            <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Linked to Transactions</p>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{receiptTotals.linkedCount} / {receiptTotals.count}</p>
             </div>
           </div>
 
-          <h4 className="font-medium mb-3">Spending by Vendor</h4>
+          <h4 className="font-medium mb-3 text-gray-900 dark:text-gray-100">Spending by Vendor</h4>
           {Object.keys(receiptTotals.byVendor).length === 0 ? (
-            <p className="text-gray-500">No receipts in this period.</p>
+            <p className="text-gray-500 dark:text-gray-400">No receipts in this period.</p>
           ) : (
             <div className="space-y-2">
-              {Object.entries(receiptTotals.byVendor)
+              {(Object.entries(receiptTotals.byVendor) as [string, number][])
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 10)
                 .map(([vendor, amount]) => {
@@ -384,12 +301,12 @@ export default function ReportsPage() {
                   return (
                     <div key={vendor}>
                       <div className="flex justify-between text-sm mb-1">
-                        <span>{vendor}</span>
-                        <span className="text-gray-600">{formatCurrency(amount)}</span>
+                        <span className="text-gray-900 dark:text-gray-100">{vendor}</span>
+                        <span className="text-gray-600 dark:text-gray-400">{formatCurrency(amount)}</span>
                       </div>
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-amber-500 rounded-full"
+                          className="h-full bg-amber-500 dark:bg-amber-600 rounded-full"
                           style={{ width: `${percentage}%` }}
                         />
                       </div>

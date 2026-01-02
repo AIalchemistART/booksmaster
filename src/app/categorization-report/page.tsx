@@ -4,9 +4,11 @@ import { useStore } from '@/store'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Transaction } from '@/types'
 import { useMemo } from 'react'
+import { FirstVisitIntro, useFirstVisit } from '@/components/gamification/FirstVisitIntro'
 
 export default function CategorizationReportPage() {
   const { transactions } = useStore()
+  const { showIntro, closeIntro } = useFirstVisit('categorization-changes')
 
   const manuallyEditedTransactions = useMemo(() => {
     return transactions
@@ -21,7 +23,7 @@ export default function CategorizationReportPage() {
       categoryChanges: 0,
       incomeToExpense: 0,
       expenseToIncome: 0,
-      categoryBreakdown: {} as Record<string, { original: string; corrected: string; count: number }[]>
+      categoryBreakdown: {} as Record<string, { original: string; corrected: string; count: number; notes?: string }[]>
     }
 
     manuallyEditedTransactions.forEach(t => {
@@ -45,7 +47,8 @@ export default function CategorizationReportPage() {
       stats.categoryBreakdown[t.description].push({
         original: `${t.originalType}/${t.originalCategory}`,
         corrected: `${t.type}/${t.category}`,
-        count: 1
+        count: 1,
+        notes: t.notes || undefined
       })
     })
 
@@ -65,9 +68,11 @@ export default function CategorizationReportPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <FirstVisitIntro tabId="categorization-changes" isVisible={showIntro} onClose={closeIntro} />
+      
       <div>
         <h1 className="text-3xl font-bold mb-2">Categorization Changes Report</h1>
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-300">
           Track manual categorization corrections to improve automatic categorization accuracy
         </p>
       </div>
@@ -128,42 +133,83 @@ export default function CategorizationReportPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Date</th>
-                    <th className="text-left p-2">Description</th>
-                    <th className="text-right p-2">Amount</th>
-                    <th className="text-left p-2">Original</th>
-                    <th className="text-left p-2">Corrected To</th>
-                    <th className="text-left p-2">Edited</th>
+                  <tr className="border-b dark:border-gray-700">
+                    <th className="text-left p-2 text-gray-900 dark:text-gray-100">Date</th>
+                    <th className="text-left p-2 text-gray-900 dark:text-gray-100">Description</th>
+                    <th className="text-right p-2 text-gray-900 dark:text-gray-100">Amount</th>
+                    <th className="text-left p-2 text-gray-900 dark:text-gray-100">Original</th>
+                    <th className="text-left p-2 text-gray-900 dark:text-gray-100">Corrected To</th>
+                    <th className="text-left p-2 text-gray-900 dark:text-gray-100">All Changes</th>
+                    <th className="text-left p-2 text-gray-900 dark:text-gray-100">Notes</th>
+                    <th className="text-left p-2 text-gray-900 dark:text-gray-100">Edited</th>
                   </tr>
                 </thead>
                 <tbody>
                   {manuallyEditedTransactions.map(transaction => (
-                    <tr key={transaction.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{new Date(transaction.date).toLocaleDateString()}</td>
-                      <td className="p-2">{transaction.description}</td>
-                      <td className="p-2 text-right font-mono">{formatAmount(transaction.amount)}</td>
+                    <tr key={transaction.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <td className="p-2 text-gray-900 dark:text-gray-100">{new Date(transaction.date).toLocaleDateString()}</td>
+                      <td className="p-2 text-gray-900 dark:text-gray-100">{transaction.description}</td>
+                      <td className="p-2 text-right font-mono text-gray-900 dark:text-gray-100">{formatAmount(transaction.amount)}</td>
                       <td className="p-2">
                         <div className="text-sm">
-                          <div className="font-medium text-gray-500">
+                          <div className="font-medium text-gray-500 dark:text-gray-400">
                             {transaction.originalType === 'income' ? '💰' : '💳'} {transaction.originalType}
                           </div>
-                          <div className="text-xs text-gray-400">
+                          <div className="text-xs text-gray-400 dark:text-gray-500">
                             {formatCategory(transaction.originalCategory || '')}
                           </div>
                         </div>
                       </td>
                       <td className="p-2">
                         <div className="text-sm">
-                          <div className="font-medium text-blue-600">
+                          <div className="font-medium text-blue-600 dark:text-blue-400">
                             {transaction.type === 'income' ? '💰' : '💳'} {transaction.type}
                           </div>
-                          <div className="text-xs text-blue-400">
+                          <div className="text-xs text-blue-400 dark:text-blue-300">
                             {formatCategory(transaction.category)}
                           </div>
                         </div>
                       </td>
-                      <td className="p-2 text-xs text-gray-500">
+                      <td className="p-2 text-xs">
+                        <div className="space-y-1">
+                          {transaction.originalDate && transaction.originalDate !== transaction.date && (
+                            <div className="text-orange-600 dark:text-orange-400">
+                              📅 Date: {new Date(transaction.originalDate).toLocaleDateString()} → {new Date(transaction.date).toLocaleDateString()}
+                            </div>
+                          )}
+                          {transaction.originalDescription && transaction.originalDescription !== transaction.description && (
+                            <div className="text-orange-600 dark:text-orange-400">
+                              📝 Desc: {transaction.originalDescription} → {transaction.description}
+                            </div>
+                          )}
+                          {transaction.originalAmount !== undefined && transaction.originalAmount !== transaction.amount && (
+                            <div className="text-orange-600 dark:text-orange-400">
+                              💰 Amt: {formatAmount(transaction.originalAmount)} → {formatAmount(transaction.amount)}
+                            </div>
+                          )}
+                          {transaction.originalPaymentMethod && transaction.originalPaymentMethod !== transaction.paymentMethod && (
+                            <div className="text-green-600 dark:text-green-400">
+                              💳 Payment: {transaction.originalPaymentMethod} → {transaction.paymentMethod || 'Not specified'}
+                            </div>
+                          )}
+                          {(!transaction.originalDate || transaction.originalDate === transaction.date) &&
+                           (!transaction.originalDescription || transaction.originalDescription === transaction.description) &&
+                           (transaction.originalAmount === undefined || transaction.originalAmount === transaction.amount) &&
+                           (!transaction.originalPaymentMethod || transaction.originalPaymentMethod === transaction.paymentMethod) && (
+                            <span className="text-gray-400 dark:text-gray-600">Type/Category only</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-2 text-xs text-gray-600 dark:text-gray-400 max-w-xs">
+                        {transaction.notes ? (
+                          <div className="truncate" title={transaction.notes}>
+                            {transaction.notes}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-600">-</span>
+                        )}
+                      </td>
+                      <td className="p-2 text-xs text-gray-500 dark:text-gray-400">
                         {transaction.editedAt 
                           ? new Date(transaction.editedAt).toLocaleString()
                           : new Date(transaction.updatedAt).toLocaleString()
@@ -187,14 +233,52 @@ export default function CategorizationReportPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {Object.entries(categorizationStats.categoryBreakdown).map(([description, changes]) => (
-              <div key={description} className="border-l-4 border-blue-500 pl-4">
-                <div className="font-medium">{description}</div>
-                {changes.map((change, idx) => (
-                  <div key={idx} className="text-sm text-gray-600 mt-1">
-                    ❌ {change.original} → ✅ {change.corrected}
-                  </div>
-                ))}
+            {manuallyEditedTransactions.map((transaction) => (
+              <div key={transaction.id} className="border-l-4 border-blue-500 dark:border-blue-600 pl-4 pb-3">
+                <div className="font-medium text-gray-900 dark:text-gray-100">{transaction.description}</div>
+                <div className="mt-2 space-y-1 text-sm">
+                  {/* Show type/category changes */}
+                  {(transaction.originalType !== transaction.type || transaction.originalCategory !== transaction.category) && (
+                    <div className="text-gray-600 dark:text-gray-400">
+                      ❌ {transaction.originalType}/{transaction.originalCategory?.replace(/_/g, ' ')} → ✅ {transaction.type}/{transaction.category.replace(/_/g, ' ')}
+                    </div>
+                  )}
+                  
+                  {/* Show date changes */}
+                  {transaction.originalDate && transaction.originalDate !== transaction.date && (
+                    <div className="text-orange-600 dark:text-orange-400 text-xs">
+                      📅 Date corrected: {new Date(transaction.originalDate).toLocaleDateString()} → {new Date(transaction.date).toLocaleDateString()}
+                    </div>
+                  )}
+                  
+                  {/* Show description changes */}
+                  {transaction.originalDescription && transaction.originalDescription !== transaction.description && (
+                    <div className="text-orange-600 dark:text-orange-400 text-xs">
+                      📝 Description corrected: "{transaction.originalDescription}" → "{transaction.description}"
+                    </div>
+                  )}
+                  
+                  {/* Show amount changes */}
+                  {transaction.originalAmount !== undefined && transaction.originalAmount !== transaction.amount && (
+                    <div className="text-orange-600 dark:text-orange-400 text-xs">
+                      💰 Amount corrected: {formatAmount(transaction.originalAmount)} → {formatAmount(transaction.amount)}
+                    </div>
+                  )}
+                  
+                  {/* Show payment method changes */}
+                  {transaction.originalPaymentMethod && transaction.originalPaymentMethod !== transaction.paymentMethod && (
+                    <div className="text-green-600 dark:text-green-400 text-xs">
+                      💳 Payment method corrected: {transaction.originalPaymentMethod} → {transaction.paymentMethod || 'Not specified'}
+                    </div>
+                  )}
+                  
+                  {/* Show user notes */}
+                  {transaction.notes && (
+                    <div className="text-xs text-blue-600 dark:text-blue-400 italic pl-4 mt-1">
+                      💡 {transaction.notes}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>

@@ -185,11 +185,11 @@ export default function CustodyPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className={`p-3 rounded-full ${netBalance >= 0 ? 'bg-green-100' : 'bg-orange-100'}`}>
-                <Users className={`h-6 w-6 ${netBalance >= 0 ? 'text-green-600' : 'text-orange-600'}`} />
+                <Users className={`h-6 w-6 ${netBalance >= 0 ? 'text-green-600' : 'text-orange-500'}`} />
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Net Balance</p>
-                <p className={`text-2xl font-bold ${netBalance >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                <p className={`text-2xl font-bold ${netBalance >= 0 ? 'text-green-600' : 'text-orange-500'}`}>
                   {formatCurrency(Math.abs(netBalance))}
                 </p>
                 <p className="text-xs text-gray-500">

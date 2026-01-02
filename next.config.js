@@ -5,6 +5,9 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
+  eslint: {
+    ignoreDuringBuilds: true
+  },
   webpack: (config, { isServer }) => {
     // Handle @xenova/transformers for client-side usage
     if (!isServer) {

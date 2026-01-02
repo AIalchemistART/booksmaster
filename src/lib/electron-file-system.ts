@@ -3,7 +3,7 @@
  * Uses Node.js fs module via IPC instead of File System Access API
  */
 
-import type { Receipt, Invoice, Transaction, CustodyExpense } from '@/types'
+import type { Receipt, Invoice, Transaction, CustodyExpense, CategorizationCorrection } from '@/types'
 
 // Type definitions for Electron API
 interface ElectronAPI {
@@ -17,6 +17,7 @@ interface ElectronAPI {
   fsReadBinary: (path: string) => Promise<{ success: boolean; data?: string; error?: string }>
   fsReaddir: (path: string) => Promise<{ success: boolean; files?: string[]; error?: string }>
   fsDeleteFile: (path: string) => Promise<{ success: boolean; error?: string }>
+  clearAllAppData: () => Promise<{ success: boolean; error?: string }>
   isElectron: boolean
 }
 
@@ -274,6 +275,168 @@ export async function saveCustodyExpensesToFileSystem(expenses: CustodyExpense[]
 }
 
 /**
+ * Save categorization corrections to file system
+ */
+export async function saveCorrectionsToFileSystem(corrections: CategorizationCorrection[]): Promise<void> {
+  try {
+    const api = getElectronAPI()
+    console.log(`[ELECTRON FS] Saving ${corrections.length} categorization corrections...`)
+    
+    const filePath = 'ai-learning/categorization-corrections.json'
+    const result = await api.fsWriteFile(filePath, JSON.stringify(corrections, null, 2))
+    
+    if (result.success) {
+      console.log('[ELECTRON FS] Categorization corrections saved successfully')
+    } else {
+      console.error('[ELECTRON FS] Error saving corrections:', result.error)
+    }
+  } catch (error) {
+    console.error('[ELECTRON FS] Error saving corrections:', error)
+    throw error
+  }
+}
+
+/**
+ * Load categorization corrections from file system
+ */
+export async function loadCorrectionsFromFileSystem(): Promise<CategorizationCorrection[]> {
+  try {
+    const api = getElectronAPI()
+    console.log('[ELECTRON FS] Loading categorization corrections...')
+    
+    const filePath = 'ai-learning/categorization-corrections.json'
+    const result = await api.fsReadFile(filePath)
+    
+    if (result.success && result.data) {
+      const corrections = JSON.parse(result.data)
+      console.log(`[ELECTRON FS] Loaded ${corrections.length} corrections`)
+      return corrections
+    } else {
+      console.log('[ELECTRON FS] No corrections file found, returning empty array')
+      return []
+    }
+  } catch (error) {
+    console.error('[ELECTRON FS] Error loading corrections:', error)
+    return []
+  }
+}
+
+/**
+ * Save card payment type mappings to file system
+ */
+export async function saveCardPaymentMappingsToFileSystem(mappings: any[]): Promise<void> {
+  try {
+    const api = getElectronAPI()
+    console.log(`[ELECTRON FS] Saving ${mappings.length} card payment type mappings...`)
+    
+    const filePath = 'ai-learning/card-payment-mappings.json'
+    const result = await api.fsWriteFile(filePath, JSON.stringify(mappings, null, 2))
+    
+    if (result.success) {
+      console.log('[ELECTRON FS] Card payment mappings saved successfully')
+    } else {
+      console.error('[ELECTRON FS] Failed to save card payment mappings:', result.error)
+    }
+  } catch (error) {
+    console.error('[ELECTRON FS] Error saving card payment mappings:', error)
+    throw error
+  }
+}
+
+/**
+ * Load card payment type mappings from file system
+ */
+export async function loadCardPaymentMappingsFromFileSystem(): Promise<any[]> {
+  try {
+    const api = getElectronAPI()
+    console.log('[ELECTRON FS] Loading card payment type mappings...')
+    
+    const filePath = 'ai-learning/card-payment-mappings.json'
+    const result = await api.fsReadFile(filePath)
+    
+    if (result.success && result.data) {
+      const mappings = JSON.parse(result.data)
+      console.log(`[ELECTRON FS] Loaded ${mappings.length} card payment mappings`)
+      return mappings
+    } else {
+      console.log('[ELECTRON FS] No card payment mappings file found, returning empty array')
+      return []
+    }
+  } catch (error) {
+    console.error('[ELECTRON FS] Error loading card payment mappings:', error)
+    return []
+  }
+}
+
+/**
+ * Delete all data files from file system
+ */
+export async function deleteAllFiles(): Promise<void> {
+  try {
+    const api = getElectronAPI()
+    const rootDir = await api.getRootDirectory()
+    
+    if (!rootDir) {
+      throw new Error('No root directory configured')
+    }
+    
+    console.log('[ELECTRON FS] Deleting all data files...')
+    
+    // List of all data files to delete
+    const filesToDelete = [
+      'receipts/data/receipts.json',
+      'invoices/data/invoices.json',
+      'transactions/transactions.json',
+      'custody-expenses/custody-expenses.json',
+      'ai-learning/categorization-corrections.json'
+    ]
+    
+    // Delete all data files
+    for (const filePath of filesToDelete) {
+      try {
+        const result = await api.fsDeleteFile(filePath)
+        if (result.success) {
+          console.log(`[ELECTRON FS] Deleted ${filePath}`)
+        }
+      } catch (error) {
+        console.warn(`[ELECTRON FS] Could not delete ${filePath}:`, error)
+      }
+    }
+    
+    // Delete all receipt images
+    try {
+      const imagesResult = await api.fsReaddir('receipts/images')
+      if (imagesResult.success && imagesResult.files) {
+        for (const file of imagesResult.files) {
+          await api.fsDeleteFile(`receipts/images/${file}`)
+        }
+        console.log(`[ELECTRON FS] Deleted ${imagesResult.files.length} receipt images`)
+      }
+    } catch (error) {
+      console.warn('[ELECTRON FS] Could not delete receipt images:', error)
+    }
+    
+    // Delete all invoice images
+    try {
+      const invoiceImagesResult = await api.fsReaddir('invoices/images')
+      if (invoiceImagesResult.success && invoiceImagesResult.files) {
+        for (const file of invoiceImagesResult.files) {
+          await api.fsDeleteFile(`invoices/images/${file}`)
+        }
+        console.log(`[ELECTRON FS] Deleted ${invoiceImagesResult.files.length} invoice images`)
+      }
+    } catch (error) {
+      console.warn('[ELECTRON FS] Could not delete invoice images:', error)
+    }
+    
+    console.log('[ELECTRON FS] All data files deleted successfully')
+  } catch (error) {
+    console.error('[ELECTRON FS] Error deleting files:', error)
+    throw error
+  }
+}
+
+/**
  * Create full backup
  */
 export async function createFullBackup(): Promise<void> {
@@ -293,13 +456,15 @@ export async function createFullBackup(): Promise<void> {
     const invoicesResult = await api.fsReadFile('invoices/data/invoices.json')
     const transactionsResult = await api.fsReadFile('transactions/transactions.json')
     const expensesResult = await api.fsReadFile('custody-expenses/custody-expenses.json')
+    const correctionsResult = await api.fsReadFile('ai-learning/categorization-corrections.json')
     
     const backup = {
       timestamp,
       receipts: receiptsResult.success ? JSON.parse(receiptsResult.data!) : [],
       invoices: invoicesResult.success ? JSON.parse(invoicesResult.data!) : [],
       transactions: transactionsResult.success ? JSON.parse(transactionsResult.data!) : [],
-      custodyExpenses: expensesResult.success ? JSON.parse(expensesResult.data!) : []
+      custodyExpenses: expensesResult.success ? JSON.parse(expensesResult.data!) : [],
+      categorizationCorrections: correctionsResult.success ? JSON.parse(correctionsResult.data!) : []
     }
     
     const result = await api.fsWriteFile(backupPath, JSON.stringify(backup, null, 2))
@@ -311,6 +476,25 @@ export async function createFullBackup(): Promise<void> {
     }
   } catch (error) {
     console.error('[ELECTRON FS] Error creating backup:', error)
+    throw error
+  }
+}
+
+/**
+ * Clear all app data including localStorage via Electron session
+ */
+export async function clearAllAppData(): Promise<void> {
+  try {
+    const api = getElectronAPI()
+    const result = await api.clearAllAppData()
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to clear app data')
+    }
+    
+    console.log('[ELECTRON FS] All app data cleared successfully')
+  } catch (error) {
+    console.error('[ELECTRON FS] Error clearing app data:', error)
     throw error
   }
 }

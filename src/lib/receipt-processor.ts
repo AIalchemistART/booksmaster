@@ -9,11 +9,15 @@ export interface ProcessedReceipt {
   originalFile: File
   originalFileBlobUrl?: string // Blob URL created from originalFile for reliable access
   processedImageUrl: string
+  originalImageData?: string // Original image before SAM cropping
+  croppedImageData?: string // SAM-cropped image
+  prefersCropped?: boolean // User preference for which view to display
   extractedData: ExtractedReceiptData
   status: 'pending' | 'processing' | 'done' | 'error'
   error?: string
   progress: number
   progressStatus: string
+  processingStartTime?: number // Timestamp when processing started
 }
 
 export interface ExtractedReceiptData {
@@ -26,6 +30,7 @@ export interface ExtractedReceiptData {
   tax?: number
   lineItems?: { description: string; amount: number; sku?: string }[]
   paymentMethod?: string
+  cardLastFour?: string
   storeId?: string
   transactionId?: string
   time?: string
@@ -33,12 +38,26 @@ export interface ExtractedReceiptData {
   transactionCategory?: string
   categorizationConfidence?: number
   ocrFailed?: boolean
+  // Return receipt tracking
+  isReturn?: boolean
+  originalReceiptNumber?: string
+  // Document classification
+  documentType?: 'itemized_receipt' | 'payment_receipt' | 'manifest' | 'invoice' | 'unknown'
+  documentTypeConfidence?: number
+  documentTypeReasoning?: string
+  // Document identifiers for linking
+  transactionNumber?: string
+  orderNumber?: string
+  invoiceNumber?: string
+  accountNumber?: string
+  // Duplicate detection
+  sourceFilename?: string
 }
 
 export interface ProcessingOptions {
-  useSAM: boolean
+  useSAM: boolean // DISABLED: SAM adds 2x processing time for minimal benefit
   enhanceContrast: boolean
-  autoCrop: boolean
+  // autoCrop: REMOVED - only useful with SAM segmenter which is disabled
   ocrMode: 'fast' | 'accurate' | 'auto'
 }
 
@@ -51,12 +70,11 @@ type CompleteCallback = (receipt: ProcessedReceipt) => void
 export class ReceiptProcessorQueue {
   private queue: ProcessedReceipt[] = []
   private isProcessing = false
-  private onProgress: ProgressCallback | null = null
-  private onComplete: CompleteCallback | null = null
+  private onProgressCallbacks: ProgressCallback[] = []
+  private onCompleteCallbacks: CompleteCallback[] = []
   private options: ProcessingOptions = {
     useSAM: false,
     enhanceContrast: true,
-    autoCrop: true,
     ocrMode: 'auto',
   }
   private samModule: typeof import('./sam-segmentation') | null = null
@@ -72,11 +90,17 @@ export class ReceiptProcessorQueue {
   }
 
   setOnProgress(callback: ProgressCallback) {
-    this.onProgress = callback
+    // Add callback if not already registered
+    if (!this.onProgressCallbacks.includes(callback)) {
+      this.onProgressCallbacks.push(callback)
+    }
   }
 
   setOnComplete(callback: CompleteCallback) {
-    this.onComplete = callback
+    // Add callback if not already registered
+    if (!this.onCompleteCallbacks.includes(callback)) {
+      this.onCompleteCallbacks.push(callback)
+    }
   }
 
   getQueue(): ProcessedReceipt[] {
@@ -89,6 +113,10 @@ export class ReceiptProcessorQueue {
     const done = this.queue.filter(r => r.status === 'done').length
     const error = this.queue.filter(r => r.status === 'error').length
     return { pending, processing, done, error, total: this.queue.length }
+  }
+
+  hasActiveProcessing(): boolean {
+    return this.isProcessing || this.queue.some(r => r.status === 'pending' || r.status === 'processing')
   }
 
   /**
@@ -112,6 +140,7 @@ export class ReceiptProcessorQueue {
           date: '',
           rawText: '',
           imageData: '',
+          sourceFilename: file.name, // Track filename for duplicate detection
         },
         status: 'pending' as const,
         progress: 0,
@@ -144,6 +173,37 @@ export class ReceiptProcessorQueue {
   }
 
   /**
+   * Clean up stalled receipts that have been stuck in 'processing' for too long
+   * Timeout: 5 minutes (300000ms)
+   */
+  cleanupStalledReceipts() {
+    const STALL_TIMEOUT = 5 * 60 * 1000 // 5 minutes
+    const now = Date.now()
+    let cleaned = 0
+
+    this.queue.forEach(receipt => {
+      if (receipt.status === 'processing' && receipt.processingStartTime) {
+        const processingDuration = now - receipt.processingStartTime
+        if (processingDuration > STALL_TIMEOUT) {
+          console.warn(`[PROCESSOR] Receipt ${receipt.id} stalled for ${processingDuration}ms, marking as error`)
+          receipt.status = 'error'
+          receipt.error = 'Processing timeout - receipt took too long to process'
+          receipt.progressStatus = 'Timeout'
+          cleaned++
+          this.onProgressCallbacks.forEach(cb => cb(receipt))
+        }
+      }
+    })
+
+    if (cleaned > 0) {
+      console.log(`[PROCESSOR] Cleaned up ${cleaned} stalled receipt(s)`)
+      this.isProcessing = false // Reset processing flag
+    }
+
+    return cleaned
+  }
+
+  /**
    * Process the next receipt in queue
    */
   private async processNext() {
@@ -158,7 +218,8 @@ export class ReceiptProcessorQueue {
     nextReceipt.status = 'processing'
     nextReceipt.progress = 0
     nextReceipt.progressStatus = 'Starting...'
-    this.onProgress?.(nextReceipt)
+    nextReceipt.processingStartTime = Date.now()
+    this.onProgressCallbacks.forEach(cb => cb(nextReceipt))
 
     const receiptStartTime = Date.now()
     console.log(`[PROCESSOR] ===== Starting receipt ${nextReceipt.id} at ${new Date().toISOString()} =====`)
@@ -170,7 +231,7 @@ export class ReceiptProcessorQueue {
       nextReceipt.progress = 100
       nextReceipt.progressStatus = 'Complete!'
       console.log(`[PROCESSOR] ===== Receipt ${nextReceipt.id} COMPLETED in ${receiptDuration}ms =====`)
-      this.onComplete?.(nextReceipt)
+      this.onCompleteCallbacks.forEach(cb => cb(nextReceipt))
     } catch (error) {
       const receiptDuration = Date.now() - receiptStartTime
       nextReceipt.status = 'error'
@@ -179,7 +240,7 @@ export class ReceiptProcessorQueue {
       console.error(`[PROCESSOR] ===== Receipt ${nextReceipt.id} FAILED after ${receiptDuration}ms =====`, error)
     }
 
-    this.onProgress?.(nextReceipt)
+    this.onProgressCallbacks.forEach(cb => cb(nextReceipt))
 
     // Process next in queue - 2000ms delay between receipts
     // Gemini categorization disabled in receipt flow, only OCR calls are made
@@ -216,13 +277,20 @@ export class ReceiptProcessorQueue {
     const browserReadableTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
     const isBrowserReadable = browserReadableTypes.includes(file.type)
     
-    // Only try conversion if file type indicates it needs conversion
-    const needsConversion = (file.type === 'image/heic' || file.type === 'image/heif') && !isBrowserReadable
+    // Check file extension as fallback (Electron files from file system have empty type)
+    const fileExtension = file.name.split('.').pop()?.toLowerCase() || ''
+    const isHEICByExtension = ['heic', 'heif'].includes(fileExtension)
+    const isHEICByMimeType = file.type === 'image/heic' || file.type === 'image/heif'
+    
+    // Convert if: (1) MIME type indicates HEIC, OR (2) Extension is HEIC and not browser-readable
+    const needsConversion = (isHEICByMimeType || (isHEICByExtension && !isBrowserReadable))
     
     if (needsConversion) {
       receipt.progressStatus = 'Converting HEIC to JPEG...'
       receipt.progress = 5
-      this.onProgress?.(receipt)
+      this.onProgressCallbacks.forEach(cb => cb(receipt))
+      
+      console.log(`[HEIC] Converting ${file.name} (detected by ${isHEICByMimeType ? 'MIME type' : 'extension'})`)
 
       try {
         const heic2any = await import('heic2any')
@@ -237,17 +305,19 @@ export class ReceiptProcessorQueue {
         file = new File([jpegBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { 
           type: 'image/jpeg' 
         })
+        console.log(`[HEIC] Successfully converted to JPEG: ${file.name}`)
         receipt.progressStatus = 'HEIC converted to JPEG'
       } catch (error) {
-        console.warn('HEIC conversion failed, trying original file:', error)
+        console.error('[HEIC] Conversion failed:', error)
         receipt.progressStatus = 'HEIC conversion failed, using original'
+        // Still try to process - sometimes the file is actually readable
       }
     }
 
     // Step 1: Pre-process image (crop + contrast)
     receipt.progressStatus = 'Preprocessing image...'
     receipt.progress = 10
-    this.onProgress?.(receipt)
+    this.onProgressCallbacks.forEach(cb => cb(receipt))
 
     let processedImageUrl: string
 
@@ -255,7 +325,7 @@ export class ReceiptProcessorQueue {
       // Use SAM for intelligent cropping
       console.log('[SAM] Starting SAM processing for:', file.name)
       receipt.progressStatus = 'Loading AI model...'
-      this.onProgress?.(receipt)
+      this.onProgressCallbacks.forEach(cb => cb(receipt))
 
       if (!this.samModule) {
         console.log('[SAM] Loading SAM module dynamically...')
@@ -267,7 +337,7 @@ export class ReceiptProcessorQueue {
 
       receipt.progressStatus = 'Detecting receipt borders...'
       receipt.progress = 20
-      this.onProgress?.(receipt)
+      this.onProgressCallbacks.forEach(cb => cb(receipt))
 
       console.log(`[SAM] Calling detectAndCropReceipt with blob URL: ${fileUrl.substring(0, 50)}...`)
       const cropResult = await this.samModule.detectAndCropReceipt(
@@ -276,18 +346,25 @@ export class ReceiptProcessorQueue {
           console.log(`[SAM] Progress: ${Math.round(progress * 100)}% - ${status}`)
           receipt.progress = 20 + Math.round(progress * 0.3)
           receipt.progressStatus = status
-          this.onProgress?.(receipt)
+          this.onProgressCallbacks.forEach(cb => cb(receipt))
         }
       )
 
       console.log('[SAM] detectAndCropReceipt returned:', cropResult ? 'SUCCESS' : 'NULL')
       if (cropResult) {
         console.log('[SAM] Crop result dimensions:', cropResult.width, 'x', cropResult.height)
+        
+        // Store original image URL (before cropping) to blob URL
+        const originalResult = await preprocessReceipt(file, {
+          enhanceContrast: false,
+        })
+        receipt.originalImageData = originalResult.dataUrl
+        
         // Apply contrast enhancement to cropped image
         if (this.options.enhanceContrast) {
           receipt.progressStatus = 'Enhancing contrast...'
           receipt.progress = 55
-          this.onProgress?.(receipt)
+          this.onProgressCallbacks.forEach(cb => cb(receipt))
 
           const img = new Image()
           img.src = cropResult.croppedDataUrl
@@ -304,11 +381,15 @@ export class ReceiptProcessorQueue {
         } else {
           processedImageUrl = cropResult.croppedDataUrl
         }
+        
+        // Store cropped version
+        receipt.croppedImageData = processedImageUrl
+        // Default to cropped view
+        receipt.prefersCropped = true
       } else {
         // Fallback to basic preprocessing
         console.warn('[SAM] SAM cropping returned NULL, falling back to basic preprocessing')
         const result = await preprocessReceipt(file, {
-          autoCrop: this.options.autoCrop,
           enhanceContrast: this.options.enhanceContrast,
         })
         processedImageUrl = result.dataUrl
@@ -317,7 +398,6 @@ export class ReceiptProcessorQueue {
     } else {
       // Use basic preprocessing without SAM
       const result = await preprocessReceipt(file, {
-        autoCrop: this.options.autoCrop,
         enhanceContrast: this.options.enhanceContrast,
       })
       processedImageUrl = result.dataUrl
@@ -326,7 +406,7 @@ export class ReceiptProcessorQueue {
     receipt.processedImageUrl = processedImageUrl
     receipt.progress = 60
     receipt.progressStatus = 'Running OCR...'
-    this.onProgress?.(receipt)
+    this.onProgressCallbacks.forEach(cb => cb(receipt))
 
     // Step 2: Run enhanced OCR (Gemini or Tesseract based on mode)
     const ocrResult = await performEnhancedOCR(
@@ -335,13 +415,13 @@ export class ReceiptProcessorQueue {
       (progress, status) => {
         receipt.progress = 60 + Math.round(progress * 0.35)
         receipt.progressStatus = status
-        this.onProgress?.(receipt)
+        this.onProgressCallbacks.forEach(cb => cb(receipt))
       }
     )
 
     receipt.progress = 95
     receipt.progressStatus = 'Processing results...'
-    this.onProgress?.(receipt)
+    this.onProgressCallbacks.forEach(cb => cb(receipt))
 
     receipt.extractedData = {
       vendor: ocrResult.vendor || 'Unknown',
@@ -351,6 +431,7 @@ export class ReceiptProcessorQueue {
       subtotal: ocrResult.subtotal,
       tax: ocrResult.tax,
       paymentMethod: ocrResult.paymentMethod,
+      cardLastFour: ocrResult.cardLastFour,
       storeId: ocrResult.storeId,
       transactionId: ocrResult.transactionId,
       lineItems: ocrResult.lineItems?.map(item => ({
@@ -359,6 +440,20 @@ export class ReceiptProcessorQueue {
       })),
       rawText: ocrResult.rawText,
       imageData: processedImageUrl,
+      // Return receipt tracking
+      isReturn: ocrResult.isReturn,
+      originalReceiptNumber: ocrResult.originalReceiptNumber,
+      // Document classification from Gemini
+      documentType: ocrResult.documentType,
+      documentTypeConfidence: ocrResult.documentTypeConfidence,
+      documentTypeReasoning: ocrResult.documentTypeReasoning,
+      // Document identifiers for linking
+      transactionNumber: ocrResult.transactionNumber,
+      orderNumber: ocrResult.orderNumber,
+      invoiceNumber: ocrResult.invoiceNumber,
+      accountNumber: ocrResult.accountNumber,
+      // Filename already set in addFiles
+      sourceFilename: receipt.extractedData.sourceFilename,
     }
 
     receipt.progress = 100
@@ -414,19 +509,22 @@ export class ReceiptProcessorQueue {
       }
     }
 
-    // Extract total amount
+    // Extract total amount (support negative amounts for returns)
     let amount: number | null = null
     const amountPatterns = [
-      /\btotal[:\s]*\$?([\d,]+\.?\d*)/i,
-      /amount[:\s]*\$?([\d,]+\.?\d*)/i,
-      /grand total[:\s]*\$?([\d,]+\.?\d*)/i,
+      /\btotal[:\s]*\$?\s*(-?[\d,]+\.?\d*)/i,
+      /amount[:\s]*\$?\s*(-?[\d,]+\.?\d*)/i,
+      /grand total[:\s]*\$?\s*(-?[\d,]+\.?\d*)/i,
+      /refund[:\s]*\$?\s*(-?[\d,]+\.?\d*)/i,
+      /return[:\s]*\$?\s*(-?[\d,]+\.?\d*)/i,
     ]
 
     for (const pattern of amountPatterns) {
       const match = text.match(pattern)
       if (match) {
         const parsed = parseFloat(match[1].replace(',', ''))
-        if (!isNaN(parsed) && parsed > 0 && parsed < 100000) {
+        // Allow negative amounts for returns, but still validate reasonable range
+        if (!isNaN(parsed) && parsed !== 0 && Math.abs(parsed) < 100000) {
           amount = parsed
           break
         }
@@ -434,12 +532,14 @@ export class ReceiptProcessorQueue {
     }
 
     if (amount === null) {
-      const allAmounts = text.match(/\$?\d+\.\d{2}/g) || []
+      const allAmounts = text.match(/\$?-?\d+\.\d{2}/g) || []
       const numbers = allAmounts
         .map((a) => parseFloat(a.replace('$', '')))
-        .filter((n) => !isNaN(n) && n > 0)
+        .filter((n) => !isNaN(n) && n !== 0)
       if (numbers.length > 0) {
-        amount = Math.max(...numbers)
+        // For returns, we want the negative amount, so use the most extreme value
+        const absMax = numbers.reduce((max, n) => Math.abs(n) > Math.abs(max) ? n : max, numbers[0])
+        amount = absMax
       }
     }
 

@@ -17,6 +17,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   fsReaddir: (path) => ipcRenderer.invoke('fs-readdir', path),
   fsDeleteFile: (path) => ipcRenderer.invoke('fs-delete-file', path),
   
+  // Clear all app data (localStorage, cache, etc.)
+  clearAllAppData: () => ipcRenderer.invoke('clear-all-app-data'),
+  
   // Environment check
   isElectron: true
 })

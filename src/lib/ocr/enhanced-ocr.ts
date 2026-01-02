@@ -23,6 +23,7 @@ export interface EnhancedOCRResult {
   subtotal?: number
   tax?: number
   paymentMethod?: string
+  cardLastFour?: string
   storeId?: string
   transactionId?: string
   lineItems?: Array<{
@@ -30,6 +31,18 @@ export interface EnhancedOCRResult {
     quantity?: number
     price?: number
   }>
+  // Return receipt tracking
+  isReturn?: boolean
+  originalReceiptNumber?: string
+  // Document classification
+  documentType?: 'itemized_receipt' | 'payment_receipt' | 'manifest' | 'invoice' | 'unknown'
+  documentTypeConfidence?: number
+  documentTypeReasoning?: string
+  // Document identifiers for linking
+  transactionNumber?: string
+  orderNumber?: string
+  invoiceNumber?: string
+  accountNumber?: string
   confidence: number
   method: 'tesseract' | 'gemini' | 'hybrid'
   rawText: string
@@ -219,8 +232,10 @@ function extractTimeFromText(text: string): string | null {
 
 function extractTotalFromText(text: string): number | null {
   const patterns = [
-    /TOTAL[\s:]*\$?\s*(\d+\.?\d{0,2})/i,
-    /AMOUNT[\s:]*\$?\s*(\d+\.?\d{0,2})/i,
+    /TOTAL[\s:]*\$?\s*(-?\d+\.?\d{0,2})/i,
+    /AMOUNT[\s:]*\$?\s*(-?\d+\.?\d{0,2})/i,
+    /REFUND[\s:]*\$?\s*(-?\d+\.?\d{0,2})/i,
+    /RETURN[\s:]*\$?\s*(-?\d+\.?\d{0,2})/i,
   ]
   
   for (const pattern of patterns) {
@@ -234,8 +249,8 @@ function extractTotalFromText(text: string): number | null {
 
 function extractSubtotalFromText(text: string): number | null {
   const patterns = [
-    /SUB[\s-]?TOTAL[\s:]*\$?\s*(\d+\.?\d{0,2})/i,
-    /SUBTOTAL[\s:]*\$?\s*(\d+\.?\d{0,2})/i,
+    /SUB[\s-]?TOTAL[\s:]*\$?\s*(-?\d+\.?\d{0,2})/i,
+    /SUBTOTAL[\s:]*\$?\s*(-?\d+\.?\d{0,2})/i,
   ]
   
   for (const pattern of patterns) {
@@ -249,8 +264,8 @@ function extractSubtotalFromText(text: string): number | null {
 
 function extractTaxFromText(text: string): number | null {
   const patterns = [
-    /TAX[\s:]*\$?\s*(\d+\.?\d{0,2})/i,
-    /SALES\s+TAX[\s:]*\$?\s*(\d+\.?\d{0,2})/i,
+    /TAX[\s:]*\$?\s*(-?\d+\.?\d{0,2})/i,
+    /SALES\s+TAX[\s:]*\$?\s*(-?\d+\.?\d{0,2})/i,
   ]
   
   for (const pattern of patterns) {
