@@ -12,6 +12,8 @@ export interface AccuracyDataPoint {
   receiptId: string
   fieldsEdited?: string[] // Which fields needed correction (vendor, amount, date, etc)
   transactionId?: string // Linked transaction ID
+  totalFields?: number // Total number of editable fields (for weighted accuracy)
+  accuracyScore?: number // 0-100, weighted by fields (e.g., 6/8 fields correct = 75%)
 }
 
 export interface AccuracyPeriodSummary {
@@ -97,17 +99,13 @@ function calculateSummariesFromDataPoints(dataPoints: AccuracyDataPoint[]): {
     const totalFieldsEdited = points.reduce((sum, p) => sum + (p.fieldsEdited?.length || 0), 0)
     const avgFieldsEdited = requiresEdits > 0 ? totalFieldsEdited / requiresEdits : 0
 
-    // Calculate weighted accuracy based on field-level correctness
-    const weightedAccuracy = points.reduce((sum, p) => sum + (p.accuracyScore || 0), 0) / (totalValidations || 1)
-
     return {
       period,
       totalValidations,
       perfectParsing,
       requiresEdits,
-      accuracyRate: Math.round(accuracyRate * 10) / 10, // Round to 1 decimal (old binary metric)
-      avgFieldsEdited: Math.round(avgFieldsEdited * 10) / 10,
-      weightedAccuracy: Math.round(weightedAccuracy * 10) / 10 // Field-weighted accuracy
+      accuracyRate: Math.round(accuracyRate * 10) / 10, // Round to 1 decimal
+      avgFieldsEdited: Math.round(avgFieldsEdited * 10) / 10
     }
   }
 

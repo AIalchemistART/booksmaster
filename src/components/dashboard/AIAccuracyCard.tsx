@@ -30,9 +30,14 @@ export function AIAccuracyCard() {
       trend = currentMonth.accuracyRate - previousMonth.accuracyRate
     }
 
+    // Use weighted accuracy instead of binary perfect/not-perfect
+    const currentRate = currentMonth?.weightedAccuracy || 0
+    const previousRate = previousMonth?.weightedAccuracy || 0
+    const weightedTrend = previousMonth ? currentRate - previousRate : 0
+    
     return {
-      currentRate: currentMonth?.accuracyRate || 0,
-      trend,
+      currentRate,
+      trend: weightedTrend,
       totalValidations: currentMonth?.totalValidations || 0,
       perfectCount: currentMonth?.perfectParsing || 0,
       recentMonths

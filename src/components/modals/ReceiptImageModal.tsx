@@ -616,15 +616,24 @@ export function ReceiptImageModal({
       if (categoryChanged) fieldsEdited.push('category')
       if (paymentMethodChanged) fieldsEdited.push('paymentMethod')
       
+      // Calculate total editable fields for this transaction type
+      const totalFields = 6 // date, vendor, amount, type, category, paymentMethod (core fields always present)
+      
+      // Calculate field-weighted accuracy score
+      const correctFields = totalFields - fieldsEdited.length
+      const accuracyScore = (correctFields / totalFields) * 100
+      
       recordValidation({
         timestamp: now,
         requiresEdit: fieldsEdited.length > 0,
         receiptId: transaction.receiptId || '',
         fieldsEdited: fieldsEdited.length > 0 ? fieldsEdited : undefined,
-        transactionId: transaction.id
+        transactionId: transaction.id,
+        totalFields,
+        accuracyScore
       })
       
-      console.log(`[AI ACCURACY] Validation recorded: ${fieldsEdited.length > 0 ? `EDITED (${fieldsEdited.join(', ')})` : 'PERFECT'}`)
+      console.log(`[AI ACCURACY] Validation recorded: ${fieldsEdited.length > 0 ? `${accuracyScore.toFixed(1)}% accurate (${correctFields}/${totalFields} fields correct, edited: ${fieldsEdited.join(', ')})` : 'PERFECT (100%)'}`)
     }
 
     onSave(updatedTransaction)
