@@ -14,7 +14,7 @@ export default function DownloadPage() {
             Contractor Bookkeeping Made Simple
           </p>
 
-          <a href="https://booksmaster.netlify.app/Booksmaster%20Setup%200.3.0.exe" download>
+          <a href="https://booksmaster.netlify.app/downloads/BooksmasterSetup-0.3.0.exe" download>
             <Button size="lg" className="text-lg px-12 py-6 mb-4">
               <Download className="mr-2 h-5 w-5" />
               Download for Windows
