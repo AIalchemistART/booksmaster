@@ -84,15 +84,16 @@
       "electron/preload.js",
       "out/**/*",
       "!out/**/*.exe",
-      "package.json"
+      "package.json",
+      "!node_modules"
     ],
-    "extraResources": [],
-    "asarUnpack": [
-      "**/node_modules/heic-convert/**/*"
+    "extraResources": [
+      {
+        "from": "node_modules/heic-convert",
+        "to": "node_modules/heic-convert",
+        "filter": ["**/*"]
+      }
     ],
-    "fileAssociations": [],
-    "extraFiles": [],
-    "electronLanguages": ["en-US"],
     "win": {
       "target": {
         "target": "nsis",
