@@ -71,7 +71,9 @@
   "build": {
     "appId": "com.booksmaster.app",
     "productName": "Booksmaster",
-    "asar": false,
+    "asar": {
+      "smartUnpack": true
+    },
     "buildDependenciesFromSource": false,
     "nodeGypRebuild": false,
     "npmRebuild": false,
@@ -82,24 +84,21 @@
     "files": [
       "electron/main.js",
       "electron/preload.js",
+      "package.json",
       "out/**/*",
       "!out/**/*.exe",
       "!out/**/*.blockmap",
       "!out/**/*.yml",
-      "package.json",
-      "!node_modules/onnxruntime-node/bin/napi-v3/darwin/**/*",
-      "!node_modules/onnxruntime-node/bin/napi-v3/linux/**/*",
-      "!node_modules/onnxruntime-node/bin/napi-v3/win32/arm64/**/*",
-      "!node_modules/@xenova/transformers/dist/*.wasm",
-      "!node_modules/onnxruntime-web/dist/*.wasm",
-      "!node_modules/sharp/vendor/**/darwin-*/**/*",
-      "!node_modules/sharp/vendor/**/linux-*/**/*",
-      "!node_modules/sharp/vendor/**/linuxmusl-*/**/*",
-      "!node_modules/sharp/build/Release-*/**/*"
+      "node_modules/heic-convert/**/*",
+      "!node_modules/**/darwin*/**",
+      "!node_modules/**/linux*/**",
+      "!node_modules/**/win32/arm64/**",
+      "!node_modules/**/*.dylib",
+      "!node_modules/**/*.so*"
     ],
     "extraResources": [],
     "asarUnpack": [
-      "node_modules/heic-convert/**/*"
+      "**/node_modules/heic-convert/**/*"
     ],
     "fileAssociations": [],
     "extraFiles": [],
