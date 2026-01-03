@@ -106,20 +106,51 @@ export default function SupportingDocumentsPage() {
   }
 
   // Save document edits
-  const saveDocumentEdits = () => {
+  const saveEdit = () => {
     if (!viewingDoc) return
+    
+    // Check if user is unchecking "Keep as supplemental" - should convert to transaction
+    const wasSupplemental = viewingDoc.isSupplementalDoc
+    const nowNotSupplemental = !editFormData.isSupplementalDoc
     
     updateReceipt(viewingDoc.id, {
       documentType: editFormData.documentType as Receipt['documentType'],
-      ocrVendor: editFormData.vendor,
-      ocrAmount: editFormData.amount ? parseFloat(editFormData.amount) : undefined,
-      ocrDate: editFormData.date,
+      ocrVendor: editFormData.vendor || undefined,
+      ocrAmount: parseFloat(editFormData.amount) || undefined,
+      ocrDate: editFormData.date || undefined,
       transactionNumber: editFormData.transactionNumber || undefined,
       orderNumber: editFormData.orderNumber || undefined,
       invoiceNumber: editFormData.invoiceNumber || undefined,
       accountNumber: editFormData.accountNumber || undefined,
       isSupplementalDoc: editFormData.isSupplementalDoc
     })
+    
+    // If unchecking supplemental, convert to transaction
+    if (wasSupplemental && nowNotSupplemental && !viewingDoc.linkedTransactionId) {
+      const transactionId = generateId()
+      const now = new Date().toISOString()
+      
+      const newTransaction: Transaction = {
+        id: transactionId,
+        date: editFormData.date || new Date().toISOString().split('T')[0],
+        amount: parseFloat(editFormData.amount) || 0,
+        description: editFormData.vendor || 'Converted from document',
+        type: 'expense',
+        category: 'other' as TransactionCategory,
+        receiptId: viewingDoc.id,
+        createdAt: now,
+        updatedAt: now,
+        wasManuallyEdited: false,
+      }
+      
+      addTransaction(newTransaction)
+      updateReceipt(viewingDoc.id, { 
+        linkedTransactionId: transactionId,
+        isSupplementalDoc: false 
+      })
+      
+      completeAction('linkReceiptToTransaction')
+    }
     
     setEditMode(false)
     // Refresh viewing doc with updated data
@@ -222,6 +253,9 @@ export default function SupportingDocumentsPage() {
         <p className="text-sm text-blue-900 dark:text-blue-200">
           <strong>Note:</strong> These documents are not counted as expenses. Payment receipts can be linked to their corresponding itemized receipts when matching transaction IDs are found. 
           Manifests and bills of lading are kept for reference only.
+        </p>
+        <p className="text-sm text-blue-900 dark:text-blue-200 mt-2">
+          <strong>💡 Tip:</strong> If a payment receipt (like a bank deposit slip or credit card statement) is your <em>only</em> documentation for an expense, you can convert it to a transaction using the <strong>Convert to Transaction</strong> button in the document details panel.
         </p>
       </div>
 

@@ -51,7 +51,7 @@ const typeOptions = [
 ]
 
 export default function TransactionsPage() {
-  const { transactions, addTransaction, updateTransaction, deleteTransaction, receipts, updateReceipt, completeAction, unlockAchievement } = useStore()
+  const { transactions, addTransaction, updateTransaction, deleteTransaction, receipts, updateReceipt, completeAction, unlockAchievement, getLatestAccuracyRate } = useStore()
   const { showIntro, closeIntro } = useFirstVisit('transactions')
   const { showModal, requireFileSystem, handleSetupComplete, handleCancel } = useFileSystemCheck()
   const [showForm, setShowForm] = useState(false)
@@ -893,18 +893,42 @@ export default function TransactionsPage() {
         <Card className="mb-6 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2 text-amber-800 dark:text-amber-200">
-                <Receipt className="h-5 w-5" />
-                {unlinkedReceipts.length} Receipt{unlinkedReceipts.length > 1 ? 's' : ''} Ready to Convert
-              </CardTitle>
-              <Button 
-                size="sm"
-                onClick={convertAllWithCategorization}
-                disabled={convertingAll}
-              >
-                <Sparkles className="h-4 w-4 mr-1" />
-                {convertingAll ? 'Converting...' : 'Convert All'}
-              </Button>
+              <div className="flex-1">
+                <CardTitle className="text-lg flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                  <Receipt className="h-5 w-5" />
+                  {unlinkedReceipts.length} Receipt{unlinkedReceipts.length > 1 ? 's' : ''} Ready to Convert
+                </CardTitle>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                  💡 <strong>Tip:</strong> Convert receipts one at a time and validate each to train the AI system for better accuracy
+                </p>
+              </div>
+              <div className="relative group">
+                {(() => {
+                  const currentAccuracy = getLatestAccuracyRate()
+                  const isLocked = currentAccuracy < 90 && receipts.filter(r => r.linkedTransactionId).length > 5
+                  
+                  return (
+                    <>
+                      <Button 
+                        size="sm"
+                        onClick={convertAllWithCategorization}
+                        disabled={convertingAll || isLocked}
+                        className={isLocked ? 'opacity-50 cursor-not-allowed' : ''}
+                      >
+                        <Sparkles className="h-4 w-4 mr-1" />
+                        {convertingAll ? 'Converting...' : 'Convert All'}
+                      </Button>
+                      {isLocked && (
+                        <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                          <p className="font-semibold mb-1">🎯 Unlock at 90% AI Accuracy</p>
+                          <p>Current: {currentAccuracy.toFixed(1)}%</p>
+                          <p className="mt-1">Convert and validate receipts one-by-one to train the AI and unlock batch conversion.</p>
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
+              </div>
             </div>
           </CardHeader>
           <CardContent>

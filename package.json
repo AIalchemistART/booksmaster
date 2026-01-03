@@ -86,9 +86,12 @@
       "!out/ThomasBooksSetup.exe",
       "!out/**/*.exe",
       "package.json",
-      "!node_modules"
+      "node_modules/heic-convert/**/*"
     ],
     "extraResources": [],
+    "asarUnpack": [
+      "node_modules/heic-convert/**/*"
+    ],
     "win": {
       "target": {
         "target": "nsis",

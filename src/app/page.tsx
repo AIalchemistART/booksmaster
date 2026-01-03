@@ -153,7 +153,7 @@ export default function Dashboard() {
       </div>
 
       {/* Your Progress - Level 2 Unlock Card */}
-      {userProgress.currentLevel === 1 && (
+      {userProgress.currentLevel === 1 && receipts.length === 0 && transactions.length === 0 && (
         <Card className="mb-8 border-2 border-purple-300 dark:border-purple-700 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -381,7 +381,7 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {receipts.slice(0, 5).map((receipt: any) => (
-                  <div key={receipt.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                  <div key={receipt.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
                     {receipt.imageData ? (
                       <img 
                         src={receipt.imageData} 

@@ -631,27 +631,17 @@ export function ReceiptImageModal({
         }`}>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Receipt Details</h2>
-            {(hasPrevious || hasNext) && (
-              <div className="flex items-center gap-1 ml-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={onNavigatePrevious}
-                  disabled={!hasPrevious}
-                  title="Previous transaction"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={onNavigateNext}
-                  disabled={!hasNext}
-                  title="Next transaction"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+            {hasPrevious && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onNavigatePrevious}
+                disabled={!hasPrevious}
+                title="Previous transaction"
+                className="ml-4"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -704,6 +694,18 @@ export function ReceiptImageModal({
                 draggable={false}
               />
             </div>
+            
+            {/* Right Navigation Arrow - positioned in darkened area outside receipt */}
+            {hasNext && (
+              <button
+                onClick={onNavigateNext}
+                disabled={!hasNext}
+                title="Next transaction"
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+              </button>
+            )}
           </div>
 
           {/* Receipt/Documentation Toggle */}

@@ -133,10 +133,10 @@ export interface BankAccount {
 
 // Document classification types
 export type DocumentType = 
-  | 'itemized_receipt'      // Standard expense receipt with line items
   | 'payment_receipt'       // Account payment confirmation (no itemization)
-  | 'bank_statement'        // Bank deposit/statement (potential check or cash income)
-  | 'manifest'              // Bill of lading/packing list (no pricing)
+  | 'bank_deposit_receipt'  // Bank deposit slip or deposit receipt
+  | 'bank_statement'        // Bank statement (potential check or cash income)
+  | 'manifest'              // Bill of lading / delivery manifest (no pricing)
   | 'invoice'               // Unpaid invoice
   | 'unknown'               // Unable to classify
 

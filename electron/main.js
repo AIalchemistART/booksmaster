@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, protocol } = require('electron')
 const path = require('path')
 const fs = require('fs').promises
 const fsSync = require('fs')
+const heicConvert = require('heic-convert')
 
 let mainWindow = null
 let rootDirPath = null
@@ -306,6 +307,31 @@ ipcMain.handle('clear-all-app-data', async () => {
   } catch (error) {
     console.error('[ELECTRON] Error clearing app data:', error)
     return { success: false, error: error.message }
+  }
+})
+
+// Convert HEIC to JPEG using native heic-convert
+ipcMain.handle('convert-heic', async (event, arrayBuffer) => {
+  try {
+    console.log('[ELECTRON HEIC] Starting HEIC conversion, input size:', arrayBuffer.byteLength)
+    
+    const outputBuffer = await heicConvert({
+      buffer: Buffer.from(arrayBuffer),
+      format: 'JPEG',
+      quality: 0.92
+    })
+    
+    console.log('[ELECTRON HEIC] Conversion successful, output size:', outputBuffer.byteLength)
+    return { 
+      success: true, 
+      buffer: Array.from(new Uint8Array(outputBuffer))
+    }
+  } catch (error) {
+    console.error('[ELECTRON HEIC] Conversion failed:', error)
+    return { 
+      success: false, 
+      error: error.message 
+    }
   }
 })
 

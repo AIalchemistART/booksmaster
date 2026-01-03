@@ -345,6 +345,7 @@ export const useStore = create<AppState>()(
         // Gamification progress
         userProgress: state.userProgress,
         unlockedAchievements: state.unlockedAchievements,
+        dailyBatchTracker: state.dailyBatchTracker,
         // AI Accuracy metrics
         accuracyDataPoints: state.accuracyDataPoints,
         weeklySummaries: state.weeklySummaries,
