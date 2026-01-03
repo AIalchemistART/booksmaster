@@ -102,6 +102,16 @@
         "from": "node_modules/libheif-js",
         "to": "node_modules/libheif-js",
         "filter": ["**/*"]
+      },
+      {
+        "from": "node_modules/jpeg-js",
+        "to": "node_modules/jpeg-js",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "node_modules/pngjs",
+        "to": "node_modules/pngjs",
+        "filter": ["**/*"]
       }
     ],
     "win": {
