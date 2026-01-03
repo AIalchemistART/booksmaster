@@ -182,6 +182,7 @@ export default function SupportingDocumentsPage() {
     }
     
     addTransaction(newTransaction)
+    // Remove from supplemental docs by setting isSupplementalDoc to false
     updateReceipt(viewingDoc.id, { 
       linkedTransactionId: transactionId,
       isSupplementalDoc: false 
@@ -190,6 +191,7 @@ export default function SupportingDocumentsPage() {
     // Award XP for linking
     completeAction('linkReceiptToTransaction')
     
+    // Close viewer - the document will no longer appear in Supporting Documents list
     closeDocViewer()
   }
 

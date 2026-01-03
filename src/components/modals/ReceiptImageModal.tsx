@@ -52,9 +52,22 @@ export function ReceiptImageModal({
   // Get linked receipt for this transaction
   const linkedReceipt = transaction?.receiptId ? receipts.find(r => r.id === transaction.receiptId) : null
   
-  // Determine initial view mode based on receipt's supplemental doc status
+  // Get linked supplemental docs (if the main receipt has linkedDocumentIds)
+  const linkedSupplementalDocs = linkedReceipt?.linkedDocumentIds 
+    ? linkedReceipt.linkedDocumentIds.map(id => receipts.find(r => r.id === id)).filter(Boolean) as Receipt[]
+    : []
+  
+  // Also check if this receipt links to another primary document
+  const primaryDocument = linkedReceipt?.primaryDocumentId 
+    ? receipts.find(r => r.id === linkedReceipt.primaryDocumentId)
+    : null
+  
+  // Determine which linked doc to show (prefer supplemental, fallback to primary)
+  const linkedDocToShow = linkedSupplementalDocs.length > 0 ? linkedSupplementalDocs[0] : primaryDocument
+  
+  // Determine initial view mode based on whether there's a linked doc
   const [viewMode, setViewMode] = useState<ViewMode>(
-    linkedReceipt?.isSupplementalDoc ? 'documentation' : 'receipt'
+    linkedDocToShow ? 'documentation' : 'receipt'
   )
   
   // Store initial form state to detect changes made in THIS session only
@@ -631,18 +644,6 @@ export function ReceiptImageModal({
         }`}>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Receipt Details</h2>
-            {hasPrevious && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={onNavigatePrevious}
-                disabled={!hasPrevious}
-                title="Previous transaction"
-                className="ml-4"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            )}
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleZoomOut}>
@@ -683,8 +684,8 @@ export function ReceiptImageModal({
               }}
             >
               <img
-                src={imageData}
-                alt="Receipt"
+                src={viewMode === 'documentation' && linkedDocToShow?.imageData ? linkedDocToShow.imageData : imageData}
+                alt={viewMode === 'documentation' ? 'Linked Documentation' : 'Receipt'}
                 className="max-w-full max-h-full object-contain"
                 style={{
                   transform: `scale(${zoom}) rotate(${rotation}deg)`,
@@ -709,7 +710,7 @@ export function ReceiptImageModal({
           </div>
 
           {/* Receipt/Documentation Toggle */}
-          {transaction && onSave && linkedReceipt && (
+          {transaction && onSave && linkedReceipt && linkedDocToShow && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
               <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-lg border-2 border-gray-200 dark:border-gray-700 overflow-hidden">
                 <button
@@ -742,6 +743,17 @@ export function ReceiptImageModal({
           {transaction && onSave && (
             <div className="w-80 flex flex-col gap-4 overflow-y-auto">
               <div className="flex items-center justify-between">
+                {hasPrevious && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={onNavigatePrevious}
+                    disabled={!hasPrevious}
+                    title="Previous transaction"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                )}
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {viewMode === 'receipt' ? 'Edit Transaction' : 'Edit Documentation'}
                 </h3>
