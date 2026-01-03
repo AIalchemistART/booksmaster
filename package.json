@@ -83,12 +83,27 @@
       "electron/main.js",
       "electron/preload.js",
       "out/**/*",
-      "package.json"
+      "!out/**/*.exe",
+      "!out/**/*.blockmap",
+      "!out/**/*.yml",
+      "package.json",
+      "!node_modules/onnxruntime-node/bin/napi-v3/darwin/**/*",
+      "!node_modules/onnxruntime-node/bin/napi-v3/linux/**/*",
+      "!node_modules/onnxruntime-node/bin/napi-v3/win32/arm64/**/*",
+      "!node_modules/@xenova/transformers/dist/*.wasm",
+      "!node_modules/onnxruntime-web/dist/*.wasm",
+      "!node_modules/sharp/vendor/**/darwin-*/**/*",
+      "!node_modules/sharp/vendor/**/linux-*/**/*",
+      "!node_modules/sharp/vendor/**/linuxmusl-*/**/*",
+      "!node_modules/sharp/build/Release-*/**/*"
     ],
     "extraResources": [],
     "asarUnpack": [
       "node_modules/heic-convert/**/*"
     ],
+    "fileAssociations": [],
+    "extraFiles": [],
+    "electronLanguages": ["en-US"],
     "win": {
       "target": {
         "target": "nsis",
