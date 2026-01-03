@@ -359,10 +359,19 @@ export default function TransactionsPage() {
     addTransaction(newTransaction)
     updateReceipt(receipt.id, { linkedTransactionId: transactionId })
     
-    // Award XP for linking receipt to transaction
-    await completeAction('linkReceiptToTransaction')
+    // Award XP and check achievements
+    const newTransactionCount = transactions.length + 1
     
-    // Check for achievement
+    if (newTransactionCount === 1) {
+      // First transaction achievement
+      await completeAction('createTransaction')
+      unlockAchievement('first_transaction')
+    } else {
+      // Regular linking XP
+      await completeAction('linkReceiptToTransaction')
+    }
+    
+    // Check for linked receipt achievement
     const linkedCount = receipts.filter((r: any) => r.linkedTransactionId).length + 1
     if (linkedCount === 10) {
       unlockAchievement('duplicate_detective')
@@ -446,10 +455,19 @@ export default function TransactionsPage() {
       addTransaction(newTransaction)
       updateReceipt(receipt.id, { linkedTransactionId: transactionId })
       
-      // Award XP for linking receipt to transaction
-      await completeAction('linkReceiptToTransaction')
+      // Award XP and check achievements
+      const newTransactionCount = transactions.length + 1
       
-      // Check for achievement
+      if (newTransactionCount === 1) {
+        // First transaction achievement
+        await completeAction('createTransaction')
+        unlockAchievement('first_transaction')
+      } else {
+        // Regular linking XP
+        await completeAction('linkReceiptToTransaction')
+      }
+      
+      // Check for linked receipt achievement
       const linkedCount = receipts.filter((r: any) => r.linkedTransactionId).length + 1
       if (linkedCount === 10) {
         unlockAchievement('duplicate_detective')
@@ -463,10 +481,10 @@ export default function TransactionsPage() {
   }
 
   // Convert all receipts
-  const convertAllReceipts = () => {
-    unlinkedReceipts.forEach((receipt: ReceiptType) => {
-      convertReceiptToTransaction(receipt)
-    })
+  const convertAllReceipts = async () => {
+    for (const receipt of unlinkedReceipts) {
+      await convertReceiptToTransaction(receipt)
+    }
   }
 
   // Convert all with AI categorization

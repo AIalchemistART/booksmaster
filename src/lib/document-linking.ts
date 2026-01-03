@@ -159,6 +159,10 @@ function haveMatchingIdentifiers(receipt1: Receipt, receipt2: Receipt): boolean 
 /**
  * Link a payment receipt to its corresponding itemized receipt
  * Returns the ID of the itemized receipt if found, null otherwise
+ * 
+ * NOTE: Payment receipts should ONLY be linked if they have STRONG evidence
+ * of being duplicate documentation (same transaction number, order number, etc.)
+ * Regular purchase receipts should NOT be auto-linked just based on vendor matching.
  */
 export function findItemizedReceiptForPayment(
   paymentReceipt: Receipt,
@@ -168,12 +172,26 @@ export function findItemizedReceiptForPayment(
     return null
   }
   
+  // IMPORTANT: Only auto-link if there are explicit transaction identifiers
+  // Vendor matching alone is too weak and causes false positives
+  const paymentIds = extractIdentifiers(paymentReceipt)
+  if (paymentIds.length === 0) {
+    // No identifiers - cannot auto-link safely
+    return null
+  }
+  
   // Look for expense receipts with matching identifiers
   const candidates = allReceipts.filter(r => {
-    // Must be a regular payment receipt (not supplemental docs)
-    if (r.documentType === 'manifest' || r.isSupplementalDoc) return false
+    // Skip self
+    if (r.id === paymentReceipt.id) return false
     
-    // Must be from same vendor
+    // Must be a regular payment receipt (not supplemental docs or other types)
+    if (r.documentType === 'manifest' || r.documentType === 'bank_deposit_receipt' || r.isSupplementalDoc) return false
+    
+    // Must have matching identifiers (strict requirement)
+    if (!haveMatchingIdentifiers(paymentReceipt, r)) return false
+    
+    // Must be from same vendor (if both have vendor info)
     if (r.ocrVendor && paymentReceipt.ocrVendor) {
       const vendor1 = r.ocrVendor.toLowerCase().trim()
       const vendor2 = paymentReceipt.ocrVendor.toLowerCase().trim()
@@ -182,8 +200,7 @@ export function findItemizedReceiptForPayment(
       }
     }
     
-    // Must have matching identifiers
-    return haveMatchingIdentifiers(paymentReceipt, r)
+    return true
   })
   
   if (candidates.length === 0) return null
