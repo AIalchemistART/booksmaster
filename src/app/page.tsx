@@ -58,8 +58,16 @@ export default function Dashboard() {
   const netProfit = totalIncome - totalExpenses
 
   // Enhanced metrics calculations
-  const linkedReceipts = receipts.filter((r: any) => r.linkedTransactionId).length
-  const receiptLinkageRate = receipts.length > 0 ? (linkedReceipts / receipts.length) * 100 : 0
+  // Receipt Linkage = Transactions that have supporting documents linked
+  const transactionsWithSuppDocs = transactions.filter((t: any) => {
+    // Check if this transaction has any supporting documents linked via receiptId
+    const hasSupplementalDoc = receipts.some((r: any) => 
+      r.isSupplementalDoc && (r.linkedTransactionId === t.id || r.primaryDocumentId === t.receiptId)
+    )
+    return hasSupplementalDoc
+  }).length
+  const receiptLinkageRate = transactions.length > 0 ? (transactionsWithSuppDocs / transactions.length) * 100 : 0
+  const linkedReceipts = transactionsWithSuppDocs
   
   // Get current month's receipt count
   const now = new Date()

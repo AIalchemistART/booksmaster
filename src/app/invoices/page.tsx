@@ -53,11 +53,47 @@ export default function InvoicesPage() {
     setEditingId(null)
   }
 
+  // Create supplemental doc from invoice when marked paid
+  const createSupplementalDocFromInvoice = (invoice: Invoice) => {
+    const now = new Date().toISOString()
+    
+    // Create a receipt entry for the invoice as supplemental documentation
+    const suppDoc: any = {
+      id: generateId(),
+      driveFileId: `invoice-${invoice.id}`,
+      driveUrl: '',
+      documentType: 'invoice' as any,
+      isSupplementalDoc: true,
+      ocrVendor: invoice.clientName,
+      ocrAmount: invoice.amount,
+      ocrDate: invoice.paidDate || invoice.issueDate,
+      ocrPaymentMethod: undefined,
+      invoiceNumber: invoice.id,
+      notes: `Invoice: ${invoice.description}`,
+      createdAt: now,
+      updatedAt: now,
+    }
+    
+    addReceipt(suppDoc)
+    console.log('[INVOICE] Created supplemental doc for paid invoice:', invoice.id)
+    
+    // Update invoice with link to supplemental doc
+    updateInvoice(invoice.id, {
+      linkedReceiptId: suppDoc.id
+    })
+    
+    return suppDoc.id
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const now = new Date().toISOString()
 
     if (editingId) {
+      const existingInvoice = invoices.find(inv => inv.id === editingId)
+      const wasUnpaid = existingInvoice && existingInvoice.status !== 'paid'
+      const nowPaid = formData.status === 'paid'
+      
       updateInvoice(editingId, {
         clientName: formData.clientName,
         clientEmail: formData.clientEmail,
@@ -67,7 +103,17 @@ export default function InvoicesPage() {
         dueDate: formData.dueDate,
         status: formData.status,
         notes: formData.notes,
+        paidDate: nowPaid && !existingInvoice?.paidDate ? now : existingInvoice?.paidDate,
       })
+      
+      // If invoice just got marked paid, create supplemental doc
+      if (wasUnpaid && nowPaid && existingInvoice) {
+        createSupplementalDocFromInvoice({
+          ...existingInvoice,
+          status: 'paid',
+          paidDate: now
+        })
+      }
     } else {
       const newInvoice: Invoice = {
         id: generateId(),

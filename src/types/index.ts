@@ -140,7 +140,7 @@ export type DocumentType =
   | 'bank_deposit_receipt'  // Bank deposit slip or deposit receipt
   | 'bank_statement'        // Bank statement (potential check or cash income)
   | 'manifest'              // Bill of lading / delivery manifest (no pricing)
-  | 'invoice'               // Unpaid invoice
+  | 'invoice'               // Invoice (from invoicing feature, marked as supplemental doc when paid)
   | 'unknown'               // Unable to classify
 
 // Line item from receipt OCR
