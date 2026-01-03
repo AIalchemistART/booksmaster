@@ -55,7 +55,7 @@ function createWindow() {
   const isDev = process.env.NODE_ENV === 'development'
   
   if (isDev) {
-    mainWindow.loadURL('http://localhost:3000')
+    mainWindow.loadURL('http://localhost:3001')
   } else {
     const indexPath = path.join(process.resourcesPath, 'app', 'out', 'index.html')
     mainWindow.loadFile(indexPath)
