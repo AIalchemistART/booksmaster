@@ -23,6 +23,9 @@ export default function SupportingDocumentsPage() {
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
   const [editMode, setEditMode] = useState(false)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   
   // Edit form state
   const [editFormData, setEditFormData] = useState({
@@ -533,32 +536,59 @@ export default function SupportingDocumentsPage() {
           {hasNextDoc && (
             <button
               onClick={navigateNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white dark:bg-gray-800 rounded-full shadow hover:bg-gray-100 dark:hover:bg-gray-700 mr-80"
+              className="absolute right-[25rem] top-1/2 -translate-y-1/2 z-10 p-3 bg-white dark:bg-gray-800 rounded-full shadow hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <ChevronRight className="h-6 w-6" />
             </button>
           )}
 
           {/* Image viewer */}
-          <div className="flex-1 flex items-center justify-center p-8 overflow-hidden">
+          <div 
+            className="flex-1 flex items-center justify-center p-8 overflow-hidden relative cursor-move"
+            onWheel={(e) => {
+              e.preventDefault()
+              const delta = -e.deltaY * 0.001
+              setZoom(prev => Math.max(0.5, Math.min(5, prev + delta)))
+            }}
+            onMouseDown={(e) => {
+              setIsDragging(true)
+              setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
+            }}
+            onMouseMove={(e) => {
+              if (isDragging) {
+                setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y })
+              }
+            }}
+            onMouseUp={() => setIsDragging(false)}
+            onMouseLeave={() => setIsDragging(false)}
+          >
             <div
               style={{
-                transform: `scale(${zoom}) rotate(${rotation}deg)`,
-                transition: 'transform 0.2s ease'
+                transform: `translate(${position.x}px, ${position.y}px)`,
+                transition: isDragging ? 'none' : 'transform 0.2s ease'
               }}
               className="max-w-full max-h-full"
             >
-              {viewingDoc.imageData ? (
-                <img
-                  src={viewingDoc.imageData}
-                  alt="Document"
-                  className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
-                />
-              ) : (
-                <div className="w-96 h-96 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded-lg">
-                  <FileText className="h-24 w-24 text-gray-400" />
-                </div>
-              )}
+              <div
+                style={{
+                  transform: `scale(${zoom}) rotate(${rotation}deg)`,
+                  transformOrigin: 'center',
+                  transition: 'transform 0.2s ease'
+                }}
+              >
+                {viewingDoc.imageData ? (
+                  <img
+                    src={viewingDoc.imageData}
+                    alt="Document"
+                    className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                    draggable={false}
+                  />
+                ) : (
+                  <div className="w-96 h-96 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded-lg">
+                    <FileText className="h-24 w-24 text-gray-400" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -599,8 +629,8 @@ export default function SupportingDocumentsPage() {
                   label="Document Type"
                   options={[
                     { value: 'payment_receipt', label: '💳 Payment Receipt' },
-                    { value: 'manifest', label: '📦 Manifest/Bill of Lading' },
-                    { value: 'itemized_receipt', label: '🧾 Itemized Receipt' }
+                    { value: 'bank_deposit_receipt', label: '🏦 Bank Deposit Receipt' },
+                    { value: 'manifest', label: '📦 Manifest/Bill of Lading' }
                   ]}
                   value={editFormData.documentType}
                   onChange={(e) => setEditFormData({ ...editFormData, documentType: e.target.value })}
@@ -658,7 +688,7 @@ export default function SupportingDocumentsPage() {
                 </div>
 
                 <div className="flex gap-2 pt-4">
-                  <Button onClick={saveDocumentEdits} className="flex-1">
+                  <Button onClick={saveEdit} className="flex-1">
                     <Save className="h-4 w-4 mr-1" />
                     Save Changes
                   </Button>
