@@ -69,12 +69,25 @@ function createWindow() {
   // Load the Next.js app
   const isDev = process.env.NODE_ENV === 'development'
   
+  console.log('[WINDOW] NODE_ENV:', process.env.NODE_ENV, 'isDev:', isDev)
+  
   if (isDev) {
+    console.log('[WINDOW] Loading dev URL: http://localhost:3001')
     mainWindow.loadURL('http://localhost:3001')
   } else {
-    const indexPath = path.join(process.resourcesPath, 'app', 'out', 'index.html')
-    mainWindow.loadFile(indexPath)
+    console.log('[WINDOW] Loading production URL: app://./index.html')
+    mainWindow.loadURL('app://./index.html')
   }
+  
+  // Log when page finishes loading
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('[WINDOW] Page finished loading')
+  })
+  
+  // Log loading failures
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('[WINDOW] Page failed to load:', errorCode, errorDescription)
+  })
 
   // Handle navigation events
   mainWindow.webContents.on('will-navigate', (event, url) => {
@@ -107,8 +120,32 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  console.log('[ELECTRON STARTUP] App is ready')
+  console.log('[ELECTRON STARTUP] process.resourcesPath:', process.resourcesPath)
+  console.log('[ELECTRON STARTUP] __dirname:', __dirname)
+  
   loadConfig()
+  
+  console.log('[ELECTRON STARTUP] Registering app:// protocol handler')
+  // Register protocol handler for app:// scheme
+  protocol.registerFileProtocol('app', (request, callback) => {
+    console.log('[PROTOCOL] Request received:', request.url)
+    
+    let filePath = request.url.replace('app://./', '')
+    filePath = decodeURIComponent(filePath)
+    console.log('[PROTOCOL] After decode:', filePath)
+    
+    // Build full path to file in out directory
+    const fullPath = path.normalize(path.join(process.resourcesPath, 'app', 'out', filePath))
+    console.log('[PROTOCOL] Full path:', fullPath)
+    console.log('[PROTOCOL] File exists:', fsSync.existsSync(fullPath))
+    
+    callback({ path: fullPath })
+  })
+  
+  console.log('[ELECTRON STARTUP] Creating window')
   createWindow()
+  console.log('[ELECTRON STARTUP] Window created')
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
