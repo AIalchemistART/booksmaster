@@ -59,8 +59,7 @@ function createWindow() {
   if (isDev) {
     mainWindow.loadURL('http://localhost:3001')
   } else {
-    // Load from unpacked app directory (ASAR disabled for compatibility)
-    const indexPath = path.join(__dirname, '../out/index.html')
+    const indexPath = path.join(process.resourcesPath, 'app', 'out', 'index.html')
     mainWindow.loadFile(indexPath)
   }
 
