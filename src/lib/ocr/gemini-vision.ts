@@ -58,7 +58,7 @@ export interface GeminiReceiptData {
   isReturn?: boolean
   originalReceiptNumber?: string
   // Document classification
-  documentType?: 'itemized_receipt' | 'payment_receipt' | 'manifest' | 'invoice' | 'unknown'
+  documentType?: 'payment_receipt' | 'bank_deposit_receipt' | 'bank_statement' | 'manifest' | 'invoice' | 'unknown'
   documentTypeConfidence?: number
   documentTypeReasoning?: string
   // Document identifiers for linking
@@ -130,7 +130,7 @@ export async function extractReceiptWithGemini(
       "price": numeric price (negative for returns)
     }
   ],
-  "documentType": "itemized_receipt | payment_receipt | manifest | invoice | unknown",
+  "documentType": "payment_receipt | bank_deposit_receipt | bank_statement | manifest | invoice | unknown",
   "documentTypeConfidence": 0.0 to 1.0,
   "documentTypeReasoning": "brief explanation of classification",
   "transactionNumber": "transaction/reference number if present",
@@ -148,10 +148,11 @@ ${correctionsContext}
 **DOCUMENT CLASSIFICATION RULES:**
 Classify the document type based on these criteria:
 
-1. **itemized_receipt**: Has line items with individual prices AND a total. This is a standard purchase receipt.
-2. **payment_receipt**: Shows payment confirmation ("Payment Received", "Account Payment") but NO itemized purchases. Often references an account number or previous invoice.
-3. **manifest**: Bill of lading, packing list, or delivery manifest. Shows items but NO prices or totals. Just quantities/descriptions.
-4. **invoice**: Unpaid bill requesting payment. Usually says "Invoice" and has a due date.
+1. **payment_receipt**: Shows payment confirmation ("Payment Received", "Account Payment") with or without itemization. Standard purchase receipts should use this type.
+2. **bank_deposit_receipt**: Bank deposit slip or deposit receipt showing funds deposited.
+3. **bank_statement**: Bank account statement showing transactions over a period.
+4. **manifest**: Bill of lading, packing list, or delivery manifest. Shows items but NO prices or totals.
+5. **invoice**: Unpaid bill requesting payment. Usually says "Invoice" and has a due date.
 5. **unknown**: Cannot confidently classify into above categories.
 
 **IDENTIFIER EXTRACTION:**

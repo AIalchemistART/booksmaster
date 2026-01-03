@@ -168,10 +168,10 @@ export function findItemizedReceiptForPayment(
     return null
   }
   
-  // Look for itemized receipts with matching identifiers
+  // Look for expense receipts with matching identifiers
   const candidates = allReceipts.filter(r => {
-    // Must be itemized receipt
-    if (r.documentType !== 'itemized_receipt') return false
+    // Must be a regular payment receipt (not supplemental docs)
+    if (r.documentType === 'manifest' || r.isSupplementalDoc) return false
     
     // Must be from same vendor
     if (r.ocrVendor && paymentReceipt.ocrVendor) {

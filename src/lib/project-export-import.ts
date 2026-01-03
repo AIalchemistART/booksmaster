@@ -134,7 +134,7 @@ Folder Structure:
 Receipt Data Includes:
 ----------------------
 - OCR data (vendor, amount, date, line items)
-- Document classification (itemized_receipt, payment_receipt, manifest, invoice)
+- Document classification (payment_receipt, bank_deposit_receipt, bank_statement, manifest, invoice)
 - Document linking information (linked receipts, supplemental docs)
 - Duplicate detection data (source filename, duplicate flags)
 - Transaction identifiers (transaction #, order #, invoice #, account #)

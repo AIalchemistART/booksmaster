@@ -42,7 +42,7 @@ export interface ExtractedReceiptData {
   isReturn?: boolean
   originalReceiptNumber?: string
   // Document classification
-  documentType?: 'itemized_receipt' | 'payment_receipt' | 'manifest' | 'invoice' | 'unknown'
+  documentType?: 'payment_receipt' | 'bank_deposit_receipt' | 'bank_statement' | 'manifest' | 'invoice' | 'unknown'
   documentTypeConfidence?: number
   documentTypeReasoning?: string
   // Document identifiers for linking

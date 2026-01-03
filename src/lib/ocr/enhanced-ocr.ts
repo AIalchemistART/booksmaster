@@ -35,7 +35,7 @@ export interface EnhancedOCRResult {
   isReturn?: boolean
   originalReceiptNumber?: string
   // Document classification
-  documentType?: 'itemized_receipt' | 'payment_receipt' | 'manifest' | 'invoice' | 'unknown'
+  documentType?: 'payment_receipt' | 'bank_deposit_receipt' | 'bank_statement' | 'manifest' | 'invoice' | 'unknown'
   documentTypeConfidence?: number
   documentTypeReasoning?: string
   // Document identifiers for linking
@@ -146,6 +146,8 @@ export async function performEnhancedOCR(
       const { rawText, ...restGemini } = geminiResult
       ocrResult = {
         ...restGemini,
+        // Map old itemized_receipt to payment_receipt for compatibility
+        documentType: restGemini.documentType === 'itemized_receipt' as any ? 'payment_receipt' : restGemini.documentType,
         method: 'gemini' as const,
         rawText: rawText || '',
       }
@@ -170,6 +172,8 @@ export async function performEnhancedOCR(
         const { rawText, ...restGemini } = geminiResult
         ocrResult = {
           ...restGemini,
+          // Map old itemized_receipt to payment_receipt for compatibility
+          documentType: restGemini.documentType === 'itemized_receipt' as any ? 'payment_receipt' : restGemini.documentType,
           method: 'hybrid' as const,
           rawText: rawText || '',
         }

@@ -1118,18 +1118,18 @@ export default function ReceiptsPage() {
               <CardContent className="pt-4">
                 <div className="space-y-2">
                   {/* Document Type Badge */}
-                  {receipt.documentType && receipt.documentType !== 'itemized_receipt' && (
+                  {receipt.documentType && (
                     <div className={`mb-2 px-2 py-1 text-xs font-semibold rounded flex items-center gap-1 ${
-                      receipt.documentType === 'payment_receipt' ? 'bg-purple-100 border border-purple-300 text-purple-800 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-200' :
+                      receipt.documentType === 'bank_deposit_receipt' ? 'bg-green-100 border border-green-300 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200' :
                       receipt.documentType === 'bank_statement' ? 'bg-blue-100 border border-blue-300 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200' :
                       receipt.documentType === 'manifest' ? 'bg-amber-100 border border-amber-300 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-200' :
                       receipt.documentType === 'invoice' ? 'bg-teal-100 border border-teal-300 text-teal-800 dark:bg-teal-900/20 dark:border-teal-800 dark:text-teal-200' :
                       'bg-gray-100 border border-gray-300 text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200'
                     }`}>
-                      <span>📄 {receipt.documentType === 'payment_receipt' ? 'Payment Receipt' : 
+                      <span>📄 {receipt.documentType === 'bank_deposit_receipt' ? 'Bank Deposit Receipt' : 
                             receipt.documentType === 'bank_statement' ? 'Bank Statement/Deposit' :
                             receipt.documentType === 'manifest' ? 'Manifest/Bill of Lading' :
-                            receipt.documentType === 'invoice' ? 'Invoice' : 'Unknown Document'}</span>
+                            receipt.documentType === 'invoice' ? 'Invoice' : 'Unknown'}</span>
                       {receipt.documentType === 'bank_statement' && (
                         <span className="ml-1" title="Bank statement detected. Add customer name, job details, and income source in transaction notes to ensure audit-ready documentation.">
                           ℹ️
