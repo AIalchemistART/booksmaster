@@ -7,18 +7,7 @@ const heicConvert = require('heic-convert')
 let mainWindow = null
 let rootDirPath = null
 
-// Register custom protocol scheme before app is ready
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'app',
-    privileges: {
-      standard: true,
-      secure: true,
-      supportFetchAPI: true,
-      corsEnabled: false
-    }
-  }
-])
+// Protocol scheme registration removed - caused Windows compatibility issues
 
 // Store user data path for persistent storage
 const userDataPath = app.getPath('userData')
