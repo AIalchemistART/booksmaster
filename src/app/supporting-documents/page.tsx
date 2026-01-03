@@ -26,6 +26,8 @@ export default function SupportingDocumentsPage() {
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [converting, setConverting] = useState(false)
+  const [convertingAll, setConvertingAll] = useState(false)
   
   // Edit form state
   const [editFormData, setEditFormData] = useState({
@@ -49,6 +51,13 @@ export default function SupportingDocumentsPage() {
       r.isSupplementalDoc
     )
   }, [receipts])
+
+  // Get unvalidated/unlinked supplemental docs for conversion queue
+  const pendingSuppDocs = useMemo(() => {
+    return supportingDocs.filter((r: Receipt) => 
+      r.isSupplementalDoc && !r.linkedTransactionId && !r.primaryDocumentId
+    )
+  }, [supportingDocs])
 
   // Apply filters
   const filteredDocs = useMemo(() => {
@@ -162,43 +171,63 @@ export default function SupportingDocumentsPage() {
   }
 
   // Convert supplemental doc to transaction
-  const convertToTransaction = () => {
-    if (!viewingDoc) return
+  const convertToTransaction = async (doc?: Receipt) => {
+    const docToConvert = doc || viewingDoc
+    if (!docToConvert) return
     
-    const now = new Date().toISOString()
-    const transactionId = generateId()
-    
-    const newTransaction: Transaction = {
-      id: transactionId,
-      date: viewingDoc.ocrDate || new Date().toISOString().split('T')[0],
-      amount: viewingDoc.ocrAmount ?? 0,
-      description: viewingDoc.ocrVendor || 'Converted from document',
-      type: 'expense',
-      category: 'other' as TransactionCategory,
-      receiptId: viewingDoc.id,
-      createdAt: now,
-      updatedAt: now,
-      wasManuallyEdited: false,
+    setConverting(true)
+    try {
+      const now = new Date().toISOString()
+      const transactionId = generateId()
+      
+      const newTransaction: Transaction = {
+        id: transactionId,
+        date: docToConvert.ocrDate || new Date().toISOString().split('T')[0],
+        amount: docToConvert.ocrAmount ?? 0,
+        description: docToConvert.ocrVendor || 'Converted from document',
+        type: 'expense',
+        category: 'other' as TransactionCategory,
+        receiptId: docToConvert.id,
+        createdAt: now,
+        updatedAt: now,
+        wasManuallyEdited: false,
+      }
+      
+      addTransaction(newTransaction)
+      // Remove from supplemental docs by setting isSupplementalDoc to false
+      updateReceipt(docToConvert.id, { 
+        linkedTransactionId: transactionId,
+        isSupplementalDoc: false 
+      })
+      
+      // Check if this was the first supplemental doc
+      const suppDocsCount = receipts.filter(r => r.isSupplementalDoc).length
+      if (suppDocsCount === 1) {
+        unlockAchievement('supporting_docs')
+      }
+      
+      // Award XP for linking
+      await completeAction('linkReceiptToTransaction')
+      
+      // Close viewer if it was the viewing doc - the document will no longer appear in Supporting Documents list
+      if (viewingDoc?.id === docToConvert.id) {
+        closeDocViewer()
+      }
+    } finally {
+      setConverting(false)
     }
-    
-    addTransaction(newTransaction)
-    // Remove from supplemental docs by setting isSupplementalDoc to false
-    updateReceipt(viewingDoc.id, { 
-      linkedTransactionId: transactionId,
-      isSupplementalDoc: false 
-    })
-    
-    // Check if this was the first supplemental doc
-    const suppDocsCount = receipts.filter(r => r.isSupplementalDoc).length
-    if (suppDocsCount === 1) {
-      unlockAchievement('supporting_docs')
+  }
+
+  // Convert all pending supplemental docs
+  const convertAllToTransactions = async () => {
+    setConvertingAll(true)
+    try {
+      for (const doc of pendingSuppDocs) {
+        await convertToTransaction(doc)
+      }
+    } finally {
+      setConvertingAll(false)
     }
-    
-    // Award XP for linking
-    completeAction('linkReceiptToTransaction')
-    
-    // Close viewer - the document will no longer appear in Supporting Documents list
-    closeDocViewer()
   }
 
   // Try to auto-link document to existing receipt
@@ -269,6 +298,92 @@ export default function SupportingDocumentsPage() {
           <strong>💡 Tip:</strong> If a payment receipt (like a bank deposit slip or credit card statement) is your <em>only</em> documentation for an expense, you can convert it to a transaction using the <strong>Convert to Transaction</strong> button in the document details panel.
         </p>
       </div>
+
+      {/* Pending Supplemental Documents Queue */}
+      {pendingSuppDocs.length > 0 && (
+        <Card className="mb-6 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <CardTitle className="text-lg flex items-center gap-2 text-purple-800 dark:text-purple-200">
+                  <FileText className="h-5 w-5" />
+                  {pendingSuppDocs.length} Document{pendingSuppDocs.length > 1 ? 's' : ''} Pending Validation
+                </CardTitle>
+                <p className="text-sm text-purple-700 dark:text-purple-300 mt-1">
+                  💡 <strong>Tip:</strong> Review each document to either convert to transaction or link to existing receipt
+                </p>
+              </div>
+              <Button 
+                size="sm"
+                onClick={convertAllToTransactions}
+                disabled={convertingAll}
+              >
+                {convertingAll ? 'Converting...' : 'Convert All to Transactions'}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {pendingSuppDocs.slice(0, 3).map((doc: Receipt) => (
+                <div key={doc.id} className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-3">
+                    {doc.imageData ? (
+                      <img src={doc.imageData} alt="" className="w-10 h-10 rounded object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{doc.ocrVendor || 'Unknown'}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{doc.ocrDate || 'No date'}</p>
+                        {doc.ocrAmount !== undefined && (
+                          <>
+                            <span className="text-xs text-gray-400">•</span>
+                            <p className="text-xs font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(doc.ocrAmount)}</p>
+                          </>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {doc.documentType === 'bank_deposit_receipt' ? '🏦 Bank Deposit' : doc.documentType === 'manifest' ? '📦 Manifest' : '💳 Payment Receipt'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openDocViewer(doc)
+                      }}
+                    >
+                      Review
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        convertToTransaction(doc)
+                      }}
+                      disabled={converting}
+                    >
+                      <ArrowRight className="h-4 w-4 mr-1" />
+                      {converting ? 'Converting...' : 'Convert'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {pendingSuppDocs.length > 3 && (
+                <p className="text-sm text-purple-700 dark:text-purple-300 text-center pt-2">
+                  +{pendingSuppDocs.length - 3} more document{pendingSuppDocs.length - 3 > 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters */}
       <Card className="mb-6">
