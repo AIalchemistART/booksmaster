@@ -21,7 +21,7 @@ const statusOptions = [
 ]
 
 export default function InvoicesPage() {
-  const { invoices, addInvoice, updateInvoice, deleteInvoice, addTransaction, completeAction, unlockAchievement } = useStore()
+  const { invoices, addInvoice, updateInvoice, deleteInvoice, addReceipt, addTransaction, completeAction, unlockAchievement } = useStore()
   const { showModal, requireFileSystem, handleSetupComplete, handleCancel } = useFileSystemCheck()
   const { showIntro, closeIntro } = useFirstVisit('invoices')
   const [showForm, setShowForm] = useState(false)

@@ -46,7 +46,9 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'preload.js'),
+      // CRITICAL FIX: Use named partition to ensure localStorage persists
+      partition: 'persist:booksmaster'
     },
     icon: path.join(__dirname, '../public/icon.png')
   })
