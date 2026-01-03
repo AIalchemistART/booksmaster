@@ -84,8 +84,7 @@
       "electron/preload.js",
       "out/**/*",
       "!out/**/*.exe",
-      "package.json",
-      "!node_modules"
+      "package.json"
     ],
     "extraResources": [],
     "asarUnpack": [
