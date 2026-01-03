@@ -7,6 +7,19 @@ const heicConvert = require('heic-convert')
 let mainWindow = null
 let rootDirPath = null
 
+// Register custom protocol scheme before app is ready
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: false
+    }
+  }
+])
+
 // Store user data path for persistent storage
 const userDataPath = app.getPath('userData')
 const configPath = path.join(userDataPath, 'config.json')
