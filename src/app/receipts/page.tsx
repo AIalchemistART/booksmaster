@@ -181,6 +181,9 @@ export default function ReceiptsPage() {
     const newReceiptCount = receipts.length + 1
     if (newReceiptCount === 1) {
       await completeAction('uploadFirstReceipt')
+      unlockAchievement('first_receipt')
+    } else if (newReceiptCount === 25) {
+      unlockAchievement('receipt_master')
     }
     
     // Milestone rewards (these are one-time)

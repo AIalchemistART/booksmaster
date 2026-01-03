@@ -13,7 +13,7 @@ import { findItemizedReceiptForPayment, linkAllReceipts } from '@/lib/document-l
 import { FirstVisitIntro, useFirstVisit } from '@/components/gamification/FirstVisitIntro'
 
 export default function SupportingDocumentsPage() {
-  const { receipts, updateReceipt, deleteReceipt, addTransaction, transactions, completeAction } = useStore()
+  const { receipts, updateReceipt, deleteReceipt, addTransaction, transactions, completeAction, unlockAchievement } = useStore()
   const { showIntro, closeIntro } = useFirstVisit('supporting-documents')
   const [searchVendor, setSearchVendor] = useState('')
   const [selectedType, setSelectedType] = useState<'all' | 'payment_receipt' | 'manifest'>('all')
@@ -187,6 +187,12 @@ export default function SupportingDocumentsPage() {
       linkedTransactionId: transactionId,
       isSupplementalDoc: false 
     })
+    
+    // Check if this was the first supplemental doc
+    const suppDocsCount = receipts.filter(r => r.isSupplementalDoc).length
+    if (suppDocsCount === 1) {
+      unlockAchievement('supporting_docs')
+    }
     
     // Award XP for linking
     completeAction('linkReceiptToTransaction')

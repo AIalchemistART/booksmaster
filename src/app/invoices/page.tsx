@@ -21,7 +21,7 @@ const statusOptions = [
 ]
 
 export default function InvoicesPage() {
-  const { invoices, addInvoice, updateInvoice, deleteInvoice, addTransaction, completeAction } = useStore()
+  const { invoices, addInvoice, updateInvoice, deleteInvoice, addTransaction, completeAction, unlockAchievement } = useStore()
   const { showModal, requireFileSystem, handleSetupComplete, handleCancel } = useFileSystemCheck()
   const { showIntro, closeIntro } = useFirstVisit('invoices')
   const [showForm, setShowForm] = useState(false)
@@ -83,6 +83,13 @@ export default function InvoicesPage() {
         updatedAt: now,
       }
       addInvoice(newInvoice)
+      
+      const newInvoiceCount = invoices.length + 1
+      if (newInvoiceCount === 1) {
+        unlockAchievement('first_invoice')
+      } else if (newInvoiceCount === 10) {
+        unlockAchievement('invoice_pro')
+      }
       
       // Award XP for invoice creation
       completeAction('createInvoice')
