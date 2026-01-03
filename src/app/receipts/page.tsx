@@ -124,6 +124,9 @@ export default function ReceiptsPage() {
     const newReceiptCount = receipts.length + 1
     if (newReceiptCount === 1) {
       await completeAction('uploadFirstReceipt')
+      unlockAchievement('first_receipt')
+    } else if (newReceiptCount === 25) {
+      unlockAchievement('receipt_master')
     } else {
       await completeAction('parseReceipt')
       
@@ -195,6 +198,17 @@ export default function ReceiptsPage() {
       await completeAction('process50Receipts')
     } else if (newReceiptCount === 100) {
       await completeAction('process100Receipts')
+    }
+  }
+
+  const handleBatchComplete = async (count: number) => {
+    const result = await completeBatchAction('parse', count)
+    if (result.leveledUp) {
+      console.log(`🎉 Batch level up! Now level ${result.newLevel}`)
+    }
+    // Batch scanner achievement - 10+ receipts in single batch
+    if (count >= 10) {
+      unlockAchievement('batch_scanner')
     }
   }
 
