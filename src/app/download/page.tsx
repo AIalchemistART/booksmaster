@@ -14,14 +14,14 @@ export default function DownloadPage() {
             Contractor Bookkeeping Made Simple
           </p>
 
-          <a href="/BooksmasterSetup.exe" download>
+          <a href="https://booksmaster.netlify.app/Booksmaster%20Setup%200.3.0.exe" download>
             <Button size="lg" className="text-lg px-12 py-6 mb-4">
               <Download className="mr-2 h-5 w-5" />
               Download for Windows
             </Button>
           </a>
 
-          <p className="text-sm text-muted-foreground mb-12">Version 0.2.0</p>
+          <p className="text-sm text-muted-foreground mb-12">Version 0.3.0 • Released Jan 3, 2026</p>
 
           <div className="text-left">
             <h2 className="text-2xl font-semibold mb-6 text-center">Features</h2>
