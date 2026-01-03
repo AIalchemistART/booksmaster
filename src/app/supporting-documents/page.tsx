@@ -363,9 +363,9 @@ export default function SupportingDocumentsPage() {
                     </Button>
                     <Button
                       size="sm"
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation()
-                        convertToTransaction(doc)
+                        await convertToTransaction(doc)
                       }}
                       disabled={converting}
                     >

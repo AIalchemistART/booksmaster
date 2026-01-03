@@ -686,7 +686,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                         <p className="text-xs text-yellow-600 dark:text-yellow-400">Your bookkeeping journey begins!</p>
                       </div>
                       <div className="text-right">
-                        <span className="text-lg font-bold text-yellow-700 dark:text-yellow-300">+200 XP</span>
+                        <span className="text-lg font-bold text-yellow-700 dark:text-yellow-300">+50 XP</span>
                       </div>
                     </div>
                   </div>
@@ -782,7 +782,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       className="font-mono"
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Get your API key at <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>. We recommend <strong>Tier 1 API</strong> (paid tier, ~$2/month) for reliable performance and faster processing. Free tier may have rate limits.
+                      Get your free API key at <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>
                     </p>
                   </div>
                   
