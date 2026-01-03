@@ -95,6 +95,42 @@ function createWindow() {
 
 app.whenReady().then(() => {
   loadConfig()
+  
+  // Intercept file:// protocol for static asset loading
+  if (process.env.NODE_ENV !== 'development') {
+    protocol.interceptFileProtocol('file', (request, callback) => {
+      let fileUrl = request.url.substring(7)
+      fileUrl = decodeURIComponent(fileUrl)
+      
+      // If already in app directory, use as-is
+      if (fileUrl.includes('\\app\\out') || fileUrl.includes('/app/out')) {
+        const cleanPath = fileUrl.startsWith('/') ? fileUrl.substring(1) : fileUrl
+        callback({ path: cleanPath })
+        return
+      }
+      
+      // Strip /C:/ prefix
+      if (fileUrl.startsWith('/C:/') || fileUrl.startsWith('/C:')) {
+        fileUrl = fileUrl.replace(/^\/C:/, '')
+      }
+      
+      // Remove leading slash
+      if (fileUrl.startsWith('/')) {
+        fileUrl = fileUrl.substring(1)
+      }
+      
+      // Build path to out directory
+      let filePath = path.join(process.resourcesPath, 'app', 'out', fileUrl)
+      
+      // Append index.html for directory paths
+      if (fileUrl.endsWith('/') || (!fileUrl.includes('.') && fsSync.existsSync(filePath) && fsSync.statSync(filePath).isDirectory())) {
+        filePath = path.join(filePath, 'index.html')
+      }
+      
+      callback({ path: filePath })
+    })
+  }
+  
   createWindow()
 
   app.on('activate', () => {
