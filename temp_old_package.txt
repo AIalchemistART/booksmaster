@@ -1,17 +1,17 @@
-{
+﻿{
   "name": "thomas-books",
-  "version": "0.3.0",
+  "version": "0.2.0",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "electron:dev": "concurrently \"cross-env BROWSER=none npm run dev\" \"wait-on http-get://localhost:3000 http-get://localhost:3001 && cross-env NODE_ENV=development electron .\"",
+    "electron:dev": "concurrently \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
     "electron:build": "cross-env SKIP_PREFLIGHT_CHECK=true next build && electron-builder",
     "electron:build:win": "cross-env SKIP_PREFLIGHT_CHECK=true next build && electron-builder --win",
     "electron:build:win:fast": "electron-builder --win --config.compression=store",
@@ -83,17 +83,12 @@
       "electron/main.js",
       "electron/preload.js",
       "out/**/*",
+      "!out/ThomasBooksSetup.exe",
       "!out/**/*.exe",
       "package.json",
       "!node_modules"
     ],
     "extraResources": [],
-    "asarUnpack": [
-      "**/node_modules/heic-convert/**/*"
-    ],
-    "fileAssociations": [],
-    "extraFiles": [],
-    "electronLanguages": ["en-US"],
     "win": {
       "target": {
         "target": "nsis",
