@@ -59,7 +59,8 @@ function createWindow() {
   if (isDev) {
     mainWindow.loadURL('http://localhost:3001')
   } else {
-    const indexPath = path.join(process.resourcesPath, 'app', 'out', 'index.html')
+    // With ASAR packaging, use app.getAppPath() which correctly resolves to app.asar
+    const indexPath = path.join(app.getAppPath(), 'out', 'index.html')
     mainWindow.loadFile(indexPath)
   }
 
