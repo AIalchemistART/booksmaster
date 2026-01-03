@@ -92,6 +92,11 @@
         "from": "node_modules/heic-convert",
         "to": "node_modules/heic-convert",
         "filter": ["**/*"]
+      },
+      {
+        "from": "node_modules/heic-decode",
+        "to": "node_modules/heic-decode",
+        "filter": ["**/*"]
       }
     ],
     "win": {
