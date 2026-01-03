@@ -914,7 +914,7 @@ export default function SupportingDocumentsPage() {
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={convertToTransaction}
+                    onClick={() => convertToTransaction()}
                   >
                     <ArrowRight className="h-4 w-4 mr-2" />
                     Convert to Transaction
