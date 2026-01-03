@@ -59,8 +59,9 @@ function createWindow() {
   if (isDev) {
     mainWindow.loadURL('http://localhost:3001')
   } else {
-    // Use custom protocol to properly serve Next.js static assets
-    mainWindow.loadURL('app://./index.html')
+    // Load from unpacked app directory (ASAR disabled for compatibility)
+    const indexPath = path.join(__dirname, '../out/index.html')
+    mainWindow.loadFile(indexPath)
   }
 
   // Handle navigation events
@@ -95,19 +96,6 @@ function createWindow() {
 
 app.whenReady().then(() => {
   loadConfig()
-  
-  // Register custom protocol handler for serving app files from ASAR
-  if (process.env.NODE_ENV !== 'development') {
-    protocol.registerFileProtocol('app', (request, callback) => {
-      let filePath = request.url.replace('app://./', '')
-      
-      // Build full path from ASAR
-      const fullPath = path.normalize(path.join(app.getAppPath(), 'out', filePath))
-      
-      callback({ path: fullPath })
-    })
-  }
-  
   createWindow()
 
   app.on('activate', () => {

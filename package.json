@@ -71,9 +71,7 @@
   "build": {
     "appId": "com.booksmaster.app",
     "productName": "Booksmaster",
-    "asar": {
-      "smartUnpack": true
-    },
+    "asar": false,
     "buildDependenciesFromSource": false,
     "nodeGypRebuild": false,
     "npmRebuild": false,
