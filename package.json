@@ -97,6 +97,11 @@
         "from": "node_modules/heic-decode",
         "to": "node_modules/heic-decode",
         "filter": ["**/*"]
+      },
+      {
+        "from": "node_modules/libheif-js",
+        "to": "node_modules/libheif-js",
+        "filter": ["**/*"]
       }
     ],
     "win": {
