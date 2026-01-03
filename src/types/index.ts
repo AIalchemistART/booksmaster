@@ -113,6 +113,9 @@ export interface Invoice {
   paidDate?: string
   status: 'draft' | 'sent' | 'paid' | 'overdue'
   notes?: string
+  // Link to payment receipt when marked as paid
+  linkedReceiptId?: string
+  linkedTransactionId?: string
   createdAt: string
   updatedAt: string
 }

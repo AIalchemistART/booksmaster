@@ -696,7 +696,19 @@ export function ReceiptImageModal({
               />
             </div>
             
-            {/* Right Navigation Arrow - positioned in darkened area outside receipt */}
+            {/* Left Navigation Arrow */}
+            {hasPrevious && (
+              <button
+                onClick={onNavigatePrevious}
+                disabled={!hasPrevious}
+                title="Previous transaction"
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+              </button>
+            )}
+            
+            {/* Right Navigation Arrow */}
             {hasNext && (
               <button
                 onClick={onNavigateNext}

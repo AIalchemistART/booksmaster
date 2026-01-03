@@ -111,9 +111,21 @@ export const createGamificationSlice: StateCreator<
       }
       
       console.log(`[LEVEL UP] Manual level up to Level ${targetLevel} (cosmetic XP: ${cosmeticXP})`)
+      console.log(`[LEVEL UP] Updated state - currentLevel: ${targetLevel}, totalXP: ${newProgress.totalXP}`)
       
       // File system backup only - zustand persist handles localStorage
       saveGamificationData(newProgress, state.unlockedAchievements).catch(console.error)
+      
+      // Debug: Verify localStorage after update
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem('thomas-books-storage')
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            console.log(`[LEVEL UP DEBUG] localStorage after update - currentLevel: ${parsed.state?.userProgress?.currentLevel}`)
+          }
+        }
+      }, 100)
       
       return { 
         userProgress: newProgress,

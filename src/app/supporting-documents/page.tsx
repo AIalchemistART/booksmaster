@@ -44,12 +44,17 @@ export default function SupportingDocumentsPage() {
   })
 
   // Filter to only supporting documents (payment receipts, manifests)
+  // EXCLUDE receipts that have been converted to transactions
   const supportingDocs = useMemo(() => {
-    return receipts.filter((r: Receipt) => 
-      r.documentType === 'payment_receipt' || 
-      r.documentType === 'manifest' ||
-      r.isSupplementalDoc
-    )
+    return receipts.filter((r: Receipt) => {
+      // Exclude if linked to a transaction (converted receipts)
+      if (r.linkedTransactionId) return false
+      
+      // Include payment receipts, manifests, or supplemental docs
+      return r.documentType === 'payment_receipt' || 
+             r.documentType === 'manifest' ||
+             r.isSupplementalDoc
+    })
   }, [receipts])
 
   // Get unvalidated/unlinked supplemental docs for conversion queue

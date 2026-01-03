@@ -358,8 +358,25 @@ export const useStore = create<AppState>()(
           console.log('[STORE] Store rehydrated, restoring receipt images...')
           console.log('[PERSIST] userProgress.onboardingComplete:', state.userProgress?.onboardingComplete)
           console.log('[PERSIST] userProgress.currentLevel:', state.userProgress?.currentLevel)
+          console.log('[PERSIST] userProgress.totalXP:', state.userProgress?.totalXP)
+          console.log('[PERSIST] userProgress.unlockedFeatures:', state.userProgress?.unlockedFeatures)
           console.log('[PERSIST] businessName:', state.businessName)
           console.log('[PERSIST] darkMode:', state.darkMode)
+          
+          // Debug: Check what's in localStorage
+          if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('thomas-books-storage')
+            if (stored) {
+              try {
+                const parsed = JSON.parse(stored)
+                console.log('[PERSIST DEBUG] localStorage userProgress:', parsed.state?.userProgress)
+              } catch (e) {
+                console.error('[PERSIST DEBUG] Failed to parse localStorage:', e)
+              }
+            } else {
+              console.log('[PERSIST DEBUG] No localStorage data found')
+            }
+          }
           
           // MIGRATION DISABLED: The migration was too aggressive and reset legitimate progress
           // Users who have receipts/transactions should keep their level, even after restart
