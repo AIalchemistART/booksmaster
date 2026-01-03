@@ -116,23 +116,6 @@ app.whenReady().then(() => {
   
   loadConfig()
   
-  console.log('[ELECTRON STARTUP] Registering app:// protocol handler')
-  // Register protocol handler for app:// scheme
-  protocol.registerFileProtocol('app', (request, callback) => {
-    console.log('[PROTOCOL] Request received:', request.url)
-    
-    let filePath = request.url.replace('app://./', '')
-    filePath = decodeURIComponent(filePath)
-    console.log('[PROTOCOL] After decode:', filePath)
-    
-    // Build full path to file in out directory
-    const fullPath = path.normalize(path.join(process.resourcesPath, 'app', 'out', filePath))
-    console.log('[PROTOCOL] Full path:', fullPath)
-    console.log('[PROTOCOL] File exists:', fsSync.existsSync(fullPath))
-    
-    callback({ path: fullPath })
-  })
-  
   console.log('[ELECTRON STARTUP] Creating window')
   createWindow()
   console.log('[ELECTRON STARTUP] Window created')
