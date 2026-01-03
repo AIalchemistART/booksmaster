@@ -59,9 +59,8 @@ function createWindow() {
   if (isDev) {
     mainWindow.loadURL('http://localhost:3001')
   } else {
-    // With ASAR packaging, use app.getAppPath() which correctly resolves to app.asar
-    const indexPath = path.join(app.getAppPath(), 'out', 'index.html')
-    mainWindow.loadFile(indexPath)
+    // Use custom protocol to properly serve Next.js static assets
+    mainWindow.loadURL('app://./index.html')
   }
 
   // Handle navigation events
@@ -97,38 +96,15 @@ function createWindow() {
 app.whenReady().then(() => {
   loadConfig()
   
-  // Intercept file:// protocol for static asset loading
+  // Register custom protocol handler for serving app files from ASAR
   if (process.env.NODE_ENV !== 'development') {
-    protocol.interceptFileProtocol('file', (request, callback) => {
-      let fileUrl = request.url.substring(7)
-      fileUrl = decodeURIComponent(fileUrl)
+    protocol.registerFileProtocol('app', (request, callback) => {
+      let filePath = request.url.replace('app://./', '')
       
-      // If already in app directory, use as-is
-      if (fileUrl.includes('\\app\\out') || fileUrl.includes('/app/out')) {
-        const cleanPath = fileUrl.startsWith('/') ? fileUrl.substring(1) : fileUrl
-        callback({ path: cleanPath })
-        return
-      }
+      // Build full path from ASAR
+      const fullPath = path.normalize(path.join(app.getAppPath(), 'out', filePath))
       
-      // Strip /C:/ prefix
-      if (fileUrl.startsWith('/C:/') || fileUrl.startsWith('/C:')) {
-        fileUrl = fileUrl.replace(/^\/C:/, '')
-      }
-      
-      // Remove leading slash
-      if (fileUrl.startsWith('/')) {
-        fileUrl = fileUrl.substring(1)
-      }
-      
-      // Build path to out directory
-      let filePath = path.join(process.resourcesPath, 'app', 'out', fileUrl)
-      
-      // Append index.html for directory paths
-      if (fileUrl.endsWith('/') || (!fileUrl.includes('.') && fsSync.existsSync(filePath) && fsSync.statSync(filePath).isDirectory())) {
-        filePath = path.join(filePath, 'index.html')
-      }
-      
-      callback({ path: filePath })
+      callback({ path: fullPath })
     })
   }
   
