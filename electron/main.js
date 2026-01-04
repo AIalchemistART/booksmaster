@@ -67,8 +67,9 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:3001')
   } else {
     const indexPath = path.join(process.resourcesPath, 'app', 'out', 'index.html')
-    console.log('[WINDOW] Loading production file:', indexPath)
-    mainWindow.loadFile(indexPath)
+    const fileUrl = `file:///${indexPath.replace(/\\/g, '/')}`
+    console.log('[WINDOW] Loading production URL:', fileUrl)
+    mainWindow.loadURL(fileUrl)
   }
   
   // Log when page finishes loading
