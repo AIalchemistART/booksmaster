@@ -40,8 +40,6 @@ function saveConfig() {
 }
 
 function createWindow() {
-  const outPath = path.join(process.resourcesPath, 'app', 'out')
-  
   mainWindow = new BrowserWindow({
     title: 'Booksmaster - Contractor Bookkeeping',
     width: 1400,
@@ -53,8 +51,8 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       // CRITICAL FIX: Use named partition to ensure localStorage persists
       partition: 'persist:booksmaster',
-      // Set base URL to fix absolute path resolution for /_next/ assets
-      baseURLForDataURL: `file://${outPath}/`
+      // Disable web security to allow loading local files with absolute paths
+      webSecurity: false
     },
     icon: path.join(__dirname, '../public/icon.png')
   })
