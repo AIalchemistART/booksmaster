@@ -118,6 +118,26 @@ app.whenReady().then(() => {
   
   loadConfig()
   
+  // Intercept file:// requests to handle Next.js absolute paths
+  protocol.interceptFileProtocol('file', (request, callback) => {
+    let url = request.url.substr(7) // Remove 'file://'
+    
+    // Decode URL
+    url = decodeURIComponent(url)
+    
+    // Handle _next absolute paths
+    if (url.includes('/_next/')) {
+      const nextPath = url.substring(url.indexOf('/_next/'))
+      const fullPath = path.join(process.resourcesPath, 'app', 'out', nextPath)
+      console.log('[PROTOCOL] Intercepted _next:', nextPath, '→', fullPath)
+      callback({ path: fullPath })
+      return
+    }
+    
+    // Default: use as-is
+    callback({ path: url })
+  })
+  
   console.log('[ELECTRON STARTUP] Creating window')
   createWindow()
   console.log('[ELECTRON STARTUP] Window created')
