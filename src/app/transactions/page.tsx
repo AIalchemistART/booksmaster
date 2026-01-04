@@ -424,8 +424,9 @@ export default function TransactionsPage() {
       )
       
       // Apply learned payment type if card number is known
-      let finalPaymentMethod = receipt.ocrPaymentMethod
-      if (receipt.ocrCardLastFour && receipt.ocrPaymentMethod) {
+      // AI categorization doesn't determine payment method - only use if learned from card mapping
+      let finalPaymentMethod: string | undefined = undefined
+      if (receipt.ocrCardLastFour) {
         const learned = await lookupCardPaymentType(receipt.ocrCardLastFour)
         if (learned && learned.confidence >= 0.7) {
           finalPaymentMethod = learned.paymentType
@@ -433,12 +434,11 @@ export default function TransactionsPage() {
         }
       }
       
-      // Update receipt with categorization and learned payment method
+      // Update receipt with categorization
       updateReceipt(receipt.id, {
         transactionType: categorization.type,
         transactionCategory: categorization.category,
-        categorizationConfidence: categorization.confidence,
-        ...(finalPaymentMethod !== receipt.ocrPaymentMethod && { ocrPaymentMethod: finalPaymentMethod })
+        categorizationConfidence: categorization.confidence
       })
       
       // Now convert with the categorization
@@ -452,7 +452,7 @@ export default function TransactionsPage() {
         description: receipt.ocrVendor || 'Receipt purchase',
         type: categorization.type,
         category: categorization.category.toLowerCase().replace(/\s+/g, '_') as TransactionCategory,
-        paymentMethod: finalPaymentMethod as PaymentMethod,
+        paymentMethod: finalPaymentMethod ? (finalPaymentMethod as PaymentMethod) : undefined,
         itemization: receipt.ocrLineItems 
           ? `Items: ${receipt.ocrLineItems.map(i => i.description).join(', ')}`
           : undefined,
