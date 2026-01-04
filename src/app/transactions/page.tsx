@@ -935,7 +935,10 @@ export default function TransactionsPage() {
               </div>
               <div className="relative group">
                 {(() => {
-                  const isLocked = userProgress.currentLevel < 6
+                  const currentAccuracy = getLatestAccuracyRate()
+                  const isLevelLocked = userProgress.currentLevel < 6
+                  const isAccuracyLocked = currentAccuracy < 90
+                  const isLocked = isLevelLocked || isAccuracyLocked
                   
                   return (
                     <>
@@ -950,9 +953,10 @@ export default function TransactionsPage() {
                       </Button>
                       {isLocked && (
                         <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                          <p className="font-semibold mb-1">🔒 Unlocks at Level 6</p>
-                          <p>Current Level: {userProgress.currentLevel}</p>
-                          <p className="mt-1">Convert and validate receipts one-by-one to train the AI system. This teaches your AI to learn your business patterns before batch processing.</p>
+                          <p className="font-semibold mb-1">🔒 Requires Level 6 + 90% Accuracy</p>
+                          <p>Level: {userProgress.currentLevel}/6 {isLevelLocked ? '❌' : '✅'}</p>
+                          <p>Accuracy: {currentAccuracy.toFixed(1)}%/90% {isAccuracyLocked ? '❌' : '✅'}</p>
+                          <p className="mt-1">Convert and validate receipts one-by-one to train the AI system before unlocking batch processing.</p>
                         </div>
                       )}
                     </>
