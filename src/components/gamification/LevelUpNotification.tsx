@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Sparkles, Trophy, ChevronRight } from 'lucide-react'
+import { X, Sparkles, Trophy, ChevronRight, Scroll } from 'lucide-react'
 import { LEVELS, type UserLevel } from '@/lib/gamification/leveling-system'
+import Link from 'next/link'
 
 interface LevelUpNotificationProps {
   newLevel: UserLevel
@@ -93,7 +94,7 @@ export function LevelUpNotification({ newLevel, onClose, isVisible }: LevelUpNot
 
         {/* Unlocked features */}
         {levelData.unlocksFeatures.length > 0 && (
-          <div className={`bg-white/10 rounded-xl p-4 mb-6 transition-all duration-500 delay-500 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className={`bg-white/10 rounded-xl p-4 mb-4 transition-all duration-500 delay-500 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <div className="flex items-center gap-2 mb-3">
               <Trophy className="h-4 w-4 text-yellow-400" />
               <span className="text-sm font-semibold text-white">Features Learned</span>
@@ -110,6 +111,26 @@ export function LevelUpNotification({ newLevel, onClose, isVisible }: LevelUpNot
             </div>
           </div>
         )}
+
+        {/* New Quest Available */}
+        <div className={`bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-400/30 rounded-xl p-4 mb-6 transition-all duration-500 delay-600 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <Scroll className="h-5 w-5 text-blue-400 animate-pulse" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-blue-200 mb-1">New Quest Available!</p>
+              <p className="text-xs text-blue-300/80">Visit the dashboard to review your new quests</p>
+            </div>
+            <Link
+              href="/"
+              onClick={onClose}
+              className="flex-shrink-0 px-3 py-1.5 bg-blue-500/30 hover:bg-blue-500/40 text-blue-200 rounded-lg text-xs font-medium transition-colors"
+            >
+              View
+            </Link>
+          </div>
+        </div>
 
         {/* Continue button */}
         <button
