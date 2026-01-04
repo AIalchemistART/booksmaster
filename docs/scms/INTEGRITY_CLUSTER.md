@@ -85,13 +85,31 @@ When terminology errors occur:
 - Serves Next.js static files from `out/` directory
 - Handles route navigation via `will-navigate` event
 
+**Electron Loading Methods:**
+- **loadFile()** - Direct file system loading, BYPASSES protocol interceptors
+- **loadURL()** - URL-based loading, ALLOWS protocol interceptors to function
+- Critical: Must use `loadURL(file:///${path})` for protocol interception to work
+
+**Electron Logging Contexts:**
+- **Main process logs** - console.log in main.js, NOT visible in DevTools
+- **Renderer process logs** - console.log in renderer/React, visible in DevTools
+- **Preload.js logs** - Runs in renderer context, VISIBLE in DevTools (best for debugging)
+
+**Electron ASAR Packaging:**
+- **ASAR enabled** - Packages app into single archive, breaks Next.js static asset paths
+- **ASAR disabled** - Unpacked files, simplifies path resolution for Next.js exports
+- ⚠️ NEVER re-enable ASAR without full path resolution audit for Next.js assets
+
 ---
 
 ## Definitions Added This Session
 
-*No new definitions yet*
+### Session 147 (Jan 3, 2026) - Electron Build Fixes
+- **loadFile() vs loadURL()** - Critical distinction for protocol interceptor functionality
+- **Preload.js logging visibility** - Runs in renderer context, appears in DevTools
+- **ASAR packaging constraint** - Incompatible with Next.js static exports without remapping
 
 ---
 
-**Last Updated:** December 28, 2024  
+**Last Updated:** January 3, 2026  
 **Next Review:** When terminology corrections occur in L2

@@ -184,13 +184,26 @@ amount: receipt.ocrAmount ?? 0       // -24.99 preserved
 
 ### Electron Build
 - Fast build: `npm run electron:build:win:fast` (no compression)
-- ASAR disabled: Required for Next.js route access
+- **CRITICAL:** ASAR packaging MUST remain disabled (`"asar": false`) for Next.js static exports
+- ⚠️ NEVER re-enable ASAR without full path resolution audit
 - Installer output: `dist/Thomas Books Setup 0.1.0.exe`
 - Public copy: Copy to `public/ThomasBooksSetup.exe` for download
+
+### Electron Loading Pattern
+- **MANDATORY:** Use `loadURL(file:///${path})` NOT `loadFile(path)` for protocol interceptor support
+- Protocol interceptors ONLY work with `loadURL()`, NOT `loadFile()`
+- Register protocol interceptor on session AFTER window creation: `mainWindow.webContents.session.protocol.interceptFileProtocol()`
+
+### Electron Logging Strategy
+- **Main process logs** (main.js): NOT visible in DevTools - use for server-side debugging only
+- **Renderer logs** (React): Visible in DevTools Console
+- **Preload.js logs:** Best for early debugging - runs in renderer context, appears in DevTools
+- Add logging in preload.js for critical startup/loading issues
 
 ### Debug Logging
 - Remove debug console.logs before production builds
 - DevTools auto-open disabled in production
+- Keep preload.js logging minimal in production (only critical errors)
 
 ---
 

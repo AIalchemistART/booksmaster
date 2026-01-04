@@ -415,15 +415,138 @@ if (isNowValidated) {
 
 ---
 
+### [FAILURE-005] Electron Build CSS/JS Loading Failure - ASAR & Protocol Interceptor Issues
+
+**Date:** 2026-01-03  
+**Session ID:** Checkpoint 147  
+**Severity:** Critical  
+**Impact:** Production - Application Unusable  
+**Status:** ✅ Resolved
+
+#### Problem Statement
+
+**What went wrong?**
+Electron app displayed white screen with no CSS/JS loading after build. All `/_next/static/` assets returned `net::ERR_FILE_NOT_FOUND` errors. App was completely non-functional in production builds despite working in development.
+
+**Expected Behavior:**
+- Production build loads with full CSS styling
+- All Next.js static assets (CSS, JS chunks) load correctly
+- App displays styled UI matching development environment
+
+**Actual Behavior:**
+- White screen or unstyled content
+- Console errors: `Failed to load resource: net::ERR_FILE_NOT_FOUND` for all `/_next/` paths
+- Paths like `file:///C:/_next/static/css/5af1785099784f90.css` attempted but failed
+- Protocol interceptor not triggering despite registration
+
+#### 5 Whys Root Cause Analysis
+
+**Why 1:** Why did CSS/JS files fail to load?
+- Electron was attempting to load `file:///C:/_next/static/...` paths which don't exist on filesystem
+
+**Why 2:** Why were these incorrect paths being generated?
+- Using `loadFile()` instead of `loadURL()` bypassed the protocol interceptor entirely
+
+**Why 3:** Why didn't the protocol interceptor catch the `/_next/` requests?
+- Protocol interceptor was registered but `loadFile()` doesn't trigger protocol handlers - only `loadURL()` does
+
+**Why 4:** Why was ASAR packaging attempted when it caused path resolution issues?
+- Tried to minimize build size without understanding Electron's ASAR path resolution requirements for Next.js static exports
+
+**Why 5:** Why did multiple attempted fixes (webSecurity: false, baseURLForDataURL, assetPrefix) fail?
+- Root cause was loading method (`loadFile` vs `loadURL`), not security settings or path configuration. Focused on symptoms instead of fundamental loading mechanism.
+
+#### Resolution
+
+**Immediate Fix:**
+Changed from `mainWindow.loadFile(indexPath)` to `mainWindow.loadURL(fileUrl)` with proper `file:///` URL format, allowing session protocol interceptor to catch and redirect `/_next/` requests to correct filesystem paths.
+
+**Files Modified:**
+- `electron/main.js:70-72` - Changed to `loadURL(file:///${indexPath})` instead of `loadFile(indexPath)`
+- `electron/main.js:143-165` - Added session.protocol.interceptFileProtocol after window creation
+- `electron/preload.js:3-24` - Added comprehensive PRELOAD logging for debugging CSS loading
+- `package.json:82` - Disabled ASAR packaging (`"asar": false`)
+
+**Code Changes:**
+```javascript
+// ANTI-PATTERN (Bug):
+mainWindow.loadFile(indexPath)  // Bypasses protocol interceptor
+
+// CORRECT PATTERN:
+const fileUrl = `file:///${indexPath.replace(/\\/g, '/')}`
+mainWindow.loadURL(fileUrl)  // Allows protocol interceptor to work
+
+// Protocol Interceptor (registered on session):
+const session = mainWindow.webContents.session
+session.protocol.interceptFileProtocol('file', (request, callback) => {
+  let url = request.url.substr(7)
+  url = decodeURIComponent(url)
+  
+  if (url.includes('/_next/')) {
+    const nextPath = url.substring(url.indexOf('/_next/'))
+    const fullPath = path.join(process.resourcesPath, 'app', 'out', nextPath)
+    callback({ path: fullPath })
+    return
+  }
+  callback({ path: url })
+})
+```
+
+#### Prevention Strategy
+
+**Short-term (This Session):**
+- [x] Changed to `loadURL()` to enable protocol interception
+- [x] Disabled ASAR packaging to simplify path resolution
+- [x] Added session-based protocol interceptor for `/_next/` paths
+- [x] Added preload.js logging for early CSS debugging visibility
+
+**Long-term (Pattern Promotion):**
+- [ ] Document "Electron + Next.js Static Export" pattern in WORKSPACE_RULES.md
+- [ ] Add to WORKSPACE_RULES: "NEVER re-enable ASAR without full path resolution audit"
+- [ ] Add to WORKSPACE_RULES: "Electron: Use loadURL() not loadFile() when protocol interceptors are needed"
+- [ ] Create build verification checklist for Electron production builds
+
+**Related Patterns:**
+- HEIC conversion dependencies required explicit bundling (extraResources pattern)
+- Protocol interceptor pattern critical for serving static assets with custom paths
+- Session-scoped protocol handlers more reliable than global handlers
+
+#### Lessons Learned
+
+**What worked well:**
+- Preload.js logging provided visibility into renderer console (main process logs invisible in DevTools)
+- Incremental debugging revealed exact failure point (`file:///C:/_next/...` paths)
+- User persistence in testing multiple builds allowed iteration to solution
+
+**What to avoid:**
+- **ANTI-PATTERN**: Enabling ASAR packaging without understanding path resolution impact on static file serving
+- **ANTI-PATTERN**: Using `loadFile()` when protocol interceptors are required for asset loading
+- **ANTI-PATTERN**: Attempting `assetPrefix: '.'` changes - incompatible with `next/font`
+- **ANTI-PATTERN**: Implementing custom `app://` protocol on Windows - caused full white screen
+- **ANTI-PATTERN**: Adding logging AFTER page load (did-finish-load) - too late to catch resource errors
+- Trying symptom fixes (webSecurity, baseURLForDataURL) without diagnosing root cause
+- Repeatedly testing same approach without logging to confirm changes took effect
+
+**Knowledge Gap Filled:**
+- `loadFile()` bypasses Electron protocol handlers; must use `loadURL(file://...)` for interception
+- Session protocol handlers (`session.protocol`) more reliable than global `protocol` API
+- Preload.js runs in renderer context - its console.log appears in DevTools
+- Main process logs (console.log in main.js) do NOT appear in renderer DevTools
+- ASAR packaging breaks Next.js static asset loading without complex path remapping
+- `assetPrefix` in next.config.js incompatible with `next/font` usage
+- Protocol interceptors must be registered AFTER window creation when using session scope
+
+---
+
 **Statistics:**
-- Total Failures: 4
-- Critical: 2
+- Total Failures: 5
+- Critical: 3
 - High: 1
 - Medium: 1
 - Low: 0
-- Resolved: 4
+- Resolved: 5
 - Open: 0
 
 ---
 
-**Last Updated:** January 1, 2026
+**Last Updated:** January 3, 2026
