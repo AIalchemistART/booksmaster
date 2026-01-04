@@ -51,7 +51,7 @@ const typeOptions = [
 ]
 
 export default function TransactionsPage() {
-  const { transactions, addTransaction, updateTransaction, deleteTransaction, receipts, updateReceipt, completeAction, unlockAchievement, getLatestAccuracyRate } = useStore()
+  const { transactions, addTransaction, updateTransaction, deleteTransaction, receipts, updateReceipt, completeAction, unlockAchievement, getLatestAccuracyRate, userProgress } = useStore()
   const { showIntro, closeIntro } = useFirstVisit('transactions')
   const { showModal, requireFileSystem, handleSetupComplete, handleCancel } = useFileSystemCheck()
   const [showForm, setShowForm] = useState(false)
@@ -385,17 +385,30 @@ export default function TransactionsPage() {
     // Skip receipts without amounts - mark as supplemental docs instead
     if (!receipt.ocrVendor || receipt.ocrAmount === undefined || receipt.ocrAmount === null) {
       if (receipt.ocrAmount === undefined || receipt.ocrAmount === null || receipt.ocrAmount === 0) {
+        // Quest: Upload supplemental document → Level 6 (Supporting Documents)
+        // CRITICAL: Check count BEFORE updating receipt
+        const suppDocsCount = receipts.filter((r: any) => r.isSupplementalDoc).length
+        console.log('[QUEST CHECK] Supplemental doc - Current count:', suppDocsCount, 'Level:', useStore.getState().userProgress.currentLevel)
+        
         updateReceipt(receipt.id, { isSupplementalDoc: true })
         console.log('[CONVERSION] Marked receipt without total as supplemental doc:', receipt.id)
         
-        // Check if this is first supplemental doc - unlock Level 4
-        const suppDocsCount = receipts.filter((r: any) => r.isSupplementalDoc).length
+        // Track milestone for Level 7 quest
+        const { incrementMilestone } = useStore.getState()
+        incrementMilestone('supplementalDocs')
+        
         if (suppDocsCount === 0) {
-          const { manualLevelUp, userProgress } = useStore.getState()
-          if (userProgress.currentLevel < 4) {
-            manualLevelUp(4)
-            console.log('[LEVEL UP] First supplemental document - unlocked Level 4 (Supporting Documents)')
+          const { manualLevelUp, userProgress, completeQuest, questProgress } = useStore.getState()
+          console.log('[QUEST CHECK] First supplemental doc - Quest completed:', questProgress.completedQuests.includes('upload_supplemental'))
+          if (!questProgress.completedQuests.includes('upload_supplemental') && userProgress.currentLevel >= 3 && userProgress.currentLevel < 7) {
+            completeQuest('upload_supplemental')
+            manualLevelUp()
+            console.log('[QUEST] ✅ Completed upload_supplemental quest - advancing to next level (Supporting Documents)')
+          } else {
+            console.log('[QUEST CHECK] Quest already completed, level too low, or already at max')
           }
+        } else {
+          console.log('[QUEST CHECK] Not first supplemental doc, skipping quest trigger')
         }
       }
       return
@@ -922,8 +935,7 @@ export default function TransactionsPage() {
               </div>
               <div className="relative group">
                 {(() => {
-                  const currentAccuracy = getLatestAccuracyRate()
-                  const isLocked = currentAccuracy < 90 && receipts.filter(r => r.linkedTransactionId).length > 5
+                  const isLocked = userProgress.currentLevel < 6
                   
                   return (
                     <>
@@ -938,9 +950,9 @@ export default function TransactionsPage() {
                       </Button>
                       {isLocked && (
                         <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                          <p className="font-semibold mb-1">🎯 Unlock at 90% AI Accuracy</p>
-                          <p>Current: {currentAccuracy.toFixed(1)}%</p>
-                          <p className="mt-1">Convert and validate receipts one-by-one to train the AI and unlock batch conversion.</p>
+                          <p className="font-semibold mb-1">🔒 Unlocks at Level 6</p>
+                          <p>Current Level: {userProgress.currentLevel}</p>
+                          <p className="mt-1">Convert and validate receipts one-by-one to train the AI system. This teaches your AI to learn your business patterns before batch processing.</p>
                         </div>
                       )}
                     </>
