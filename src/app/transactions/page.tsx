@@ -105,26 +105,41 @@ export default function TransactionsPage() {
     )
   }
   
-  // Normalize payment method to standard types (same as receipts page)
-  // Migrate paymentMethod from receipts to transactions (one-time fix for existing data)
+  // Migration: Clear OCR-based payment methods (keep only learned card types)
   useEffect(() => {
     if (paymentMethodMigrated || transactions.length === 0) return
     
-    let needsUpdate = false
-    transactions.forEach((t: Transaction) => {
-      if (!t.paymentMethod && t.receiptId) {
-        const linkedReceipt = receipts.find((r: ReceiptType) => r.id === t.receiptId)
-        if (linkedReceipt?.ocrPaymentMethod) {
-          updateTransaction(t.id, { paymentMethod: linkedReceipt.ocrPaymentMethod as PaymentMethod })
-          needsUpdate = true
+    const runMigration = async () => {
+      let clearedCount = 0
+      let keptCount = 0
+      
+      for (const t of transactions) {
+        if (!t.paymentMethod) continue
+        
+        // Check if this payment method came from learned card mapping
+        const linkedReceipt = t.receiptId ? receipts.find((r: ReceiptType) => r.id === t.receiptId) : null
+        let shouldKeep = false
+        
+        if (linkedReceipt?.ocrCardLastFour) {
+          const learned = await lookupCardPaymentType(linkedReceipt.ocrCardLastFour)
+          if (learned && learned.confidence >= 0.7 && learned.paymentType === t.paymentMethod) {
+            shouldKeep = true
+            keptCount++
+          }
+        }
+        
+        // Clear OCR payment methods
+        if (!shouldKeep) {
+          updateTransaction(t.id, { paymentMethod: undefined })
+          clearedCount++
         }
       }
-    })
-    
-    if (needsUpdate) {
-      console.log('[MIGRATION] Updated transactions with paymentMethod from receipts')
+      
+      console.log(`[MIGRATION] Cleared ${clearedCount} OCR payment methods, kept ${keptCount} learned`)
+      setPaymentMethodMigrated(true)
     }
-    setPaymentMethodMigrated(true)
+    
+    runMigration()
   }, [transactions, receipts, paymentMethodMigrated, updateTransaction])
   
   const normalizePaymentMethod = (method: string | undefined): string | null => {
