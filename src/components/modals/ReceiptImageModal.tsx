@@ -502,6 +502,10 @@ export function ReceiptImageModal({
     // Mark as manually edited if type or category changed from original
     const categorizationChanged = (formData.type !== originalType) || (formData.category !== originalCategory)
 
+    const wasManuallyEditedValue = anyFieldChanged || transaction.wasManuallyEdited || false
+    console.log('[TRANSACTION UPDATE] anyFieldChanged:', anyFieldChanged, 'categorizationChanged:', categorizationChanged, 'wasManuallyEdited:', wasManuallyEditedValue)
+    console.log('[TRANSACTION UPDATE] originalType:', originalType, 'originalCategory:', originalCategory)
+    
     const updatedTransaction: Transaction = {
       ...transaction,
       date: formData.date,
@@ -523,9 +527,16 @@ export function ReceiptImageModal({
       originalDescription,
       originalAmount,
       originalPaymentMethod,
-      wasManuallyEdited: categorizationChanged || transaction.wasManuallyEdited || false,
+      wasManuallyEdited: wasManuallyEditedValue,
       editedAt: anyFieldChanged ? now : transaction.editedAt
     }
+    
+    console.log('[TRANSACTION UPDATE] Updated transaction:', {
+      id: updatedTransaction.id,
+      wasManuallyEdited: updatedTransaction.wasManuallyEdited,
+      originalType: updatedTransaction.originalType,
+      originalCategory: updatedTransaction.originalCategory
+    })
 
     // Create categorization correction for AI learning if any field changed
     if (anyFieldChanged) {
@@ -561,30 +572,66 @@ export function ReceiptImageModal({
         console.error('[CORRECTION] Failed to save to file system:', error)
       }
       
-      // Check for level-ups based on transaction edits
-      const { transactions, userProgress, manualLevelUp } = useStore.getState()
+      // Check for level-ups based on transaction edits (Quest system)
+      const { transactions, userProgress, manualLevelUp, questProgress, completeQuest, markTransactionUsedForQuest } = useStore.getState()
+      const { canTransactionTriggerQuest } = await import('@/lib/gamification/quest-system')
       
-      // Level 5: First transaction edit/validation
+      // Quest: Edit a transaction → Level 4 (Categorization Changes)
       if (categorizationChanged || anyFieldChanged) {
-        const editedTransactions = transactions.filter(t => t.wasManuallyEdited || t.userValidated)
-        if (editedTransactions.length === 0) {
-          // First edit - unlock Invoices & Reports (Level 5)
-          if (userProgress.currentLevel < 5) {
-            manualLevelUp(5)
-            console.log('[LEVEL UP] First transaction edit - unlocked Level 5 (Invoices & Reports)')
+        // Track milestone for categorization corrections
+        if (categorizationChanged) {
+          const { incrementMilestone } = useStore.getState()
+          incrementMilestone('categorizations')
+        }
+        
+        // Check if this transaction can trigger the edit quest
+        console.log('[QUEST CHECK] Edit transaction - Level:', userProgress.currentLevel, 'Completed:', questProgress.completedQuests.includes('edit_transaction'))
+        if (canTransactionTriggerQuest(transaction.id, 'edit_transaction', questProgress)) {
+          console.log('[QUEST CHECK] Transaction can trigger edit quest')
+          if (!questProgress.completedQuests.includes('edit_transaction') && userProgress.currentLevel >= 3) {
+            markTransactionUsedForQuest(transaction.id, 'edit_transaction')
+            completeQuest('edit_transaction')
+            manualLevelUp()
+            console.log('[QUEST] ✅ Completed edit_transaction quest - advancing to Level 4 (Categorization Changes)')
+          } else {
+            console.log('[QUEST CHECK] Quest already completed or level too low')
           }
+        } else {
+          console.log('[QUEST CHECK] Transaction already used for quest')
         }
       }
       
-      // Level 6: First categorization correction
-      if (categorizationChanged) {
-        if (categorizationCorrections.length === 0) {
-          // First categorization correction - unlock Categorization Changes (Level 6)
-          if (userProgress.currentLevel < 6) {
-            manualLevelUp(6)
-            console.log('[LEVEL UP] First categorization correction - unlocked Level 6 (Categorization Changes)')
+      // Quest: Validate a transaction → Level 5 (Invoices)
+      // Triggers on: 1st validation without edits OR 2nd validation overall (with or without edits)
+      console.log('[QUEST CHECK] Validate - anyFieldChanged:', anyFieldChanged, 'finalValidationState:', finalValidationState, 'userValidated:', transaction.userValidated)
+      if (finalValidationState && !transaction.userValidated) {
+        // Count PREVIOUSLY validated transactions (excluding current one)
+        const validatedCount = transactions.filter(t => t.userValidated && t.id !== transaction.id).length
+        console.log('[QUEST CHECK] Validate transaction - Level:', userProgress.currentLevel, 'Validated count (previous):', validatedCount, 'Has edits:', anyFieldChanged)
+        
+        // Trigger if: (1) First validation without edits, OR (2) Second validation overall
+        const shouldTriggerValidate = !anyFieldChanged || validatedCount >= 1
+        
+        if (shouldTriggerValidate) {
+          console.log('[QUEST CHECK] Validation quest eligible - Reason:', !anyFieldChanged ? 'First validation without edits' : 'Second validation overall')
+          if (canTransactionTriggerQuest(transaction.id, 'validate_transaction', questProgress)) {
+            console.log('[QUEST CHECK] Transaction can trigger validate quest')
+            if (!questProgress.completedQuests.includes('validate_transaction') && userProgress.currentLevel >= 3 && userProgress.currentLevel < 7) {
+              markTransactionUsedForQuest(transaction.id, 'validate_transaction')
+              completeQuest('validate_transaction')
+              manualLevelUp()
+              console.log('[QUEST] ✅ Completed validate_transaction quest - advancing to next level (Invoices)')
+            } else {
+              console.log('[QUEST CHECK] Quest already completed, level too low, or already at max')
+            }
+          } else {
+            console.log('[QUEST CHECK] Transaction already used for quest')
           }
+        } else {
+          console.log('[QUEST CHECK] First validation WITH edits - will trigger edit quest instead')
         }
+      } else {
+        console.log('[QUEST CHECK] Validation quest requirements not met')
       }
     }
     
@@ -1122,7 +1169,7 @@ export function ReceiptImageModal({
                     <div className="flex-1">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Date:</span>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {new Date(transaction.date).toLocaleDateString()} → {new Date(formData.date).toLocaleDateString()}
+                        {new Date(initialFormData.current.date).toLocaleDateString()} → {new Date(formData.date).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
@@ -1134,7 +1181,7 @@ export function ReceiptImageModal({
                     <div className="flex-1">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Description:</span>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        "{transaction.description}" → "{formData.description}"
+                        "{initialFormData.current.description}" → "{formData.description}"
                       </div>
                     </div>
                   </div>
@@ -1146,7 +1193,7 @@ export function ReceiptImageModal({
                     <div className="flex-1">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Amount:</span>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {formatCurrency(transaction.amount)} → {formatCurrency(parseFloat(formData.amount))}
+                        {formatCurrency(parseFloat(initialFormData.current.amount))} → {formatCurrency(parseFloat(formData.amount))}
                       </div>
                     </div>
                   </div>
@@ -1158,7 +1205,7 @@ export function ReceiptImageModal({
                     <div className="flex-1">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Type:</span>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {transaction.type} → {formData.type}
+                        {initialFormData.current.type} → {formData.type}
                       </div>
                     </div>
                   </div>
@@ -1170,7 +1217,7 @@ export function ReceiptImageModal({
                     <div className="flex-1">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Category:</span>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {transaction.category.replace(/_/g, ' ')} → {formData.category.replace(/_/g, ' ')}
+                        {initialFormData.current.category.replace(/_/g, ' ')} → {formData.category.replace(/_/g, ' ')}
                       </div>
                     </div>
                   </div>
@@ -1182,7 +1229,7 @@ export function ReceiptImageModal({
                     <div className="flex-1">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Payment Method:</span>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {transaction.paymentMethod || 'Not specified'} → {formData.paymentMethod || 'Not specified'}
+                        {initialFormData.current.paymentMethod || 'Not specified'} → {formData.paymentMethod || 'Not specified'}
                       </div>
                     </div>
                   </div>
@@ -1192,7 +1239,10 @@ export function ReceiptImageModal({
                   <div className="flex items-start gap-2">
                     <span className="text-purple-600 dark:text-purple-400 font-semibold">💡</span>
                     <div className="flex-1">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Notes updated</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Notes:</span>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {transaction.notes ? `"${transaction.notes}"` : '(none)'} → "{formData.notes}"
+                      </div>
                     </div>
                   </div>
                 )}
