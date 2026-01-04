@@ -125,16 +125,20 @@ app.whenReady().then(() => {
     // Decode URL
     url = decodeURIComponent(url)
     
+    console.log('[PROTOCOL MAIN] Intercepted:', url)
+    
     // Handle _next absolute paths
     if (url.includes('/_next/')) {
       const nextPath = url.substring(url.indexOf('/_next/'))
       const fullPath = path.join(process.resourcesPath, 'app', 'out', nextPath)
-      console.log('[PROTOCOL] Intercepted _next:', nextPath, '→', fullPath)
+      const exists = fsSync.existsSync(fullPath)
+      console.log('[PROTOCOL MAIN] _next path:', nextPath, '→', fullPath, 'exists:', exists)
       callback({ path: fullPath })
       return
     }
     
     // Default: use as-is
+    console.log('[PROTOCOL MAIN] Using as-is:', url)
     callback({ path: url })
   })
   
