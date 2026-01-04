@@ -478,20 +478,20 @@ export function ReceiptImageModal({
       return
     }
     
-    // Detect if any fields were changed
-    const dateChanged = formData.date !== transaction.date
-    const descriptionChanged = formData.description !== transaction.description
-    const amountChanged = parseFloat(formData.amount) !== transaction.amount
-    const typeChanged = formData.type !== transaction.type
-    const categoryChanged = formData.category !== transaction.category
-    const paymentMethodChanged = (formData.paymentMethod || '') !== (transaction.paymentMethod || '')
-    const itemizationChanged = (formData.itemization || '') !== (transaction.itemization || '')
-    const notesChanged = (formData.notes || '') !== (transaction.notes || '')
+    // Detect if any fields were changed IN THIS SESSION (compare to initial form data)
+    const dateChanged = formData.date !== initialFormData.current.date
+    const descriptionChanged = formData.description !== initialFormData.current.description
+    const amountChanged = parseFloat(formData.amount) !== parseFloat(initialFormData.current.amount)
+    const typeChanged = formData.type !== initialFormData.current.type
+    const categoryChanged = formData.category !== initialFormData.current.category
+    const paymentMethodChanged = (formData.paymentMethod || '') !== (initialFormData.current.paymentMethod || '')
+    const itemizationChanged = (formData.itemization || '') !== (initialFormData.current.itemization || '')
+    const notesChanged = (formData.notes || '') !== (initialFormData.current.notes || '')
     
     const anyFieldChanged = pendingChanges ? Object.values(pendingChanges).some(v => v) : false
     
     // Track categorization changes for report
-    // Set original values if this is the first edit
+    // Set original values if this is the first edit (preserve OCR values for audit trail)
     const originalType = transaction.originalType || transaction.type
     const originalCategory = transaction.originalCategory || transaction.category
     const originalDate = transaction.originalDate || transaction.date
@@ -499,8 +499,8 @@ export function ReceiptImageModal({
     const originalAmount = transaction.originalAmount !== undefined ? transaction.originalAmount : transaction.amount
     const originalPaymentMethod = transaction.originalPaymentMethod || transaction.paymentMethod
     
-    // Mark as manually edited if type or category changed from original
-    const categorizationChanged = (formData.type !== originalType) || (formData.category !== originalCategory)
+    // Mark as categorization change ONLY if user changed type or category in THIS session
+    const categorizationChanged = typeChanged || categoryChanged
 
     const wasManuallyEditedValue = anyFieldChanged || transaction.wasManuallyEdited || false
     console.log('[TRANSACTION UPDATE] anyFieldChanged:', anyFieldChanged, 'categorizationChanged:', categorizationChanged, 'wasManuallyEdited:', wasManuallyEditedValue)
@@ -547,13 +547,13 @@ export function ReceiptImageModal({
         vendor: formData.description,
         amount: parseFloat(formData.amount) || 0,
         changes: {
-          ...(dateChanged && { date: { from: transaction.date, to: formData.date } }),
-          ...(descriptionChanged && { description: { from: transaction.description, to: formData.description } }),
-          ...(amountChanged && { amount: { from: transaction.amount, to: parseFloat(formData.amount) || 0 } }),
-          ...(typeChanged && { type: { from: transaction.type, to: formData.type as Transaction['type'] } }),
-          ...(categoryChanged && { category: { from: transaction.category, to: formData.category as Transaction['category'] } }),
-          ...(paymentMethodChanged && { paymentMethod: { from: transaction.paymentMethod || '', to: formData.paymentMethod } }),
-          ...(notesChanged && { notes: { from: transaction.notes || '', to: formData.notes } })
+          ...(dateChanged && { date: { from: initialFormData.current.date, to: formData.date } }),
+          ...(descriptionChanged && { description: { from: initialFormData.current.description, to: formData.description } }),
+          ...(amountChanged && { amount: { from: parseFloat(initialFormData.current.amount), to: parseFloat(formData.amount) || 0 } }),
+          ...(typeChanged && { type: { from: initialFormData.current.type as Transaction['type'], to: formData.type as Transaction['type'] } }),
+          ...(categoryChanged && { category: { from: initialFormData.current.category as Transaction['category'], to: formData.category as Transaction['category'] } }),
+          ...(paymentMethodChanged && { paymentMethod: { from: initialFormData.current.paymentMethod || '', to: formData.paymentMethod } }),
+          ...(notesChanged && { notes: { from: initialFormData.current.notes || '', to: formData.notes } })
         },
         userNotes: formData.notes,
         receiptId: transaction.receiptId,
