@@ -1,5 +1,28 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
+console.log('[PRELOAD] Preload script starting - EARLY LOGGING')
+
+// Add resource loading listeners BEFORE page loads
+window.addEventListener('DOMContentLoaded', () => {
+  console.log('[PRELOAD] DOM Content Loaded')
+  console.log('[PRELOAD] document.styleSheets.length:', document.styleSheets.length)
+  
+  const cssLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+  console.log('[PRELOAD] CSS link count:', cssLinks.length)
+  cssLinks.forEach((link, i) => {
+    console.log(`[PRELOAD] CSS link ${i}:`, link.href)
+  })
+})
+
+// Capture resource loading errors
+window.addEventListener('error', (e) => {
+  if (e.target && (e.target.tagName === 'LINK' || e.target.tagName === 'SCRIPT')) {
+    console.error('[PRELOAD ERROR] Failed to load resource:', e.target.tagName, e.target.href || e.target.src)
+  }
+}, true)
+
+console.log('[PRELOAD] Event listeners registered')
+
 // Expose protected methods that allow the renderer process to use
 // ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {

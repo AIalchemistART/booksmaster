@@ -74,11 +74,28 @@ function createWindow() {
   // Log when page finishes loading
   mainWindow.webContents.on('did-finish-load', () => {
     console.log('[WINDOW] Page finished loading')
+    
+    // Inject visible logging into renderer
+    mainWindow.webContents.executeJavaScript(`
+      console.log('[RENDERER] Page loaded - checking CSS');
+      console.log('[RENDERER] document.styleSheets.length:', document.styleSheets.length);
+      console.log('[RENDERER] CSS links:', Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(l => l.href));
+      
+      // Log all failed resource loads
+      window.addEventListener('error', (e) => {
+        if (e.target.tagName === 'LINK' || e.target.tagName === 'SCRIPT') {
+          console.error('[RENDERER ERROR] Failed to load:', e.target.tagName, e.target.href || e.target.src);
+        }
+      }, true);
+    `).catch(err => console.error('[WINDOW] Failed to inject logging:', err))
   })
   
   // Log loading failures
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
     console.error('[WINDOW] Page failed to load:', errorCode, errorDescription)
+    mainWindow.webContents.executeJavaScript(`
+      console.error('[RENDERER] Page load failed:', ${errorCode}, '${errorDescription}');
+    `).catch(() => {})
   })
 
   // Handle navigation events
@@ -125,20 +142,16 @@ app.whenReady().then(() => {
     // Decode URL
     url = decodeURIComponent(url)
     
-    console.log('[PROTOCOL MAIN] Intercepted:', url)
-    
     // Handle _next absolute paths
     if (url.includes('/_next/')) {
       const nextPath = url.substring(url.indexOf('/_next/'))
       const fullPath = path.join(process.resourcesPath, 'app', 'out', nextPath)
-      const exists = fsSync.existsSync(fullPath)
-      console.log('[PROTOCOL MAIN] _next path:', nextPath, '→', fullPath, 'exists:', exists)
+      console.log('[PROTOCOL] Intercepted _next:', nextPath, '→', fullPath)
       callback({ path: fullPath })
       return
     }
     
     // Default: use as-is
-    console.log('[PROTOCOL MAIN] Using as-is:', url)
     callback({ path: url })
   })
   
