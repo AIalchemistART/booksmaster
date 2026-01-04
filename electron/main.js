@@ -136,28 +136,35 @@ app.whenReady().then(() => {
   
   loadConfig()
   
-  // Intercept file:// requests to handle Next.js absolute paths
-  protocol.interceptFileProtocol('file', (request, callback) => {
+  console.log('[ELECTRON STARTUP] Creating window')
+  createWindow()
+  
+  // Register protocol interceptor on the window's session AFTER window is created
+  const session = mainWindow.webContents.session
+  session.protocol.interceptFileProtocol('file', (request, callback) => {
     let url = request.url.substr(7) // Remove 'file://'
     
     // Decode URL
     url = decodeURIComponent(url)
     
+    console.log('[PROTOCOL] Intercepted request:', url)
+    
     // Handle _next absolute paths
     if (url.includes('/_next/')) {
       const nextPath = url.substring(url.indexOf('/_next/'))
       const fullPath = path.join(process.resourcesPath, 'app', 'out', nextPath)
-      console.log('[PROTOCOL] Intercepted _next:', nextPath, '→', fullPath)
+      const exists = fsSync.existsSync(fullPath)
+      console.log('[PROTOCOL] _next path:', nextPath, '→', fullPath, 'exists:', exists)
       callback({ path: fullPath })
       return
     }
     
     // Default: use as-is
+    console.log('[PROTOCOL] Using as-is:', url)
     callback({ path: url })
   })
   
-  console.log('[ELECTRON STARTUP] Creating window')
-  createWindow()
+  console.log('[ELECTRON STARTUP] Protocol interceptor registered on session')
   console.log('[ELECTRON STARTUP] Window created')
 
   app.on('activate', () => {
