@@ -39,37 +39,37 @@ const navigation: NavItem[] = [
     name: 'Receipts', 
     href: '/receipts', 
     icon: Camera,
-    unlockCondition: (store) => store.questProgress.completedQuests.includes('start_scanning')
+    unlockCondition: (store) => store.userProgress.unlockedFeatures.includes('receipts')
   },
   { 
     name: 'Transactions', 
     href: '/transactions', 
     icon: Receipt,
-    unlockCondition: (store) => store.questProgress.completedQuests.includes('validate_first_receipt')
+    unlockCondition: (store) => store.userProgress.unlockedFeatures.includes('transactions')
   },
   { 
     name: 'Categorization Changes', 
     href: '/categorization-report', 
     icon: GitCompare,
-    unlockCondition: (store) => store.questProgress.completedQuests.includes('edit_transaction')
+    unlockCondition: (store) => store.userProgress.unlockedFeatures.includes('categorization_changes')
   },
   { 
     name: 'Invoices', 
     href: '/invoices', 
     icon: FileText,
-    unlockCondition: (store) => store.questProgress.completedQuests.includes('validate_transaction')
+    unlockCondition: (store) => store.userProgress.unlockedFeatures.includes('invoices')
   },
   { 
     name: 'Supporting Documents', 
     href: '/supporting-documents', 
     icon: FolderOpen,
-    unlockCondition: (store) => store.questProgress.completedQuests.includes('upload_supplemental')
+    unlockCondition: (store) => store.userProgress.unlockedFeatures.includes('supporting_documents')
   },
   { 
     name: 'Reports', 
     href: '/reports', 
     icon: TrendingUp,
-    unlockCondition: (store) => store.questProgress.completedQuests.includes('reach_milestones')
+    unlockCondition: (store) => store.userProgress.unlockedFeatures.includes('reports')
   },
   { 
     name: 'Bank Accounts', 

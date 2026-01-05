@@ -1089,8 +1089,7 @@ export default function ReceiptsPage() {
                               id: receipt.id,
                               isSupplementalDoc: receipt.isSupplementalDoc,
                               documentType: receipt.documentType,
-                              ocrVendor: receipt.ocrVendor,
-                              description: receipt.description
+                              ocrVendor: receipt.ocrVendor
                             })
                             
                             // If first receipt is supplemental doc, unlock Supporting Documents
