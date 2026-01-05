@@ -22,17 +22,13 @@ export default function CategorizationReportPage() {
     
     const filtered = transactions
       .filter(t => {
-        const typeChanged = t.originalType && t.originalType !== t.type
-        const categoryChanged = t.originalCategory && t.originalCategory !== t.category
-        const passes = t.wasManuallyEdited && (typeChanged || categoryChanged)
+        const passes = t.wasManuallyEdited
         console.log('[CATEGORIZATION REPORT] Transaction', t.id, 'passes filter:', passes, {
           wasManuallyEdited: t.wasManuallyEdited,
           originalType: t.originalType,
           type: t.type,
           originalCategory: t.originalCategory,
-          category: t.category,
-          typeChanged,
-          categoryChanged
+          category: t.category
         })
         return passes
       })
@@ -177,24 +173,32 @@ export default function CategorizationReportPage() {
                       <td className="p-2 text-gray-900 dark:text-gray-100">{transaction.description}</td>
                       <td className="p-2 text-right font-mono text-gray-900 dark:text-gray-100">{formatAmount(transaction.amount)}</td>
                       <td className="p-2">
-                        <div className="text-sm">
-                          <div className="font-medium text-gray-500 dark:text-gray-400">
-                            {transaction.originalType === 'income' ? '💰' : '💳'} {transaction.originalType}
+                        {transaction.originalType && (transaction.originalType !== transaction.type || transaction.originalCategory !== transaction.category) ? (
+                          <div className="text-sm">
+                            <div className="font-medium text-gray-500 dark:text-gray-400">
+                              {transaction.originalType === 'income' ? '💰' : '💳'} {transaction.originalType}
+                            </div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
+                              {formatCategory(transaction.originalCategory || '')}
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-400 dark:text-gray-500">
-                            {formatCategory(transaction.originalCategory || '')}
-                          </div>
-                        </div>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-600 text-sm">-</span>
+                        )}
                       </td>
                       <td className="p-2">
-                        <div className="text-sm">
-                          <div className="font-medium text-blue-600 dark:text-blue-400">
-                            {transaction.type === 'income' ? '💰' : '💳'} {transaction.type}
+                        {transaction.originalType && (transaction.originalType !== transaction.type || transaction.originalCategory !== transaction.category) ? (
+                          <div className="text-sm">
+                            <div className="font-medium text-blue-600 dark:text-blue-400">
+                              {transaction.type === 'income' ? '💰' : '💳'} {transaction.type}
+                            </div>
+                            <div className="text-xs text-blue-400 dark:text-blue-300">
+                              {formatCategory(transaction.category)}
+                            </div>
                           </div>
-                          <div className="text-xs text-blue-400 dark:text-blue-300">
-                            {formatCategory(transaction.category)}
-                          </div>
-                        </div>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-600 text-sm">-</span>
+                        )}
                       </td>
                       <td className="p-2 text-xs">
                         <div className="space-y-1">
