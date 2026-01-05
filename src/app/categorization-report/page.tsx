@@ -22,11 +22,17 @@ export default function CategorizationReportPage() {
     
     const filtered = transactions
       .filter(t => {
-        const passes = t.wasManuallyEdited && t.originalType && t.originalCategory
+        const typeChanged = t.originalType && t.originalType !== t.type
+        const categoryChanged = t.originalCategory && t.originalCategory !== t.category
+        const passes = t.wasManuallyEdited && (typeChanged || categoryChanged)
         console.log('[CATEGORIZATION REPORT] Transaction', t.id, 'passes filter:', passes, {
           wasManuallyEdited: t.wasManuallyEdited,
           originalType: t.originalType,
-          originalCategory: t.originalCategory
+          type: t.type,
+          originalCategory: t.originalCategory,
+          category: t.category,
+          typeChanged,
+          categoryChanged
         })
         return passes
       })
