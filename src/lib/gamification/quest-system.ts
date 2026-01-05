@@ -179,22 +179,23 @@ export function getActiveQuests(currentLevel: number, questProgress: QuestProgre
 
 /**
  * Check if a transaction can be used for a specific quest
+ * A transaction can trigger BOTH edit and validate quests (they are different actions)
+ * but not the same quest twice
  */
 export function canTransactionTriggerQuest(
   transactionId: string,
   questId: 'edit_transaction' | 'validate_transaction',
   questProgress: QuestProgress
 ): boolean {
-  // Check if transaction already used for edit quest
-  if (questProgress.transactionIdsUsedForQuests.edit_transaction?.includes(transactionId)) {
+  // Check if transaction already used for THIS SPECIFIC quest (not other quests)
+  const usedForThisQuest = questProgress.transactionIdsUsedForQuests[questId]?.includes(transactionId)
+  
+  // Can't use same transaction for same quest twice
+  if (usedForThisQuest) {
     return false
   }
   
-  // Check if transaction already used for validate quest
-  if (questProgress.transactionIdsUsedForQuests.validate_transaction?.includes(transactionId)) {
-    return false
-  }
-  
+  // Can use for different quests (e.g., validate first, then edit later)
   return true
 }
 
