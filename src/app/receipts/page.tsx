@@ -1079,12 +1079,20 @@ export default function ReceiptsPage() {
                         // Check if this is the first validated receipt - unlock Level 3
                         const validatedCount = receipts.filter((r: any) => r.userValidated).length
                         if (validatedCount === 0) {
-                          // First validation - unlock Transactions tab (Level 2 → 3)
+                          // First validation - intelligent feature unlock based on receipt type
                           const { manualLevelUp, userProgress, completeQuest } = useStore.getState()
                           if (userProgress.currentLevel === 2) {
                             completeQuest('validate_first_receipt')
-                            manualLevelUp('transactions')
-                            console.log('[QUEST] Completed validate_first_receipt quest - advancing to Level 3 (Transactions)')
+                            
+                            // If first receipt is supplemental doc, unlock Supporting Documents
+                            // Otherwise unlock Transactions
+                            if (receipt.isSupplementalDoc || receipt.documentType === 'manifest' || receipt.documentType === 'invoice') {
+                              manualLevelUp('supporting_documents')
+                              console.log('[QUEST] Completed validate_first_receipt quest - advancing to Level 3 (Supporting Documents)')
+                            } else {
+                              manualLevelUp('transactions')
+                              console.log('[QUEST] Completed validate_first_receipt quest - advancing to Level 3 (Transactions)')
+                            }
                           }
                         }
                         
