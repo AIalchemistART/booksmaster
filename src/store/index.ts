@@ -482,13 +482,8 @@ export const useStore = create<AppState>()(
                 questsUpdated = true
                 console.log('[QUEST MIGRATION] ✅ Added validate_first_receipt quest (Level 3+)')
               }
-              if (correctedLevel >= 4 && !completedQuests.includes('edit_transaction')) {
-                completedQuests.push('edit_transaction')
-                questsUpdated = true
-                console.log('[QUEST MIGRATION] ✅ Added edit_transaction quest (Level 4+)')
-              }
-              // Note: validate_transaction and upload_supplemental are PARALLEL quests
-              // They can be completed in either order (Levels 5 and 6)
+              // Note: edit_transaction, validate_transaction, and upload_supplemental are PARALLEL quests (Levels 4-6)
+              // They can be completed in any order
               // Cannot infer completion from level alone - must be explicitly completed
               if (correctedLevel >= 7 && !completedQuests.includes('reach_milestones')) {
                 completedQuests.push('reach_milestones')
