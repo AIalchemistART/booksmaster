@@ -617,39 +617,43 @@ export function ReceiptImageModal({
           console.log('[QUEST CHECK] Transaction already used for quest')
         }
       }
+    }
+    
+    // Quest: Validate a transaction → Level 5 (Invoices) - OUTSIDE anyFieldChanged block
+    // Triggers on: 1st validation without edits OR 2nd validation overall (with or without edits)
+    console.log('[QUEST CHECK] Validate - anyFieldChanged:', anyFieldChanged, 'finalValidationState:', finalValidationState, 'userValidated:', transaction.userValidated)
+    if (finalValidationState && !transaction.userValidated) {
+      // Import quest functions if needed
+      const { transactions, userProgress, manualLevelUp, questProgress, completeQuest, markTransactionUsedForQuest } = useStore.getState()
+      const { canTransactionTriggerQuest } = await import('@/lib/gamification/quest-system')
       
-      // Quest: Validate a transaction → Level 5 (Invoices)
-      // Triggers on: 1st validation without edits OR 2nd validation overall (with or without edits)
-      console.log('[QUEST CHECK] Validate - anyFieldChanged:', anyFieldChanged, 'finalValidationState:', finalValidationState, 'userValidated:', transaction.userValidated)
-      if (finalValidationState && !transaction.userValidated) {
-        // Count PREVIOUSLY validated transactions (excluding current one)
-        const validatedCount = transactions.filter(t => t.userValidated && t.id !== transaction.id).length
-        console.log('[QUEST CHECK] Validate transaction - Level:', userProgress.currentLevel, 'Validated count (previous):', validatedCount, 'Has edits:', anyFieldChanged)
-        
-        // Trigger if: (1) First validation without edits, OR (2) Second validation overall
-        const shouldTriggerValidate = !anyFieldChanged || validatedCount >= 1
-        
-        if (shouldTriggerValidate) {
-          console.log('[QUEST CHECK] Validation quest eligible - Reason:', !anyFieldChanged ? 'First validation without edits' : 'Second validation overall')
-          if (canTransactionTriggerQuest(transaction.id, 'validate_transaction', questProgress)) {
-            console.log('[QUEST CHECK] Transaction can trigger validate quest')
-            if (!questProgress.completedQuests.includes('validate_transaction') && userProgress.currentLevel >= 3 && userProgress.currentLevel < 7) {
-              markTransactionUsedForQuest(transaction.id, 'validate_transaction')
-              completeQuest('validate_transaction')
-              manualLevelUp('invoices')
-              console.log('[QUEST] ✅ Completed validate_transaction quest - advancing to next level (Invoices)')
-            } else {
-              console.log('[QUEST CHECK] Quest already completed, level too low, or already at max')
-            }
+      // Count PREVIOUSLY validated transactions (excluding current one)
+      const validatedCount = transactions.filter(t => t.userValidated && t.id !== transaction.id).length
+      console.log('[QUEST CHECK] Validate transaction - Level:', userProgress.currentLevel, 'Validated count (previous):', validatedCount, 'Has edits:', anyFieldChanged)
+      
+      // Trigger if: (1) First validation without edits, OR (2) Second validation overall
+      const shouldTriggerValidate = !anyFieldChanged || validatedCount >= 1
+      
+      if (shouldTriggerValidate) {
+        console.log('[QUEST CHECK] Validation quest eligible - Reason:', !anyFieldChanged ? 'First validation without edits' : 'Second validation overall')
+        if (canTransactionTriggerQuest(transaction.id, 'validate_transaction', questProgress)) {
+          console.log('[QUEST CHECK] Transaction can trigger validate quest')
+          if (!questProgress.completedQuests.includes('validate_transaction') && userProgress.currentLevel >= 3 && userProgress.currentLevel < 7) {
+            markTransactionUsedForQuest(transaction.id, 'validate_transaction')
+            completeQuest('validate_transaction')
+            manualLevelUp('invoices')
+            console.log('[QUEST] ✅ Completed validate_transaction quest - advancing to next level (Invoices)')
           } else {
-            console.log('[QUEST CHECK] Transaction already used for quest')
+            console.log('[QUEST CHECK] Quest already completed, level too low, or already at max')
           }
         } else {
-          console.log('[QUEST CHECK] First validation WITH edits - will trigger edit quest instead')
+          console.log('[QUEST CHECK] Transaction already used for quest')
         }
       } else {
-        console.log('[QUEST CHECK] Validation quest requirements not met')
+        console.log('[QUEST CHECK] First validation WITH edits - will trigger edit quest instead')
       }
+    } else {
+      console.log('[QUEST CHECK] Validation quest requirements not met')
     }
     
     // Learn card payment type if user corrected "Card" → "Credit" or "Debit"
