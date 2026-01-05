@@ -547,6 +547,7 @@ export function ReceiptImageModal({
         typeChanged,
         categoryChanged,
         paymentMethodChanged,
+        itemizationChanged,
         notesChanged,
         categorizationChanged
       })
@@ -566,6 +567,7 @@ export function ReceiptImageModal({
           ...(typeChanged && { type: { from: initialFormData.current.type as Transaction['type'], to: formData.type as Transaction['type'] } }),
           ...(categoryChanged && { category: { from: initialFormData.current.category as Transaction['category'], to: formData.category as Transaction['category'] } }),
           ...(paymentMethodChanged && { paymentMethod: { from: initialFormData.current.paymentMethod || '', to: formData.paymentMethod } }),
+          ...(itemizationChanged && { itemization: { from: initialFormData.current.itemization || '', to: formData.itemization } }),
           ...(notesChanged && { notes: { from: initialFormData.current.notes || '', to: formData.notes } })
         },
         userNotes: formData.notes,

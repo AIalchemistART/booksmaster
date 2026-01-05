@@ -3,7 +3,7 @@
  * Progressive feature unlocking to guide users through learning the system
  */
 
-export type UserLevel = 1 | 2 | 3 | 4 | 5 | 6
+export type UserLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 export type TechTreePath = 
   // Construction & Trades
@@ -189,29 +189,38 @@ export const LEVELS: Level[] = [
   },
   {
     level: 4,
-    title: 'Organizer - Document Keeper',
-    description: 'Store supporting documents for your records',
-    xpRequired: 600, // Cosmetic - actual unlock via first supporting doc
+    title: 'Editor - Data Quality',
+    description: 'Make corrections to improve accuracy',
+    xpRequired: 600, // Cosmetic - actual unlock via first transaction edit
+    badge: '✏️',
+    unlocksFeatures: ['categorization_changes'],
+    requiredActions: []
+  },
+  {
+    level: 5,
+    title: 'Professional - Client Ready',
+    description: 'Create invoices for your clients',
+    xpRequired: 1000, // Cosmetic - actual unlock via first transaction validation
+    badge: '📋',
+    unlocksFeatures: ['invoices'],
+    requiredActions: []
+  },
+  {
+    level: 6,
+    title: 'Organizer - Complete Records',
+    description: 'Manage all supporting documentation',
+    xpRequired: 1500, // Cosmetic - actual unlock via first supplemental doc
     badge: '📁',
     unlocksFeatures: ['supporting_documents'],
     requiredActions: []
   },
   {
-    level: 5,
-    title: 'Tracker - Active Bookkeeper',
-    description: 'Track and manage your business finances',
-    xpRequired: 1000, // Cosmetic - actual unlock via first transaction edit
-    badge: '📊',
-    unlocksFeatures: ['invoices', 'reports'],
-    requiredActions: []
-  },
-  {
-    level: 6,
+    level: 7,
     title: 'Master - Full Access',
-    description: 'All features unlocked - you\'re ready for anything!',
-    xpRequired: 1500, // Cosmetic - actual unlock via transaction confirmation
+    description: 'Complete insights and reporting unlocked',
+    xpRequired: 2000, // Cosmetic - actual unlock via milestones
     badge: '🏆',
-    unlocksFeatures: ['categorization_changes'],
+    unlocksFeatures: ['reports'],
     requiredActions: []
   }
 ]

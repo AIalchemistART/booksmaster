@@ -38,14 +38,36 @@ export default function CategorizationReportPage() {
     return filtered
   }, [transactions])
 
+  // Determine which columns to show based on actual changes
+  const columnsToShow = useMemo(() => {
+    const hasTypeChanges = manuallyEditedTransactions.some(t => 
+      t.originalType && t.originalType !== t.type
+    )
+    const hasCategoryChanges = manuallyEditedTransactions.some(t => 
+      t.originalCategory && t.originalCategory !== t.category
+    )
+    const hasPaymentMethodChanges = manuallyEditedTransactions.some(t => 
+      (t.originalPaymentMethod || '') !== (t.paymentMethod || '')
+    )
+    const hasItemizationChanges = manuallyEditedTransactions.some(t => 
+      t.originalAmount !== undefined // Proxy: if we track original amount, we likely have itemization changes tracked too
+    )
+    
+    return {
+      type: hasTypeChanges,
+      category: hasCategoryChanges,
+      paymentMethod: hasPaymentMethodChanges,
+      itemization: hasItemizationChanges
+    }
+  }, [manuallyEditedTransactions])
+
   const categorizationStats = useMemo(() => {
     const stats = {
       totalEdited: manuallyEditedTransactions.length,
       typeChanges: 0,
       categoryChanges: 0,
       incomeToExpense: 0,
-      expenseToIncome: 0,
-      categoryBreakdown: {} as Record<string, { original: string; corrected: string; count: number; notes?: string }[]>
+      expenseToIncome: 0
     }
 
     manuallyEditedTransactions.forEach(t => {
@@ -61,17 +83,6 @@ export default function CategorizationReportPage() {
       if (t.category !== t.originalCategory) {
         stats.categoryChanges++
       }
-
-      const key = `${t.originalType}:${t.originalCategory} → ${t.type}:${t.category}`
-      if (!stats.categoryBreakdown[t.description]) {
-        stats.categoryBreakdown[t.description] = []
-      }
-      stats.categoryBreakdown[t.description].push({
-        original: `${t.originalType}/${t.originalCategory}`,
-        corrected: `${t.type}/${t.category}`,
-        count: 1,
-        notes: t.notes || undefined
-      })
     })
 
     return stats
@@ -159,94 +170,151 @@ export default function CategorizationReportPage() {
                     <th className="text-left p-2 text-gray-900 dark:text-gray-100">Date</th>
                     <th className="text-left p-2 text-gray-900 dark:text-gray-100">Description</th>
                     <th className="text-right p-2 text-gray-900 dark:text-gray-100">Amount</th>
-                    <th className="text-left p-2 text-gray-900 dark:text-gray-100">Original</th>
-                    <th className="text-left p-2 text-gray-900 dark:text-gray-100">Corrected To</th>
-                    <th className="text-left p-2 text-gray-900 dark:text-gray-100">All Changes</th>
+                    {columnsToShow.type && (
+                      <th className="text-left p-2 text-gray-900 dark:text-gray-100">Type Change</th>
+                    )}
+                    {columnsToShow.category && (
+                      <th className="text-left p-2 text-gray-900 dark:text-gray-100">Category Change</th>
+                    )}
+                    {columnsToShow.paymentMethod && (
+                      <th className="text-left p-2 text-gray-900 dark:text-gray-100">Payment Method</th>
+                    )}
+                    {columnsToShow.itemization && (
+                      <th className="text-left p-2 text-gray-900 dark:text-gray-100">Itemization</th>
+                    )}
                     <th className="text-left p-2 text-gray-900 dark:text-gray-100">Notes</th>
                     <th className="text-left p-2 text-gray-900 dark:text-gray-100">Edited</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {manuallyEditedTransactions.map(transaction => (
-                    <tr key={transaction.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <td className="p-2 text-gray-900 dark:text-gray-100">{new Date(transaction.date).toLocaleDateString()}</td>
-                      <td className="p-2 text-gray-900 dark:text-gray-100">{transaction.description}</td>
-                      <td className="p-2 text-right font-mono text-gray-900 dark:text-gray-100">{formatAmount(transaction.amount)}</td>
-                      <td className="p-2">
-                        {transaction.originalType && (transaction.originalType !== transaction.type || transaction.originalCategory !== transaction.category) ? (
-                          <div className="text-sm">
-                            <div className="font-medium text-gray-500 dark:text-gray-400">
-                              {transaction.originalType === 'income' ? '💰' : '💳'} {transaction.originalType}
-                            </div>
-                            <div className="text-xs text-gray-400 dark:text-gray-500">
-                              {formatCategory(transaction.originalCategory || '')}
-                            </div>
+                  {manuallyEditedTransactions.map(transaction => {
+                    const dateChanged = transaction.originalDate && transaction.originalDate !== transaction.date
+                    const descChanged = transaction.originalDescription && transaction.originalDescription !== transaction.description
+                    const amtChanged = transaction.originalAmount !== undefined && transaction.originalAmount !== transaction.amount
+                    const typeChanged = transaction.originalType && transaction.originalType !== transaction.type
+                    const catChanged = transaction.originalCategory && transaction.originalCategory !== transaction.category
+                    const pmChanged = (transaction.originalPaymentMethod || '') !== (transaction.paymentMethod || '')
+                    
+                    return (
+                      <tr key={transaction.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+                        {/* Always show: Date */}
+                        <td className="p-2 text-xs">
+                          <div className="text-gray-900 dark:text-gray-100">
+                            {new Date(transaction.date).toLocaleDateString()}
                           </div>
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-600 text-sm">-</span>
-                        )}
-                      </td>
-                      <td className="p-2">
-                        {transaction.originalType && (transaction.originalType !== transaction.type || transaction.originalCategory !== transaction.category) ? (
-                          <div className="text-sm">
-                            <div className="font-medium text-blue-600 dark:text-blue-400">
-                              {transaction.type === 'income' ? '💰' : '💳'} {transaction.type}
+                          {dateChanged && (
+                            <div className="text-orange-500 dark:text-orange-400 text-[10px] mt-1">
+                              ← {new Date(transaction.originalDate!).toLocaleDateString()}
                             </div>
-                            <div className="text-xs text-blue-400 dark:text-blue-300">
-                              {formatCategory(transaction.category)}
-                            </div>
+                          )}
+                        </td>
+                        
+                        {/* Always show: Description */}
+                        <td className="p-2 text-xs">
+                          <div className="text-gray-900 dark:text-gray-100">
+                            {transaction.description}
                           </div>
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-600 text-sm">-</span>
-                        )}
-                      </td>
-                      <td className="p-2 text-xs">
-                        <div className="space-y-1">
-                          {transaction.originalDate && transaction.originalDate !== transaction.date && (
-                            <div className="text-orange-600 dark:text-orange-400">
-                              📅 Date: {new Date(transaction.originalDate).toLocaleDateString()} → {new Date(transaction.date).toLocaleDateString()}
+                          {descChanged && (
+                            <div className="text-orange-500 dark:text-orange-400 text-[10px] mt-1">
+                              ← {transaction.originalDescription}
                             </div>
                           )}
-                          {transaction.originalDescription && transaction.originalDescription !== transaction.description && (
-                            <div className="text-orange-600 dark:text-orange-400">
-                              📝 Desc: {transaction.originalDescription} → {transaction.description}
-                            </div>
-                          )}
-                          {transaction.originalAmount !== undefined && transaction.originalAmount !== transaction.amount && (
-                            <div className="text-orange-600 dark:text-orange-400">
-                              💰 Amt: {formatAmount(transaction.originalAmount)} → {formatAmount(transaction.amount)}
-                            </div>
-                          )}
-                          {(transaction.originalPaymentMethod || '') !== (transaction.paymentMethod || '') && (
-                            <div className="text-green-600 dark:text-green-400">
-                              💳 Payment: {transaction.originalPaymentMethod || 'Not specified'} → {transaction.paymentMethod || 'Not specified'}
-                            </div>
-                          )}
-                          {(!transaction.originalDate || transaction.originalDate === transaction.date) &&
-                           (!transaction.originalDescription || transaction.originalDescription === transaction.description) &&
-                           (transaction.originalAmount === undefined || transaction.originalAmount === transaction.amount) &&
-                           ((transaction.originalPaymentMethod || '') === (transaction.paymentMethod || '')) && (
-                            <span className="text-gray-400 dark:text-gray-600">Type/Category only</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-2 text-xs text-gray-600 dark:text-gray-400 max-w-xs">
-                        {transaction.notes ? (
-                          <div className="truncate" title={transaction.notes}>
-                            {transaction.notes}
+                        </td>
+                        
+                        {/* Always show: Amount */}
+                        <td className="p-2 text-right text-xs">
+                          <div className="font-mono text-gray-900 dark:text-gray-100">
+                            {formatAmount(transaction.amount)}
                           </div>
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-600">-</span>
+                          {amtChanged && (
+                            <div className="text-orange-500 dark:text-orange-400 text-[10px] mt-1">
+                              ← {formatAmount(transaction.originalAmount!)}
+                            </div>
+                          )}
+                        </td>
+                        
+                        {/* Conditional: Type Change */}
+                        {columnsToShow.type && (
+                          <td className="p-2 text-xs">
+                            {typeChanged ? (
+                              <div className="space-y-1">
+                                <div className="text-gray-500 dark:text-gray-400">
+                                  {transaction.originalType === 'income' ? '💰' : '💳'} {transaction.originalType}
+                                </div>
+                                <div className="text-blue-600 dark:text-blue-400 font-medium">
+                                  → {transaction.type === 'income' ? '💰' : '💳'} {transaction.type}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 dark:text-gray-600">-</span>
+                            )}
+                          </td>
                         )}
-                      </td>
-                      <td className="p-2 text-xs text-gray-500 dark:text-gray-400">
-                        {transaction.editedAt 
-                          ? new Date(transaction.editedAt).toLocaleString()
-                          : new Date(transaction.updatedAt).toLocaleString()
-                        }
-                      </td>
-                    </tr>
-                  ))}
+                        
+                        {/* Conditional: Category Change */}
+                        {columnsToShow.category && (
+                          <td className="p-2 text-xs">
+                            {catChanged ? (
+                              <div className="space-y-1">
+                                <div className="text-gray-500 dark:text-gray-400">
+                                  {formatCategory(transaction.originalCategory || '')}
+                                </div>
+                                <div className="text-blue-600 dark:text-blue-400 font-medium">
+                                  → {formatCategory(transaction.category)}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 dark:text-gray-600">-</span>
+                            )}
+                          </td>
+                        )}
+                        
+                        {/* Conditional: Payment Method */}
+                        {columnsToShow.paymentMethod && (
+                          <td className="p-2 text-xs">
+                            {pmChanged ? (
+                              <div className="space-y-1">
+                                <div className="text-gray-500 dark:text-gray-400">
+                                  {transaction.originalPaymentMethod || 'Not specified'}
+                                </div>
+                                <div className="text-green-600 dark:text-green-400 font-medium">
+                                  → {transaction.paymentMethod || 'Not specified'}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 dark:text-gray-600">-</span>
+                            )}
+                          </td>
+                        )}
+                        
+                        {/* Conditional: Itemization (placeholder for future) */}
+                        {columnsToShow.itemization && (
+                          <td className="p-2 text-xs">
+                            <span className="text-gray-400 dark:text-gray-600">-</span>
+                          </td>
+                        )}
+                        
+                        {/* Always show: Notes */}
+                        <td className="p-2 text-xs text-gray-600 dark:text-gray-400 max-w-xs">
+                          {transaction.notes ? (
+                            <div className="truncate" title={transaction.notes}>
+                              {transaction.notes}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 dark:text-gray-600">-</span>
+                          )}
+                        </td>
+                        
+                        {/* Always show: Edited timestamp */}
+                        <td className="p-2 text-xs text-gray-500 dark:text-gray-400">
+                          {transaction.editedAt 
+                            ? new Date(transaction.editedAt).toLocaleString()
+                            : new Date(transaction.updatedAt).toLocaleString()
+                          }
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -256,62 +324,76 @@ export default function CategorizationReportPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Patterns to Improve</CardTitle>
+          <CardTitle>AI Learning Insights</CardTitle>
           <CardDescription>
-            Common vendors/descriptions that need categorization rule improvements
+            How the AI is adapting based on your manual corrections
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {manuallyEditedTransactions.map((transaction) => (
-              <div key={transaction.id} className="border-l-4 border-blue-500 dark:border-blue-600 pl-4 pb-3">
-                <div className="font-medium text-gray-900 dark:text-gray-100">{transaction.description}</div>
-                <div className="mt-2 space-y-1 text-sm">
-                  {/* Show type/category changes */}
-                  {(transaction.originalType !== transaction.type || transaction.originalCategory !== transaction.category) && (
-                    <div className="text-gray-600 dark:text-gray-400">
-                      ❌ {transaction.originalType}/{transaction.originalCategory?.replace(/_/g, ' ')} → ✅ {transaction.type}/{transaction.category.replace(/_/g, ' ')}
+          {manuallyEditedTransactions.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No pattern data yet - start making corrections to train the AI</p>
+          ) : (
+            <div className="space-y-6">
+              {/* Overall Learning Summary */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">📊 Learning Summary</h3>
+                <div className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                  <p>• Total corrections analyzed: <span className="font-semibold">{manuallyEditedTransactions.length}</span></p>
+                  <p>• Type corrections: <span className="font-semibold">{categorizationStats.typeChanges}</span></p>
+                  <p>• Category corrections: <span className="font-semibold">{categorizationStats.categoryChanges}</span></p>
+                  <p>• Payment method refinements: <span className="font-semibold">{manuallyEditedTransactions.filter(t => (t.originalPaymentMethod || '') !== (t.paymentMethod || '')).length}</span></p>
+                </div>
+              </div>
+
+              {/* Pattern Analysis - Placeholder for AI-generated insights */}
+              <div className="border-l-4 border-purple-500 dark:border-purple-600 pl-4">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">🧠 Detected Patterns</h3>
+                <div className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
+                  <p className="italic text-gray-500 dark:text-gray-400">
+                    AI pattern analysis will be generated automatically as you make corrections. 
+                    The system will identify trends and adapt categorization rules accordingly.
+                  </p>
+                  
+                  {/* Show basic pattern detection */}
+                  {categorizationStats.typeChanges > 0 && (
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded p-3 mt-2">
+                      <div className="font-medium text-gray-900 dark:text-gray-100">Transaction Type Preferences:</div>
+                      <ul className="mt-1 space-y-1 text-xs">
+                        {categorizationStats.incomeToExpense > 0 && (
+                          <li>• {categorizationStats.incomeToExpense} transaction{categorizationStats.incomeToExpense > 1 ? 's' : ''} reclassified from Income to Expense</li>
+                        )}
+                        {categorizationStats.expenseToIncome > 0 && (
+                          <li>• {categorizationStats.expenseToIncome} transaction{categorizationStats.expenseToIncome > 1 ? 's' : ''} reclassified from Expense to Income</li>
+                        )}
+                      </ul>
                     </div>
                   )}
                   
-                  {/* Show date changes */}
-                  {transaction.originalDate && transaction.originalDate !== transaction.date && (
-                    <div className="text-orange-600 dark:text-orange-400 text-xs">
-                      📅 Date corrected: {new Date(transaction.originalDate).toLocaleDateString()} → {new Date(transaction.date).toLocaleDateString()}
-                    </div>
-                  )}
-                  
-                  {/* Show description changes */}
-                  {transaction.originalDescription && transaction.originalDescription !== transaction.description && (
-                    <div className="text-orange-600 dark:text-orange-400 text-xs">
-                      📝 Description corrected: "{transaction.originalDescription}" → "{transaction.description}"
-                    </div>
-                  )}
-                  
-                  {/* Show amount changes */}
-                  {transaction.originalAmount !== undefined && transaction.originalAmount !== transaction.amount && (
-                    <div className="text-orange-600 dark:text-orange-400 text-xs">
-                      💰 Amount corrected: {formatAmount(transaction.originalAmount)} → {formatAmount(transaction.amount)}
-                    </div>
-                  )}
-                  
-                  {/* Show payment method changes */}
-                  {(transaction.originalPaymentMethod || '') !== (transaction.paymentMethod || '') && (
-                    <div className="text-green-600 dark:text-green-400 text-xs">
-                      💳 Payment method corrected: {transaction.originalPaymentMethod || 'Not specified'} → {transaction.paymentMethod || 'Not specified'}
-                    </div>
-                  )}
-                  
-                  {/* Show user notes */}
-                  {transaction.notes && (
-                    <div className="text-xs text-blue-600 dark:text-blue-400 italic pl-4 mt-1">
-                      💡 {transaction.notes}
+                  {/* Payment method learning */}
+                  {manuallyEditedTransactions.filter(t => (t.originalPaymentMethod || '') !== (t.paymentMethod || '')).length > 0 && (
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded p-3 mt-2">
+                      <div className="font-medium text-gray-900 dark:text-gray-100">Payment Method Intelligence:</div>
+                      <p className="mt-1 text-xs">
+                        The system is learning to better identify payment methods from receipts. 
+                        {manuallyEditedTransactions.filter(t => (t.originalPaymentMethod || '') !== (t.paymentMethod || '')).length} correction{manuallyEditedTransactions.filter(t => (t.originalPaymentMethod || '') !== (t.paymentMethod || '')).length > 1 ? 's' : ''} recorded for improved accuracy.
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
-            ))}
-          </div>
+
+              {/* Future: Vendor-specific patterns */}
+              <div className="border-l-4 border-green-500 dark:border-green-600 pl-4">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">🎯 Adaptation Strategy</h3>
+                <div className="text-sm text-gray-700 dark:text-gray-300">
+                  <p>
+                    The AI will progressively improve categorization accuracy by learning from your corrections. 
+                    As patterns emerge, the system will automatically apply learned rules to similar transactions.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

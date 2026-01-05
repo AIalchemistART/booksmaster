@@ -538,15 +538,315 @@ session.protocol.interceptFileProtocol('file', (request, callback) => {
 
 ---
 
+### [FAILURE-006] Categorization Changes Tab Missing Transactions Due to Incomplete Field Tracking
+
+**Date:** 2026-01-04  
+**Session ID:** Checkpoint 163  
+**Severity:** High  
+**Impact:** Production - Data Loss (AI Learning)  
+**Status:** ✅ Resolved
+
+#### Problem Statement
+
+**What went wrong?**
+First categorization correction didn't appear in Categorization Changes tab despite quest triggering and correction being saved. User changed payment method but transaction was filtered out because `wasManuallyEdited` flag was `false`.
+
+**Expected Behavior:**
+- ANY field edit to a transaction marks it as manually edited
+- All manually edited transactions appear in Categorization Changes tab
+- AI learning corrections captured for all user modifications
+
+**Actual Behavior:**
+- Only type/category changes set `wasManuallyEdited = true`
+- Editing other fields (payment method, description, amount, etc.) didn't mark transaction as edited
+- Categorization report filtered out transaction: `wasManuallyEdited: false`
+
+#### 5 Whys Root Cause Analysis
+
+**Why 1:** Why didn't the transaction appear in the Categorization Changes tab?
+- Categorization report filters by `t.wasManuallyEdited && t.originalType && t.originalCategory`
+- The transaction had `wasManuallyEdited: false`
+
+**Why 2:** Why was `wasManuallyEdited` false when the user edited the payment method?
+- Code only checked `categorizationChanged` (type/category edits), not `anyFieldChanged`
+- `wasManuallyEdited = categorizationChanged || transaction.wasManuallyEdited || false`
+
+**Why 3:** Why was the logic restricted to categorization changes?
+- Original implementation focused on AI categorization learning (type/category corrections)
+- Payment method field added later without updating the edit tracking logic
+
+**Why 4:** Why wasn't `anyFieldChanged` used instead of `categorizationChanged`?
+- The `anyFieldChanged` variable existed but wasn't connected to `wasManuallyEdited` flag
+- Variable was used for quest logic but not persistence logic
+
+**Why 5:** Why wasn't field tracking audited when new fields were added?
+- No documented pattern linking field change detection to persistence flags
+- Adding fields didn't trigger review of edit tracking logic
+
+#### Resolution
+
+**Immediate Fix:**
+Changed `wasManuallyEdited` to use `anyFieldChanged` instead of only `categorizationChanged`.
+
+**Files Modified:**
+- `src/components/modals/ReceiptImageModal.tsx:505` - `wasManuallyEdited = anyFieldChanged || transaction.wasManuallyEdited`
+
+**Code Changes:**
+```typescript
+// ANTI-PATTERN (Bug):
+const categorizationChanged = (
+  (finalType && finalType !== originalType) ||
+  (finalCategory && finalCategory !== originalCategory)
+)
+const wasManuallyEditedValue = categorizationChanged || transaction.wasManuallyEdited || false
+
+// CORRECT PATTERN:
+const anyFieldChanged = /* checks ALL fields */
+const wasManuallyEditedValue = anyFieldChanged || transaction.wasManuallyEdited || false
+```
+
+#### Prevention Strategy
+
+**Short-term (This Session):**
+- [x] Fixed `wasManuallyEdited` to track ANY field change
+- [x] Confirmed categorization corrections save for all edits
+
+**Long-term (Pattern Promotion):**
+- [ ] Document "Complete Field Tracking" pattern in WORKSPACE_RULES.md
+- [ ] Create test coverage for all editable transaction fields
+- [ ] Add validation that field change detection matches persisted flags
+
+**Related Patterns:**
+- Similar risk in validation tracking (should track all changes, not just categorization)
+- Quest eligibility uses same `anyFieldChanged` variable correctly
+
+#### Lessons Learned
+
+**What worked well:**
+- Diagnostic logging revealed exact filter condition failing
+- `anyFieldChanged` variable already existed, just needed to be used correctly
+- User provided detailed logs showing exact failure point
+
+**What to avoid:**
+- **ANTI-PATTERN**: Using subset field checks (type/category) when "any field" semantics needed
+- Adding fields without auditing related tracking/filtering logic
+- Assuming variable names indicate all usage (categorizationChanged vs anyFieldChanged)
+
+**Knowledge Gap Filled:**
+- Field change tracking must be comprehensive for features that depend on "was edited" semantics
+- Variable naming matters - `anyFieldChanged` is more semantically accurate than `categorizationChanged`
+- Filter conditions in reports must match flags set during persistence
+
+---
+
+### [FAILURE-007] Validation Quest Counting Bug - Off-by-One Error
+
+**Date:** 2026-01-04  
+**Session ID:** Checkpoint 163  
+**Severity:** Medium  
+**Impact:** Production - Game Mechanics  
+**Status:** ✅ Resolved
+
+#### Problem Statement
+
+**What went wrong?**
+Validation quest (`validate_transaction`) was marked complete on first transaction instead of second, preventing proper progression. Quest was supposed to trigger on 2nd validation overall but triggered on 1st.
+
+**Expected Behavior:**
+- 1st transaction with edit + validate → `edit_transaction` quest only
+- 2nd transaction validate → `validate_transaction` quest (Level 5)
+- Count PREVIOUS validations, not including current one
+
+**Actual Behavior:**
+- 1st transaction validated → both quests marked complete simultaneously
+- No quest available for 2nd validation
+- User stuck at Level 4 despite completing intended progression
+
+#### 5 Whys Root Cause Analysis
+
+**Why 1:** Why did the validation quest trigger on the first transaction?
+- Count included the current transaction being validated in the filter
+
+**Why 2:** Why was the current transaction included in the count?
+- Code: `transactions.filter(t => t.userValidated).length` included ALL validated transactions
+- State update happens after quest check, but filter read from store
+
+**Why 3:** Why does including current transaction cause off-by-one error?
+- Condition: `validatedCount >= 1` evaluates to true when current is 1st and count = 1
+- Should be `validatedCount >= 1` where count excludes current (requires current to be 2nd)
+
+**Why 4:** Why wasn't the current transaction explicitly excluded?
+- Original implementation didn't anticipate timing issue between quest check and state update
+- Filter assumed store state wouldn't include current until after quest logic
+
+**Why 5:** Why wasn't this caught during initial testing?
+- Test flow didn't isolate edit vs validate quests (both could trigger on same transaction)
+- No explicit test for "2nd validation" progression path
+
+#### Resolution
+
+**Immediate Fix:**
+Explicitly exclude current transaction from validated count.
+
+**Files Modified:**
+- `src/components/modals/ReceiptImageModal.tsx:609` - `transactions.filter(t => t.userValidated && t.id !== transaction.id).length`
+
+**Code Changes:**
+```typescript
+// ANTI-PATTERN (Bug):
+const validatedCount = transactions.filter(t => t.userValidated).length
+// Could include current transaction depending on timing
+
+// CORRECT PATTERN:
+const validatedCount = transactions.filter(t => t.userValidated && t.id !== transaction.id).length
+// Explicitly excludes current transaction
+```
+
+#### Prevention Strategy
+
+**Short-term (This Session):**
+- [x] Fixed validation count to exclude current transaction
+- [x] Added logging: "Validated count (previous)" for clarity
+
+**Long-term (Pattern Promotion):**
+- [ ] Document "Count Previous Events" pattern for quest triggers
+- [ ] Add E2E test for sequential quest progression
+- [ ] Create quest progression diagram showing all paths
+
+**Related Patterns:**
+- First-time checks use `count === 0` before state update (timing-dependent)
+- Transaction ID exclusion pattern prevents self-counting
+
+#### Lessons Learned
+
+**What worked well:**
+- Explicit ID exclusion prevents timing-dependent bugs
+- Logging with "(previous)" clarifies intent in console
+- User logs showed quest completing unexpectedly early
+
+**What to avoid:**
+- **ANTI-PATTERN**: Counting from store state that's about to change without exclusions
+- Assuming state updates happen after quest logic (race conditions)
+- Off-by-one errors from inclusive vs exclusive counting
+
+**Knowledge Gap Filled:**
+- Quest triggers that count events must explicitly exclude current event
+- Store reads during state mutation handlers can include partially updated data
+- Clear variable naming ("previous", "excluding current") prevents confusion
+
+---
+
+### [FAILURE-008] Quest Migration Incorrectly Inferring Parallel Quests from Level
+
+**Date:** 2026-01-04  
+**Session ID:** Checkpoint 163  
+**Severity:** Critical  
+**Impact:** Production - Game Mechanics Broken  
+**Status:** ✅ Resolved
+
+#### Problem Statement
+
+**What went wrong?**
+Quest migration automatically added `validate_transaction` to completed quests when user reached Level 5, even though user reached L5 via `upload_supplemental` quest instead. This caused Invoices tab to unlock prematurely when user clicked Supporting Documents tab.
+
+**Expected Behavior:**
+- Level 5 can be reached by EITHER `validate_transaction` OR `upload_supplemental`
+- Migration should only infer sequential quests (1→2→3→4)
+- Parallel quests must be explicitly completed, not inferred from level
+
+**Actual Behavior:**
+- Migration saw Level 5 and added `validate_transaction` to completed quests
+- User path was: edit (L4) → supplemental (L5)
+- When sidebar re-rendered, Invoices unlocked because quest was in completedQuests
+
+#### 5 Whys Root Cause Analysis
+
+**Why 1:** Why did Invoices unlock when user clicked Supporting Documents?
+- Sidebar checked `completedQuests.includes('validate_transaction')` and found it
+
+**Why 2:** Why was `validate_transaction` in completed quests?
+- Quest migration added it because `correctedLevel >= 5`
+
+**Why 3:** Why did migration assume Level 5 means validation quest complete?
+- Migration logic: `if (correctedLevel >= 5 && !completedQuests.includes('validate_transaction'))`
+- Assumed linear progression: L1→L2→L3→L4→L5 where L5 = validate
+
+**Why 4:** Why was linear progression assumed when quests are parallel?
+- Migration was written before parallel quest paths (validate OR supplemental) were implemented
+- Code wasn't updated when quest system changed from sequential to branching
+
+**Why 5:** Why wasn't migration logic audited when parallel quests were added?
+- No systematic review of all level-related code when quest architecture changed
+- Migration runs silently on rehydration, not visible during quest implementation testing
+
+#### Resolution
+
+**Immediate Fix:**
+Removed incorrect quest inference for parallel quests (L5 and L6).
+
+**Files Modified:**
+- `src/store/index.ts:490-498` - Removed `validate_transaction` and `upload_supplemental` from migration logic
+
+**Code Changes:**
+```typescript
+// ANTI-PATTERN (Bug):
+if (correctedLevel >= 5 && !completedQuests.includes('validate_transaction')) {
+  completedQuests.push('validate_transaction')  // ❌ WRONG - L5 can also be from supplemental
+}
+if (correctedLevel >= 6 && !completedQuests.includes('upload_supplemental')) {
+  completedQuests.push('upload_supplemental')  // ❌ WRONG - L6 can also be from validation
+}
+
+// CORRECT PATTERN:
+// Parallel quests (L5, L6) cannot be inferred from level alone
+// Only sequential quests (L2, L3, L4, L7) can be migrated
+```
+
+#### Prevention Strategy
+
+**Short-term (This Session):**
+- [x] Removed parallel quest inference from migration
+- [x] Added comment explaining why parallel quests can't be inferred
+- [x] Migration now only handles sequential progression
+
+**Long-term (Pattern Promotion):**
+- [ ] Document "Sequential vs Parallel Quest Migration" pattern
+- [ ] Add validation test: Level 5 should not auto-complete validate_transaction
+- [ ] Create quest dependency graph showing parallel paths
+
+**Related Patterns:**
+- Level migration pattern works for sequential unlocks only
+- Sidebar unlock conditions use OR logic for parallel paths
+- Quest completion must be explicit for branching progression
+
+#### Lessons Learned
+
+**What worked well:**
+- User testing caught issue immediately (wrong tab unlocked)
+- Logs showed migration adding quest: `[QUEST MIGRATION] ✅ Added validate_transaction`
+- Fix was simple deletion - no complex logic needed
+
+**What to avoid:**
+- **ANTI-PATTERN**: Inferring quest completion from level when multiple paths exist
+- Assuming migration logic stays valid when game architecture changes
+- Silent state mutations (migrations) without visibility during feature testing
+
+**Knowledge Gap Filled:**
+- Linear level progression ≠ linear quest progression when parallel paths exist
+- Migration logic must distinguish between sequential and branching unlocks
+- State rehydration migrations can introduce bugs invisible during active development
+
+---
+
 **Statistics:**
-- Total Failures: 5
-- Critical: 3
-- High: 1
-- Medium: 1
+- Total Failures: 8
+- Critical: 4
+- High: 2
+- Medium: 2
 - Low: 0
-- Resolved: 5
+- Resolved: 8
 - Open: 0
 
 ---
 
-**Last Updated:** January 3, 2026
+**Last Updated:** January 4, 2026

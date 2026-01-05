@@ -25,6 +25,7 @@ import { TaxDeadlineReminder } from '@/components/dashboard/TaxDeadlineReminder'
 import { LevelProgressCard } from '@/components/dashboard/LevelProgressCard'
 import { AchievementsDisplay } from '@/components/dashboard/AchievementsDisplay'
 import { FirstVisitIntro, useFirstVisit } from '@/components/gamification/FirstVisitIntro'
+import { QuestList } from '@/components/quests/QuestCard'
 
 const categoryLabels: Record<ExpenseCategory, string> = {
   materials: 'Materials',
@@ -43,8 +44,11 @@ const categoryLabels: Record<ExpenseCategory, string> = {
 }
 
 export default function Dashboard() {
-  const { transactions, invoices, receipts, userProgress, manualLevelUp } = useStore()
+  const { transactions, invoices, receipts, userProgress, manualLevelUp, getActiveQuests, completeQuest } = useStore()
   const { showIntro, closeIntro } = useFirstVisit('dashboard')
+  
+  // Get active quests
+  const activeQuests = getActiveQuests()
 
   // Calculate business stats
   const totalIncome = transactions
@@ -156,34 +160,31 @@ export default function Dashboard() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Your business at a glance</p>
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Your business at a glance</h1>
+            {/* DEBUG: Store state display */}
+            <div className="mt-2 p-2 bg-red-600 text-white text-xs font-mono">
+              DEBUG - Level: {userProgress.currentLevel} | Features: {userProgress.unlockedFeatures.join(', ')} | Receipts: {receipts.length}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Your Progress - Level 2 Unlock Card */}
-      {userProgress.currentLevel === 1 && receipts.length === 0 && transactions.length === 0 && (
-        <Card className="mb-8 border-2 border-purple-300 dark:border-purple-700 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-4 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 text-white">
-                  <Sparkles className="h-8 w-8" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Ready to Start?</h3>
-                  <p className="text-gray-600 dark:text-gray-400">Click here to unlock Receipt Scanning and begin your bookkeeping journey!</p>
-                </div>
-              </div>
-              <Button 
-                onClick={() => manualLevelUp(2)}
-                className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-6 py-3"
-              >
-                <span className="mr-2">Start Scanning</span>
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Quest System */}
+      {activeQuests.length > 0 && (
+        <div className="mb-8">
+          <QuestList 
+            quests={activeQuests}
+            onStartScanning={() => {
+              if (userProgress.currentLevel === 1) {
+                completeQuest('start_scanning')
+                manualLevelUp()
+                console.log('[QUEST] Completed start_scanning quest - advancing to Level 2')
+              }
+            }}
+          />
+        </div>
       )}
 
       {/* Primary Stats Grid */}

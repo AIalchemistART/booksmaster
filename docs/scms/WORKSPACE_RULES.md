@@ -173,6 +173,46 @@ amount: receipt.ocrAmount ?? 0       // -24.99 preserved
 - **Impact:** Critical for returns/refunds feature - prevented data loss of 7 receipts
 - **Related:** See FAILURES.md [FAILURE-001] for full root cause analysis
 
+### ❌ 5. Quest Trigger Event Counting Without Exclusion
+- **Problem:** Counting events from store state during mutation includes current event, causing off-by-one errors
+- **Root Cause:** Quest triggers check event counts while state update is in progress; filter reads partially updated store
+- **Solution:** Explicitly exclude current event by ID when counting "previous" events
+- **Example:**
+```typescript
+// ❌ Bad - Includes current event, triggers on 1st instead of 2nd
+const validatedCount = transactions.filter(t => t.userValidated).length
+if (validatedCount >= 1) { /* triggers on 1st validation */ }
+
+// ✅ Good - Excludes current, triggers on 2nd as intended
+const validatedCount = transactions.filter(t => 
+  t.userValidated && t.id !== transaction.id
+).length
+if (validatedCount >= 1) { /* triggers on 2nd validation */ }
+```
+- **Validated:** Fixed in validation quest and supplemental doc triggers (2026-01-04)
+- **Pattern Used:** n=2 (validation count, supplemental count)
+- **Impact:** High - Prevents quest progression bugs and premature level unlocks
+- **Related:** See FAILURES.md [FAILURE-007] for full root cause analysis
+
+### ❌ 6. Inferring Parallel Quest Completion from Level
+- **Problem:** Migration logic assumes single path to each level, breaks when parallel quests are introduced
+- **Root Cause:** Level can be reached via multiple quest paths (e.g., L5 via validate_transaction OR upload_supplemental)
+- **Solution:** Only infer sequential quests from level; parallel quests must be explicitly completed
+- **Example:**
+```typescript
+// ❌ Bad - Assumes L5 always means validate_transaction complete
+if (correctedLevel >= 5 && !completedQuests.includes('validate_transaction')) {
+  completedQuests.push('validate_transaction')  // WRONG - L5 may be from supplemental
+}
+
+// ✅ Good - Only migrate sequential progression, not parallel paths
+// Levels 1→2→3→4 are sequential, can be inferred
+// Levels 4→5 and 5→6 have parallel paths (validate OR supplemental), cannot be inferred
+```
+- **Validated:** Removed parallel quest inference from migration (2026-01-04)
+- **Impact:** Critical - Prevents premature tab unlocking and progression breaks
+- **Related:** See FAILURES.md [FAILURE-008] for full root cause analysis
+
 ---
 
 ## Build & Deployment Rules

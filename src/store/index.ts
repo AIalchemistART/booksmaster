@@ -7,6 +7,7 @@ import type { MileageSlice } from './mileage-slice'
 import { createMileageSlice } from './mileage-slice'
 import type { AIAccuracySlice } from './ai-accuracy-slice'
 import { createAIAccuracySlice } from './ai-accuracy-slice'
+import type { UserLevel } from '@/lib/gamification/leveling-system'
 import { 
   saveReceiptsToFileSystem,
   saveInvoicesToFileSystem,
@@ -235,12 +236,24 @@ export const useStore = create<AppState>()(
       receipts: [],
       addReceipt: (receipt: Receipt) =>
         set((state) => {
+          console.log('[STORE] ============================================')
+          console.log('[STORE] addReceipt() called - BEFORE')
+          console.log('[STORE] Current Level:', state.userProgress.currentLevel)
+          console.log('[STORE] Current XP:', state.userProgress.currentXP)
+          console.log('[STORE] Unlocked Features:', state.userProgress.unlockedFeatures)
+          console.log('[STORE] Receipt count before:', state.receipts.length)
+          console.log('[STORE] New receipt ID:', receipt.id)
+
           // Add the new receipt
           let newReceipts = [...state.receipts, receipt]
-          
-          // Process all receipts: detect duplicates, link documents, mark supplemental
+
+          // Process any manifest or invoice documents
           newReceipts = processReceiptDocuments(newReceipts)
-          
+
+          console.log('[STORE] Receipt count after:', newReceipts.length)
+          console.log('[STORE] addReceipt() returning - check if level changes...')
+          console.log('[STORE] ============================================')
+
           // Debounce file system saves to batch operations
           debouncedSaveReceipts(newReceipts)
           return { receipts: newReceipts }
@@ -346,6 +359,7 @@ export const useStore = create<AppState>()(
         userProgress: state.userProgress,
         unlockedAchievements: state.unlockedAchievements,
         dailyBatchTracker: state.dailyBatchTracker,
+        questProgress: state.questProgress,
         // AI Accuracy metrics
         accuracyDataPoints: state.accuracyDataPoints,
         weeklySummaries: state.weeklySummaries,
@@ -378,19 +392,125 @@ export const useStore = create<AppState>()(
             }
           }
           
-          // MIGRATION DISABLED: The migration was too aggressive and reset legitimate progress
-          // Users who have receipts/transactions should keep their level, even after restart
-          // The manual level-up system preserves progress correctly via unlockedFeatures
-          // if (state.userProgress && state.userProgress.currentLevel > 1) {
-          //   const hasValidLevelUp = state.userProgress.unlockedFeatures.includes('receipts')
-          //   if (!hasValidLevelUp) {
-          //     console.log('[MIGRATION] Resetting invalid level from', state.userProgress.currentLevel, 'to 1 (keeping XP for cosmetic progress)')
-          //     state.userProgress.currentLevel = 1
-          //     state.userProgress.unlockedFeatures = ['dashboard', 'settings']
-          //   }
-          // }
-          
           state.restoreReceiptImages()
+          
+          // LEVEL MIGRATION: Fix stale level 1 when data indicates user progressed further
+          // CRITICAL: Must run AFTER restoreReceiptImages so receipt count is accurate
+          if (state.userProgress) {
+            const { currentLevel, unlockedFeatures, totalXP } = state.userProgress
+            let correctedLevel = currentLevel
+            const receiptCount = state.receipts?.length || 0
+            const transactionCount = state.transactions?.length || 0
+            const validatedReceiptCount = state.receipts?.filter((r: any) => r.userValidated === true).length || 0
+            
+            console.log(`[LEVEL MIGRATION] ========================================`)
+            console.log(`[LEVEL MIGRATION] Starting migration check...`)
+            console.log(`[LEVEL MIGRATION] Current state - Level: ${currentLevel}, XP: ${totalXP}`)
+            console.log(`[LEVEL MIGRATION] Data counts - Receipts: ${receiptCount}, Transactions: ${transactionCount}, Validated: ${validatedReceiptCount}`)
+            console.log(`[LEVEL MIGRATION] Unlocked features:`, unlockedFeatures)
+            
+            // Determine correct level based on unlocked features (manual level-up history)
+            if (unlockedFeatures.includes('categorization_report') || unlockedFeatures.includes('bank_accounts')) {
+              correctedLevel = Math.max(currentLevel, 6) as UserLevel
+              console.log('[LEVEL MIGRATION] Found Level 6 features in unlockedFeatures')
+            } else if (unlockedFeatures.includes('invoices') || unlockedFeatures.includes('reports')) {
+              correctedLevel = Math.max(currentLevel, 5) as UserLevel
+              console.log('[LEVEL MIGRATION] Found Level 5 features in unlockedFeatures')
+            } else if (unlockedFeatures.includes('supporting_documents')) {
+              correctedLevel = Math.max(currentLevel, 4) as UserLevel
+              console.log('[LEVEL MIGRATION] Found Level 4 features in unlockedFeatures')
+            } else if (unlockedFeatures.includes('transactions')) {
+              correctedLevel = Math.max(currentLevel, 3) as UserLevel
+              console.log('[LEVEL MIGRATION] Found Level 3 features in unlockedFeatures')
+            } else if (unlockedFeatures.includes('receipts')) {
+              correctedLevel = Math.max(currentLevel, 2) as UserLevel
+              console.log('[LEVEL MIGRATION] Found Level 2 features in unlockedFeatures')
+            }
+            
+            // Fallback: Check actual data if unlockedFeatures don't indicate level-ups
+            // This catches cases where the level was reset but data exists
+            if (correctedLevel === 1 && currentLevel === 1) {
+              console.log('[LEVEL MIGRATION] Still at Level 1, checking actual data...')
+              if (transactionCount > 0) {
+                correctedLevel = 3 as UserLevel
+                console.log(`[LEVEL MIGRATION] 🔍 Found ${transactionCount} transactions - correcting to Level 3`)
+              } else if (validatedReceiptCount > 0) {
+                correctedLevel = 3 as UserLevel
+                console.log(`[LEVEL MIGRATION] 🔍 Found ${validatedReceiptCount} validated receipts - correcting to Level 3`)
+              } else if (receiptCount > 0) {
+                correctedLevel = 2 as UserLevel
+                console.log(`[LEVEL MIGRATION] 🔍 Found ${receiptCount} receipts - correcting to Level 2`)
+              }
+            }
+            
+            if (correctedLevel !== currentLevel) {
+              console.log(`[LEVEL MIGRATION] ✅ CORRECTING stale level ${currentLevel} → ${correctedLevel}`)
+              state.userProgress.currentLevel = correctedLevel
+              
+              // Update unlockedFeatures to match corrected level
+              const newFeatures = ['dashboard', 'settings']
+              if (correctedLevel >= 2) newFeatures.push('receipts')
+              if (correctedLevel >= 3) newFeatures.push('transactions')
+              if (correctedLevel >= 4) newFeatures.push('categorization_changes')
+              if (correctedLevel >= 5) newFeatures.push('invoices')
+              if (correctedLevel >= 6) newFeatures.push('supporting_documents')
+              if (correctedLevel >= 7) newFeatures.push('reports')
+              state.userProgress.unlockedFeatures = newFeatures
+              console.log('[LEVEL MIGRATION] Updated unlockedFeatures:', newFeatures)
+              console.log('[LEVEL MIGRATION] Note: Changes will be persisted by Zustand middleware')
+            } else {
+              console.log('[LEVEL MIGRATION] ✅ Level is correct, no migration needed')
+            }
+            
+            // QUEST MIGRATION: Restore completed quests based on current level
+            if (state.questProgress) {
+              const completedQuests = [...(state.questProgress.completedQuests || [])]
+              let questsUpdated = false
+              
+              console.log('[QUEST MIGRATION] ========================================')
+              console.log('[QUEST MIGRATION] Current completed quests:', completedQuests)
+              console.log('[QUEST MIGRATION] User is at Level:', correctedLevel)
+              
+              // Reconstruct completed quests based on level
+              if (correctedLevel >= 2 && !completedQuests.includes('start_scanning')) {
+                completedQuests.push('start_scanning')
+                questsUpdated = true
+                console.log('[QUEST MIGRATION] ✅ Added start_scanning quest (Level 2+)')
+              }
+              if (correctedLevel >= 3 && !completedQuests.includes('validate_first_receipt')) {
+                completedQuests.push('validate_first_receipt')
+                questsUpdated = true
+                console.log('[QUEST MIGRATION] ✅ Added validate_first_receipt quest (Level 3+)')
+              }
+              if (correctedLevel >= 4 && !completedQuests.includes('edit_transaction')) {
+                completedQuests.push('edit_transaction')
+                questsUpdated = true
+                console.log('[QUEST MIGRATION] ✅ Added edit_transaction quest (Level 4+)')
+              }
+              // Note: validate_transaction and upload_supplemental are PARALLEL quests
+              // They can be completed in either order (Levels 5 and 6)
+              // Cannot infer completion from level alone - must be explicitly completed
+              if (correctedLevel >= 7 && !completedQuests.includes('reach_milestones')) {
+                completedQuests.push('reach_milestones')
+                questsUpdated = true
+                console.log('[QUEST MIGRATION] ✅ Added reach_milestones quest (Level 7)')
+              }
+              
+              if (questsUpdated) {
+                state.questProgress.completedQuests = completedQuests
+                console.log('[QUEST MIGRATION] ✅ Updated questProgress.completedQuests:', completedQuests)
+                console.log('[QUEST MIGRATION] Note: Changes will be persisted by Zustand middleware')
+              } else {
+                console.log('[QUEST MIGRATION] ✅ Quest progress is correct, no migration needed')
+              }
+              console.log('[QUEST MIGRATION] ========================================')
+            }
+            console.log(`[LEVEL MIGRATION] ========================================`)
+          }
+          
+          console.log('[PERSIST] Final userProgress.currentLevel:', state.userProgress?.currentLevel)
+          console.log('[PERSIST] Final userProgress.unlockedFeatures:', state.userProgress?.unlockedFeatures)
+          console.log('[PERSIST] Final darkMode:', state.darkMode)
           
           // Recalculate AI accuracy summaries after rehydration
           if (state.calculateSummaries) {
@@ -398,9 +518,20 @@ export const useStore = create<AppState>()(
             state.calculateSummaries()
           }
           
-          // Apply dark mode class if enabled
-          if (state.darkMode && typeof document !== 'undefined') {
-            document.documentElement.classList.add('dark')
+          // Apply dark mode class if enabled - CRITICAL: Must run after all state mutations
+          if (typeof document !== 'undefined') {
+            console.log('[DARK MODE] Current darkMode state:', state.darkMode)
+            console.log('[DARK MODE] Current document classes:', document.documentElement.className)
+            
+            if (state.darkMode) {
+              document.documentElement.classList.add('dark')
+              console.log('[DARK MODE] ✅ Applied dark class')
+            } else {
+              document.documentElement.classList.remove('dark')
+              console.log('[DARK MODE] ❌ Removed dark class')
+            }
+            
+            console.log('[DARK MODE] Final document classes:', document.documentElement.className)
           }
         } else {
           console.log('[PERSIST] No state to rehydrate - using defaults')

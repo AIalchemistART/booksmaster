@@ -1072,14 +1072,19 @@ export default function ReceiptsPage() {
                       if (isNowValidated) {
                         await completeAction('validateReceipt')
                         
+                        // Track milestone for Level 7 quest
+                        const { incrementMilestone } = useStore.getState()
+                        incrementMilestone('validatedTransactions')
+                        
                         // Check if this is the first validated receipt - unlock Level 3
                         const validatedCount = receipts.filter((r: any) => r.userValidated).length
                         if (validatedCount === 0) {
-                          // First validation - unlock Transactions tab (Level 3)
-                          const { manualLevelUp, userProgress } = useStore.getState()
-                          if (userProgress.currentLevel < 3) {
-                            manualLevelUp(3)
-                            console.log('[LEVEL UP] First receipt validated - unlocked Level 3 (Transactions)')
+                          // First validation - unlock Transactions tab (Level 2 → 3)
+                          const { manualLevelUp, userProgress, completeQuest } = useStore.getState()
+                          if (userProgress.currentLevel === 2) {
+                            completeQuest('validate_first_receipt')
+                            manualLevelUp()
+                            console.log('[QUEST] Completed validate_first_receipt quest - advancing to Level 3')
                           }
                         }
                         

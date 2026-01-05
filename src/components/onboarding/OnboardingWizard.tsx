@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { CheckCircle, ArrowRight, ArrowLeft, Sparkles, Rocket, Moon, Sun, Briefcase, Calendar, FolderOpen } from 'lucide-react'
 import { JOB_TYPE_LABELS, type TechTreePath } from '@/lib/gamification/leveling-system'
 import { setupFileSystemStorage } from '@/lib/file-system-adapter'
-import { setGeminiApiKey } from '@/lib/persistent-storage'
+import { setGeminiApiKey, getGeminiApiKey } from '@/lib/persistent-storage'
 import { CustomJobDescriptionDialog } from '@/components/gamification/CustomJobDescriptionDialog'
 
 interface OnboardingWizardProps {
@@ -27,7 +27,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [fiscalYearStartMonth, setFiscalYearStartMonth] = useState(1)
   const [fiscalYearEndMonth, setFiscalYearEndMonth] = useState(12)
   const [fileSystemConfigured, setFileSystemConfigured] = useState(false)
-  const [apiKey, setApiKey] = useState(localStorage.getItem('gemini-api-key') || '')
+  const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '')
   const [unlockedFeatures, setUnlockedFeatures] = useState<Set<number>>(new Set())
   const [showConfetti, setShowConfetti] = useState(false)
 
@@ -121,14 +121,26 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     // Save API key to persistent storage (IndexedDB + localStorage)
     if (apiKey && apiKey.trim()) {
       console.log('[WIZARD] Saving API key to persistent storage...')
+      console.log('[WIZARD] API key length:', apiKey.trim().length, 'chars')
       await setGeminiApiKey(apiKey.trim()).catch(err => {
-        console.error('Failed to save API key:', err)
+        console.error('[WIZARD ERROR] Failed to save API key:', err)
       })
       console.log('[WIZARD] Saved API key to IndexedDB and localStorage')
       
-      // Verify save
+      // Verify save with detailed logging
       const savedKey = localStorage.getItem('gemini_api_key')
-      console.log('[WIZARD] Verified localStorage API key:', savedKey ? 'PRESENT' : 'MISSING')
+      console.log('[WIZARD] Verified localStorage API key:', savedKey ? `PRESENT (${savedKey.length} chars)` : 'MISSING')
+      
+      // Double-check IndexedDB
+      const indexedKey = await getGeminiApiKey()
+      console.log('[WIZARD] Verified IndexedDB API key:', indexedKey ? `PRESENT (${indexedKey.length} chars)` : 'MISSING')
+      
+      // Critical: Wait for Settings component to pick up the API key
+      // Settings page renders immediately after wizard, needs time to load from storage
+      console.log('[WIZARD] Waiting 500ms for API key to propagate to Settings component...')
+      await new Promise(resolve => setTimeout(resolve, 500))
+    } else {
+      console.log('[WIZARD] No API key to save (empty or whitespace)')
     }
     
     // Mark onboarding complete (no XP award - stay at Level 1)

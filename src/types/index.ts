@@ -250,10 +250,13 @@ export interface CategorizationCorrection {
     category?: { from: TransactionCategory; to: TransactionCategory }
     notes?: { from: string; to: string }
     paymentMethod?: { from: string; to: string; cardLastFour?: string } // Payment type corrections with card info
+    itemization?: { from: string; to: string } // Itemization corrections
     linkedTransactionId?: { from: string | undefined; to: string | undefined } // Link/unlink actions
     verificationLevel?: { from: VerificationLevel | undefined; to: VerificationLevel | undefined }
     isDuplicateOfLinked?: { from: boolean | undefined; to: boolean | undefined }
   }
+  // AI-generated pattern analysis (updated after each correction)
+  patternAnalysis?: string
   // Linking context
   linkedTransactionDetails?: {
     id: string

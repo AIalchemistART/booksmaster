@@ -265,8 +265,55 @@ export function linkAllReceipts(receipts: Receipt[]): Receipt[] {
  * Mark manifest documents as supplemental (don't count as expenses)
  */
 export function markManifestsAsSupplemental(receipts: Receipt[]): Receipt[] {
+  // Track if this is the first manifest being marked
+  const existingManifests = receipts.filter(r => r.documentType === 'manifest' && r.isSupplementalDoc).length
+  let firstManifestMarked = false
+  
+  const processed = receipts.map(receipt => {
+    if (receipt.documentType === 'manifest' && !receipt.isSupplementalDoc) {
+      console.log('[MANIFEST] Marking receipt as supplemental doc:', receipt.id)
+      
+      // Quest: Upload supplemental document → Level 6 (Supporting Documents)
+      if (existingManifests === 0 && !firstManifestMarked) {
+        firstManifestMarked = true
+        
+        // Dynamically import to avoid circular dependencies
+        import('@/store').then(({ useStore }) => {
+          const { manualLevelUp, userProgress, completeQuest, questProgress, incrementMilestone } = useStore.getState()
+          
+          console.log('[QUEST CHECK] First manifest - Level:', userProgress.currentLevel, 'Quest completed:', questProgress.completedQuests.includes('upload_supplemental'))
+          
+          // Track milestone
+          incrementMilestone('supplementalDocs')
+          
+          if (!questProgress.completedQuests.includes('upload_supplemental') && userProgress.currentLevel >= 3 && userProgress.currentLevel < 7) {
+            completeQuest('upload_supplemental')
+            manualLevelUp()
+            console.log('[QUEST] ✅ Completed upload_supplemental quest (manifest) - advancing to next level (Supporting Documents)')
+          } else {
+            console.log('[QUEST CHECK] Quest already completed, level too low, or already at max')
+          }
+        })
+      }
+      
+      return {
+        ...receipt,
+        isSupplementalDoc: true
+      }
+    }
+    return receipt
+  })
+  
+  return processed
+}
+
+/**
+ * Mark invoice documents as supplemental (don't count as expenses)
+ * Invoices represent money owed TO the user, not expenses paid BY the user
+ */
+export function markInvoicesAsSupplemental(receipts: Receipt[]): Receipt[] {
   return receipts.map(receipt => {
-    if (receipt.documentType === 'manifest') {
+    if (receipt.documentType === 'invoice') {
       return {
         ...receipt,
         isSupplementalDoc: true
@@ -316,6 +363,9 @@ export function processReceiptDocuments(receipts: Receipt[]): Receipt[] {
   
   // Step 3: Mark manifests as supplemental
   processed = markManifestsAsSupplemental(processed)
+  
+  // Step 4: Mark invoices as supplemental (third-party/scanned invoices)
+  processed = markInvoicesAsSupplemental(processed)
   
   console.log('[DOCUMENT PROCESSING] Complete')
   return processed

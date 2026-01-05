@@ -22,6 +22,9 @@ import { useState, useEffect } from 'react'
 import { hasActiveProcessing, getProcessingStats } from '@/lib/global-receipt-processor'
 import { useStore } from '@/store'
 
+// MODULE LOAD CHECK - fires when file is imported
+console.log('[SIDEBAR MODULE] Sidebar.tsx loaded')
+
 interface NavItem {
   name: string
   href: string
@@ -36,37 +39,37 @@ const navigation: NavItem[] = [
     name: 'Receipts', 
     href: '/receipts', 
     icon: Camera,
-    unlockCondition: (store) => store.userProgress.currentLevel >= 2 || store.userProgress.onboardingComplete || store.receipts.length > 0
+    unlockCondition: (store) => store.questProgress.completedQuests.includes('start_scanning')
   },
   { 
     name: 'Transactions', 
     href: '/transactions', 
     icon: Receipt,
-    unlockCondition: (store) => store.userProgress.currentLevel >= 3 || store.receipts.some((r: any) => r.userValidated === true)
-  },
-  { 
-    name: 'Supporting Documents', 
-    href: '/supporting-documents', 
-    icon: FolderOpen,
-    unlockCondition: (store) => store.userProgress.currentLevel >= 4 || store.receipts.some((r: any) => r.isSupplementalDoc === true)
-  },
-  { 
-    name: 'Invoices', 
-    href: '/invoices', 
-    icon: FileText,
-    unlockCondition: (store) => store.userProgress.currentLevel >= 5 || store.transactions.some((t: any) => t.wasManuallyEdited === true || t.userValidated === true)
-  },
-  { 
-    name: 'Reports', 
-    href: '/reports', 
-    icon: TrendingUp,
-    unlockCondition: (store) => store.userProgress.currentLevel >= 5 || store.transactions.some((t: any) => t.wasManuallyEdited === true || t.userValidated === true)
+    unlockCondition: (store) => store.questProgress.completedQuests.includes('validate_first_receipt')
   },
   { 
     name: 'Categorization Changes', 
     href: '/categorization-report', 
     icon: GitCompare,
-    unlockCondition: (store) => store.userProgress.currentLevel >= 6 || store.categorizationCorrections.length > 0
+    unlockCondition: (store) => store.questProgress.completedQuests.includes('edit_transaction')
+  },
+  { 
+    name: 'Invoices', 
+    href: '/invoices', 
+    icon: FileText,
+    unlockCondition: (store) => store.questProgress.completedQuests.includes('validate_transaction')
+  },
+  { 
+    name: 'Supporting Documents', 
+    href: '/supporting-documents', 
+    icon: FolderOpen,
+    unlockCondition: (store) => store.questProgress.completedQuests.includes('upload_supplemental')
+  },
+  { 
+    name: 'Reports', 
+    href: '/reports', 
+    icon: TrendingUp,
+    unlockCondition: (store) => store.questProgress.completedQuests.includes('reach_milestones')
   },
   { 
     name: 'Bank Accounts', 
@@ -77,13 +80,34 @@ const navigation: NavItem[] = [
   { name: 'Settings', href: '/settings', icon: Settings, alwaysUnlocked: true },
 ]
 
-export function Sidebar() {
+export default function Sidebar() {
   const pathname = usePathname()
   const store = useStore()
   const [isProcessing, setIsProcessing] = useState(false)
   const [stats, setStats] = useState({ pending: 0, processing: 0, done: 0, error: 0, total: 0 })
 
-  // Check processing status every 2 seconds
+  useEffect(() => {
+    console.log('[SIDEBAR MOUNT] Sidebar mounted successfully')
+  }, [])
+
+  useEffect(() => {
+    console.log('[SIDEBAR RENDER] Level:', store.userProgress.currentLevel, 'Features:', store.userProgress.unlockedFeatures, 'Receipts:', store.receipts.length)
+  })
+
+  useEffect(() => {
+    console.log('[SIDEBAR] Current Level:', store.userProgress.currentLevel)
+    console.log('[SIDEBAR] Unlocked Features:', store.userProgress.unlockedFeatures)
+    console.log('[SIDEBAR] Receipt Count:', store.receipts.length)
+    console.log('[SIDEBAR] Onboarding Complete:', store.userProgress.onboardingComplete)
+    
+    navigation.forEach(item => {
+      if (!item.alwaysUnlocked && item.unlockCondition) {
+        const isUnlocked = item.unlockCondition(store)
+        console.log(`[SIDEBAR] ${item.name} unlocked:`, isUnlocked)
+      }
+    })
+  }, [store.userProgress.currentLevel, store.userProgress.unlockedFeatures, store.receipts.length, store.userProgress.onboardingComplete])
+
   useEffect(() => {
     const checkProcessing = () => {
       const active = hasActiveProcessing()
@@ -116,6 +140,12 @@ export function Sidebar() {
     <div className="flex h-full w-64 flex-col bg-slate-900">
       <div className="flex h-16 items-center justify-center border-b border-slate-700">
         <h1 className="text-xl font-bold text-white">Booksmaster</h1>
+      </div>
+      {/* DEBUG: Visual store state display */}
+      <div className="bg-red-900 text-white text-xs p-2 border-b border-red-700">
+        <div><strong>DEBUG Level:</strong> {store.userProgress.currentLevel}</div>
+        <div><strong>Features:</strong> {store.userProgress.unlockedFeatures.join(', ')}</div>
+        <div><strong>Receipts Count:</strong> {store.receipts.length}</div>
       </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
         {isProcessing && (
