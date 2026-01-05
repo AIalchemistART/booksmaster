@@ -376,7 +376,11 @@ export function ReceiptImageModal({
   }
 
   const handleInitiateSave = () => {
-    if (!transaction || !onSave) return
+    console.log('[VALIDATION] handleInitiateSave called')
+    if (!transaction || !onSave) {
+      console.log('[VALIDATION] Missing transaction or onSave, returning')
+      return
+    }
     
     // Check what changed
     const dateChanged = formData.date !== transaction.date
@@ -390,16 +394,32 @@ export function ReceiptImageModal({
     
     const anyFieldChanged = dateChanged || descriptionChanged || amountChanged || typeChanged || categoryChanged || paymentMethodChanged || itemizationChanged || notesChanged
     
+    console.log('[VALIDATION] Field changes:', {
+      dateChanged,
+      descriptionChanged,
+      amountChanged,
+      typeChanged,
+      categoryChanged,
+      paymentMethodChanged,
+      itemizationChanged,
+      notesChanged,
+      anyFieldChanged,
+      isValidated,
+      viewMode
+    })
+    
     // If no changes AND already validated, just close
     if (!anyFieldChanged && viewMode !== 'documentation') {
+      console.log('[VALIDATION] No field changes detected')
       // If already validated, just close
       if (isValidated) {
+        console.log('[VALIDATION] Already validated, closing modal')
         onClose()
         return
       }
       
       // If not validated, allow user to validate without making edits
-      // Call handleConfirmedSave directly with shouldVerify=true
+      console.log('[VALIDATION] Not validated, calling handleConfirmedSave(true)')
       handleConfirmedSave(true)
       return
     }
@@ -419,13 +439,18 @@ export function ReceiptImageModal({
   }
   
   const handleConfirmedSave = async (shouldVerify: boolean) => {
-    if (!transaction || !onSave) return
+    console.log('[VALIDATION] handleConfirmedSave called with shouldVerify:', shouldVerify)
+    if (!transaction || !onSave) {
+      console.log('[VALIDATION] Missing transaction or onSave in handleConfirmedSave')
+      return
+    }
     
     // Close confirmation modal
     setShowConfirmation(false)
     
     // Update validation state based on user choice
     const finalValidationState = shouldVerify ? true : isValidated
+    console.log('[VALIDATION] finalValidationState:', finalValidationState, 'isValidated:', isValidated, 'transaction.userValidated:', transaction.userValidated)
     
     const { receipts, deleteTransaction } = useStore.getState()
     const now = new Date().toISOString()
@@ -538,6 +563,13 @@ export function ReceiptImageModal({
       wasManuallyEdited: wasManuallyEditedValue,
       editedAt: anyFieldChanged ? now : transaction.editedAt
     }
+    
+    console.log('[VALIDATION] Updated transaction:', {
+      id: updatedTransaction.id,
+      userValidated: updatedTransaction.userValidated,
+      validatedAt: updatedTransaction.validatedAt,
+      wasManuallyEdited: updatedTransaction.wasManuallyEdited
+    })
     
     console.log('[TRANSACTION UPDATE] Updated transaction:', {
       id: updatedTransaction.id,
@@ -712,7 +744,9 @@ export function ReceiptImageModal({
       console.log(`[AI ACCURACY] Validation recorded: ${fieldsEdited.length > 0 ? `${accuracyScore.toFixed(1)}% accurate (${correctFields}/${totalFields} fields correct, edited: ${fieldsEdited.join(', ')})` : 'PERFECT (100%)'}`)
     }
 
+    console.log('[VALIDATION] Calling onSave with updated transaction')
     onSave(updatedTransaction)
+    console.log('[VALIDATION] Closing modal')
     onClose()
   }
 
