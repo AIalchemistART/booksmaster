@@ -492,12 +492,12 @@ export function ReceiptImageModal({
     
     // Track categorization changes for report
     // Set original values if this is the first edit (preserve OCR values for audit trail)
-    const originalType = transaction.originalType || transaction.type
-    const originalCategory = transaction.originalCategory || transaction.category
-    const originalDate = transaction.originalDate || transaction.date
-    const originalDescription = transaction.originalDescription || transaction.description
-    const originalAmount = transaction.originalAmount !== undefined ? transaction.originalAmount : transaction.amount
-    const originalPaymentMethod = transaction.originalPaymentMethod || transaction.paymentMethod
+    const originalType = typeChanged && !transaction.originalType ? initialFormData.current.type as Transaction['type'] : transaction.originalType
+    const originalCategory = categoryChanged && !transaction.originalCategory ? initialFormData.current.category as Transaction['category'] : transaction.originalCategory
+    const originalDate = dateChanged && !transaction.originalDate ? initialFormData.current.date : transaction.originalDate
+    const originalDescription = descriptionChanged && !transaction.originalDescription ? initialFormData.current.description : transaction.originalDescription
+    const originalAmount = amountChanged && transaction.originalAmount === undefined ? parseFloat(initialFormData.current.amount) : transaction.originalAmount
+    const originalPaymentMethod = paymentMethodChanged && !transaction.originalPaymentMethod ? (initialFormData.current.paymentMethod as Transaction['paymentMethod']) : transaction.originalPaymentMethod
     
     // Mark as categorization change ONLY if user changed type or category in THIS session
     const categorizationChanged = typeChanged || categoryChanged
