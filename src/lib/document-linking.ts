@@ -288,7 +288,7 @@ export function markManifestsAsSupplemental(receipts: Receipt[]): Receipt[] {
           
           if (!questProgress.completedQuests.includes('upload_supplemental') && userProgress.currentLevel >= 3 && userProgress.currentLevel < 7) {
             completeQuest('upload_supplemental')
-            manualLevelUp()
+            manualLevelUp('supporting_documents')
             console.log('[QUEST] ✅ Completed upload_supplemental quest (manifest) - advancing to next level (Supporting Documents)')
           } else {
             console.log('[QUEST CHECK] Quest already completed, level too low, or already at max')

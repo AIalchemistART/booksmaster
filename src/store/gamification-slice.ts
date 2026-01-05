@@ -19,6 +19,7 @@ export interface GamificationSlice {
   unlockedAchievements: Achievement[]
   pendingAchievement: Achievement | null
   pendingLevelUp: UserLevel | null  // Track pending level-up for notification
+  lastUnlockedFeature: string | null  // Track which feature was just unlocked for display
   dailyBatchTracker: DailyBatchTracker
   questProgress: QuestProgress  // Quest system state
   
@@ -26,7 +27,7 @@ export interface GamificationSlice {
   initializeUserProgress: () => void
   selectTechPath: (path: TechTreePath) => void
   selectCustomPath: (nodeIds: string[]) => void
-  manualLevelUp: () => void  // Manually increment level by 1
+  manualLevelUp: (unlockedFeature?: string) => void  // Manually increment level by 1, optionally specify feature unlocked
   completeAction: (action: keyof typeof XP_REWARDS) => { leveledUp: boolean; newLevel?: UserLevel; xpGained: number }
   completeBatchAction: (type: 'parse' | 'validate', count: number) => { leveledUp: boolean; newLevel?: UserLevel; xpGained: number }
   completeOnboarding: () => void
@@ -71,6 +72,7 @@ export const createGamificationSlice: StateCreator<
   unlockedAchievements: [],
   pendingAchievement: null,
   pendingLevelUp: null,
+  lastUnlockedFeature: null,
   dailyBatchTracker: { date: '', parseCount: 0, validateCount: 0 },
   questProgress: DEFAULT_QUEST_PROGRESS,
 
@@ -109,7 +111,7 @@ export const createGamificationSlice: StateCreator<
     })
   },
 
-  manualLevelUp: () => {
+  manualLevelUp: (unlockedFeature?: string) => {
     set((state) => {
       const currentLevel = state.userProgress.currentLevel
       
@@ -138,7 +140,8 @@ export const createGamificationSlice: StateCreator<
       }
       
       console.log(`[LEVEL UP] Incremented from Level ${currentLevel} → Level ${newLevel} (cosmetic XP: ${cosmeticXP})`)
-      console.log(`[LEVEL UP] New features unlocked:`, newFeatures)
+      console.log(`[LEVEL UP] Feature unlocked:`, unlockedFeature || 'default')
+      console.log(`[LEVEL UP] All features unlocked:`, newFeatures)
       
       // File system backup only - zustand persist handles localStorage
       saveGamificationData(newProgress, state.unlockedAchievements).catch(console.error)
@@ -154,7 +157,8 @@ export const createGamificationSlice: StateCreator<
       
       return {
         userProgress: newProgress,
-        pendingLevelUp: newLevel
+        pendingLevelUp: newLevel,
+        lastUnlockedFeature: unlockedFeature || null
       }
     })
   },
@@ -345,7 +349,7 @@ export const createGamificationSlice: StateCreator<
   },
   
   dismissLevelUp: () => {
-    set({ pendingLevelUp: null })
+    set({ pendingLevelUp: null, lastUnlockedFeature: null })
   },
   
   checkAndUnlockAchievements: () => {

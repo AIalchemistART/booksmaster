@@ -14,7 +14,7 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
   console.log('[LAYOUT ENTRY] LayoutClient function called')
   
   useProcessingGuard()
-  const { userProgress, pendingLevelUp, dismissLevelUp, darkMode } = useStore()
+  const { userProgress, pendingLevelUp, dismissLevelUp, darkMode, lastUnlockedFeature } = useStore()
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [hasRehydrated, setHasRehydrated] = useState(false)
 
@@ -89,7 +89,8 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
         <LevelUpNotification 
           newLevel={pendingLevelUp} 
           isVisible={!!pendingLevelUp} 
-          onClose={dismissLevelUp} 
+          onClose={dismissLevelUp}
+          unlockedFeature={lastUnlockedFeature}
         />
       )}
       {showOnboarding && (

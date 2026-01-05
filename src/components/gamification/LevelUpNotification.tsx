@@ -9,12 +9,16 @@ interface LevelUpNotificationProps {
   newLevel: UserLevel
   onClose: () => void
   isVisible: boolean
+  unlockedFeature?: string | null
 }
 
-export function LevelUpNotification({ newLevel, onClose, isVisible }: LevelUpNotificationProps) {
+export function LevelUpNotification({ newLevel, onClose, isVisible, unlockedFeature }: LevelUpNotificationProps) {
   const [isAnimating, setIsAnimating] = useState(false)
   const [showContent, setShowContent] = useState(false)
   const levelData = LEVELS[newLevel - 1]
+  
+  // Use the actual unlocked feature if provided, otherwise fall back to level data
+  const displayFeatures = unlockedFeature ? [unlockedFeature] : levelData.unlocksFeatures
   
   useEffect(() => {
     if (isVisible) {
@@ -93,14 +97,14 @@ export function LevelUpNotification({ newLevel, onClose, isVisible }: LevelUpNot
         </div>
 
         {/* Unlocked features */}
-        {levelData.unlocksFeatures.length > 0 && (
+        {displayFeatures.length > 0 && (
           <div className={`bg-white/10 rounded-xl p-4 mb-4 transition-all duration-500 delay-500 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <div className="flex items-center gap-2 mb-3">
               <Trophy className="h-4 w-4 text-yellow-400" />
               <span className="text-sm font-semibold text-white">Features Learned</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {levelData.unlocksFeatures.map((feature) => (
+              {displayFeatures.map((feature) => (
                 <span
                   key={feature}
                   className="px-3 py-1 bg-purple-500/30 text-purple-200 rounded-full text-xs font-medium capitalize"

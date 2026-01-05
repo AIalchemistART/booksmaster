@@ -1083,8 +1083,8 @@ export default function ReceiptsPage() {
                           const { manualLevelUp, userProgress, completeQuest } = useStore.getState()
                           if (userProgress.currentLevel === 2) {
                             completeQuest('validate_first_receipt')
-                            manualLevelUp()
-                            console.log('[QUEST] Completed validate_first_receipt quest - advancing to Level 3')
+                            manualLevelUp('transactions')
+                            console.log('[QUEST] Completed validate_first_receipt quest - advancing to Level 3 (Transactions)')
                           }
                         }
                         

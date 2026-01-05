@@ -608,7 +608,7 @@ export function ReceiptImageModal({
           if (!questProgress.completedQuests.includes('edit_transaction') && userProgress.currentLevel >= 3) {
             markTransactionUsedForQuest(transaction.id, 'edit_transaction')
             completeQuest('edit_transaction')
-            manualLevelUp()
+            manualLevelUp('categorization_changes')
             console.log('[QUEST] ✅ Completed edit_transaction quest - advancing to Level 4 (Categorization Changes)')
           } else {
             console.log('[QUEST CHECK] Quest already completed or level too low')
@@ -636,7 +636,7 @@ export function ReceiptImageModal({
             if (!questProgress.completedQuests.includes('validate_transaction') && userProgress.currentLevel >= 3 && userProgress.currentLevel < 7) {
               markTransactionUsedForQuest(transaction.id, 'validate_transaction')
               completeQuest('validate_transaction')
-              manualLevelUp()
+              manualLevelUp('invoices')
               console.log('[QUEST] ✅ Completed validate_transaction quest - advancing to next level (Invoices)')
             } else {
               console.log('[QUEST CHECK] Quest already completed, level too low, or already at max')

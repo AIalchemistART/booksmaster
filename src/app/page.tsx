@@ -179,8 +179,8 @@ export default function Dashboard() {
             onStartScanning={() => {
               if (userProgress.currentLevel === 1) {
                 completeQuest('start_scanning')
-                manualLevelUp()
-                console.log('[QUEST] Completed start_scanning quest - advancing to Level 2')
+                manualLevelUp('receipts')
+                console.log('[QUEST] Completed start_scanning quest - advancing to Level 2 (Receipts)')
               }
             }}
           />

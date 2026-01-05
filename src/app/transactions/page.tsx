@@ -417,7 +417,7 @@ export default function TransactionsPage() {
           console.log('[QUEST CHECK] First supplemental doc - Quest completed:', questProgress.completedQuests.includes('upload_supplemental'))
           if (!questProgress.completedQuests.includes('upload_supplemental') && userProgress.currentLevel >= 3 && userProgress.currentLevel < 7) {
             completeQuest('upload_supplemental')
-            manualLevelUp()
+            manualLevelUp('supporting_documents')
             console.log('[QUEST] ✅ Completed upload_supplemental quest - advancing to next level (Supporting Documents)')
           } else {
             console.log('[QUEST CHECK] Quest already completed, level too low, or already at max')
