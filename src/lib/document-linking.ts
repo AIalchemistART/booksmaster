@@ -3,7 +3,7 @@
  * Matches payment receipts to itemized receipts and detects duplicate uploads
  */
 
-import type { Receipt } from '@/types'
+import type { Receipt, ReceiptLineItem } from '@/types'
 
 /**
  * Check if two filenames are likely the same file (duplicate detection)
@@ -262,6 +262,30 @@ export function linkAllReceipts(receipts: Receipt[]): Receipt[] {
 }
 
 /**
+ * Heuristic detection for manifests based on content
+ */
+function isManifestByContent(receipt: Receipt): boolean {
+  const vendor = receipt.ocrVendor?.toLowerCase() || ''
+  const items = receipt.ocrLineItems?.map((item: ReceiptLineItem) => item.description?.toLowerCase() || '').join(' ') || ''
+  const combinedText = `${vendor} ${items}`
+  
+  // Look for manifest/scale ticket keywords
+  const manifestKeywords = [
+    'weight', 'inbound', 'outbound', 'scale', 'manifest',
+    'tare', 'gross', 'net weight', 'weigh', 'scale ticket',
+    'ton', 'tonnage', 'lb', 'lbs', 'dump', 'transfer station'
+  ]
+  
+  const hasManifestKeyword = manifestKeywords.some(keyword => combinedText.includes(keyword))
+  
+  // Additional check: has weight-related items but vendor is generic
+  const hasWeightItem = items.includes('weight') || items.includes('lb') || items.includes('ton')
+  const isGenericVendor = vendor.includes('cash') || vendor.includes('customer') || vendor === ''
+  
+  return hasManifestKeyword || (hasWeightItem && isGenericVendor)
+}
+
+/**
  * Mark manifest documents as supplemental (don't count as expenses)
  */
 export function markManifestsAsSupplemental(receipts: Receipt[]): Receipt[] {
@@ -270,8 +294,11 @@ export function markManifestsAsSupplemental(receipts: Receipt[]): Receipt[] {
   let firstManifestMarked = false
   
   const processed = receipts.map(receipt => {
-    if (receipt.documentType === 'manifest' && !receipt.isSupplementalDoc) {
-      console.log('[MANIFEST] Marking receipt as supplemental doc:', receipt.id)
+    // Check both Gemini classification AND heuristic detection
+    const isManifest = receipt.documentType === 'manifest' || isManifestByContent(receipt)
+    
+    if (isManifest && !receipt.isSupplementalDoc) {
+      console.log('[MANIFEST] Marking receipt as supplemental doc:', receipt.id, '(detected by:', receipt.documentType === 'manifest' ? 'Gemini' : 'heuristic', ')')
       
       // Quest: Upload supplemental document → Level 6 (Supporting Documents)
       if (existingManifests === 0 && !firstManifestMarked) {
