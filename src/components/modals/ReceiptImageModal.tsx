@@ -522,7 +522,21 @@ export function ReceiptImageModal({
     const itemizationChanged = (formData.itemization || '') !== (initialFormData.current.itemization || '')
     const notesChanged = (formData.notes || '') !== (initialFormData.current.notes || '')
     
+    console.log('[EDIT QUEST DEBUG] Individual field changes:', {
+      dateChanged,
+      descriptionChanged,
+      amountChanged,
+      typeChanged,
+      categoryChanged,
+      paymentMethodChanged,
+      itemizationChanged,
+      notesChanged
+    })
+    console.log('[EDIT QUEST DEBUG] pendingChanges:', pendingChanges)
+    console.log('[EDIT QUEST DEBUG] pendingChanges values:', pendingChanges ? Object.values(pendingChanges) : 'null')
+    
     const anyFieldChanged = pendingChanges ? Object.values(pendingChanges).some(v => v) : false
+    console.log('[EDIT QUEST DEBUG] anyFieldChanged (from pendingChanges):', anyFieldChanged)
     
     // Track categorization changes for report
     // Set original values if this is the first edit (preserve OCR values for audit trail)
@@ -580,7 +594,9 @@ export function ReceiptImageModal({
     })
 
     // Create categorization correction for AI learning if any field changed
+    console.log('[EDIT QUEST DEBUG] Checking anyFieldChanged block - anyFieldChanged:', anyFieldChanged)
     if (anyFieldChanged) {
+      console.log('[EDIT QUEST DEBUG] ENTERED anyFieldChanged block - this will create correction and potentially trigger edit quest')
       console.log('[CORRECTION] Creating correction with changes:', {
         dateChanged,
         descriptionChanged,
