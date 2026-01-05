@@ -1084,9 +1084,21 @@ export default function ReceiptsPage() {
                           if (userProgress.currentLevel === 2) {
                             completeQuest('validate_first_receipt')
                             
+                            // Debug: Log receipt properties
+                            console.log('[QUEST DEBUG] Receipt properties:', {
+                              id: receipt.id,
+                              isSupplementalDoc: receipt.isSupplementalDoc,
+                              documentType: receipt.documentType,
+                              ocrVendor: receipt.ocrVendor,
+                              description: receipt.description
+                            })
+                            
                             // If first receipt is supplemental doc, unlock Supporting Documents
                             // Otherwise unlock Transactions
-                            if (receipt.isSupplementalDoc || receipt.documentType === 'manifest' || receipt.documentType === 'invoice') {
+                            const isSupplemental = receipt.isSupplementalDoc || receipt.documentType === 'manifest' || receipt.documentType === 'invoice'
+                            console.log('[QUEST DEBUG] isSupplemental:', isSupplemental)
+                            
+                            if (isSupplemental) {
                               manualLevelUp('supporting_documents')
                               console.log('[QUEST] Completed validate_first_receipt quest - advancing to Level 3 (Supporting Documents)')
                             } else {
