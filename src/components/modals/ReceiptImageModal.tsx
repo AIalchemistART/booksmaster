@@ -540,6 +540,19 @@ export function ReceiptImageModal({
 
     // Create categorization correction for AI learning if any field changed
     if (anyFieldChanged) {
+      console.log('[CORRECTION] Creating correction with changes:', {
+        dateChanged,
+        descriptionChanged,
+        amountChanged,
+        typeChanged,
+        categoryChanged,
+        paymentMethodChanged,
+        notesChanged,
+        categorizationChanged
+      })
+      console.log('[CORRECTION] Initial values:', initialFormData.current)
+      console.log('[CORRECTION] New values:', formData)
+      
       const correction: CategorizationCorrection = {
         id: generateId(),
         transactionId: transaction.id,
@@ -559,6 +572,8 @@ export function ReceiptImageModal({
         receiptId: transaction.receiptId,
         wasAutoCategorizationCorrection: categorizationChanged
       }
+      
+      console.log('[CORRECTION] Created correction:', correction)
 
       // Add to store
       addCorrection(correction)
