@@ -390,9 +390,17 @@ export function ReceiptImageModal({
     
     const anyFieldChanged = dateChanged || descriptionChanged || amountChanged || typeChanged || categoryChanged || paymentMethodChanged || itemizationChanged || notesChanged
     
-    // If no changes, just close
+    // If no changes AND already validated, just close
     if (!anyFieldChanged && viewMode !== 'documentation') {
-      onClose()
+      // If already validated, just close
+      if (isValidated) {
+        onClose()
+        return
+      }
+      
+      // If not validated, allow user to validate without making edits
+      // Call handleConfirmedSave directly with shouldVerify=true
+      handleConfirmedSave(true)
       return
     }
     
