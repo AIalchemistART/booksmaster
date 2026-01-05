@@ -405,21 +405,22 @@ export function ReceiptImageModal({
       notesChanged,
       anyFieldChanged,
       isValidated,
+      transactionUserValidated: transaction.userValidated,
       viewMode
     })
     
     // If no changes AND already validated, just close
     if (!anyFieldChanged && viewMode !== 'documentation') {
       console.log('[VALIDATION] No field changes detected')
-      // If already validated, just close
-      if (isValidated) {
-        console.log('[VALIDATION] Already validated, closing modal')
+      // Use transaction.userValidated directly instead of stale isValidated state
+      if (transaction.userValidated) {
+        console.log('[VALIDATION] Transaction already validated, closing modal')
         onClose()
         return
       }
       
       // If not validated, allow user to validate without making edits
-      console.log('[VALIDATION] Not validated, calling handleConfirmedSave(true)')
+      console.log('[VALIDATION] Transaction not validated, calling handleConfirmedSave(true)')
       handleConfirmedSave(true)
       return
     }
