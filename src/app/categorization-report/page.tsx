@@ -11,9 +11,29 @@ export default function CategorizationReportPage() {
   const { showIntro, closeIntro } = useFirstVisit('categorization-changes')
 
   const manuallyEditedTransactions = useMemo(() => {
-    return transactions
-      .filter(t => t.wasManuallyEdited && t.originalType && t.originalCategory)
+    console.log('[CATEGORIZATION REPORT] Total transactions:', transactions.length)
+    console.log('[CATEGORIZATION REPORT] All transactions:', transactions.map(t => ({
+      id: t.id,
+      description: t.description,
+      wasManuallyEdited: t.wasManuallyEdited,
+      originalType: t.originalType,
+      originalCategory: t.originalCategory
+    })))
+    
+    const filtered = transactions
+      .filter(t => {
+        const passes = t.wasManuallyEdited && t.originalType && t.originalCategory
+        console.log('[CATEGORIZATION REPORT] Transaction', t.id, 'passes filter:', passes, {
+          wasManuallyEdited: t.wasManuallyEdited,
+          originalType: t.originalType,
+          originalCategory: t.originalCategory
+        })
+        return passes
+      })
       .sort((a, b) => (b.editedAt || b.updatedAt).localeCompare(a.editedAt || a.updatedAt))
+    
+    console.log('[CATEGORIZATION REPORT] Filtered transactions:', filtered.length)
+    return filtered
   }, [transactions])
 
   const categorizationStats = useMemo(() => {
@@ -187,15 +207,15 @@ export default function CategorizationReportPage() {
                               💰 Amt: {formatAmount(transaction.originalAmount)} → {formatAmount(transaction.amount)}
                             </div>
                           )}
-                          {transaction.originalPaymentMethod && transaction.originalPaymentMethod !== transaction.paymentMethod && (
+                          {(transaction.originalPaymentMethod || '') !== (transaction.paymentMethod || '') && (
                             <div className="text-green-600 dark:text-green-400">
-                              💳 Payment: {transaction.originalPaymentMethod} → {transaction.paymentMethod || 'Not specified'}
+                              💳 Payment: {transaction.originalPaymentMethod || 'Not specified'} → {transaction.paymentMethod || 'Not specified'}
                             </div>
                           )}
                           {(!transaction.originalDate || transaction.originalDate === transaction.date) &&
                            (!transaction.originalDescription || transaction.originalDescription === transaction.description) &&
                            (transaction.originalAmount === undefined || transaction.originalAmount === transaction.amount) &&
-                           (!transaction.originalPaymentMethod || transaction.originalPaymentMethod === transaction.paymentMethod) && (
+                           ((transaction.originalPaymentMethod || '') === (transaction.paymentMethod || '')) && (
                             <span className="text-gray-400 dark:text-gray-600">Type/Category only</span>
                           )}
                         </div>
@@ -266,9 +286,9 @@ export default function CategorizationReportPage() {
                   )}
                   
                   {/* Show payment method changes */}
-                  {transaction.originalPaymentMethod && transaction.originalPaymentMethod !== transaction.paymentMethod && (
+                  {(transaction.originalPaymentMethod || '') !== (transaction.paymentMethod || '') && (
                     <div className="text-green-600 dark:text-green-400 text-xs">
-                      💳 Payment method corrected: {transaction.originalPaymentMethod} → {transaction.paymentMethod || 'Not specified'}
+                      💳 Payment method corrected: {transaction.originalPaymentMethod || 'Not specified'} → {transaction.paymentMethod || 'Not specified'}
                     </div>
                   )}
                   
