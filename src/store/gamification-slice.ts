@@ -126,7 +126,7 @@ export const createGamificationSlice: StateCreator<
       
       // Get features for the new level
       // If a specific feature is provided, use current features + that feature
-      // Otherwise use the default features for the new level
+      // Otherwise preserve existing features and add default features for the new level
       let newFeatures: string[]
       if (unlockedFeature) {
         // Add the specified feature to existing features (if not already present)
@@ -134,8 +134,12 @@ export const createGamificationSlice: StateCreator<
           ? state.userProgress.unlockedFeatures
           : [...state.userProgress.unlockedFeatures, unlockedFeature]
       } else {
-        // Use default features for this level
-        newFeatures = getUnlockedFeaturesAtLevel(newLevel)
+        // Preserve existing features (including custom ones) and add default features for new level
+        const levelData = LEVELS.find(l => l.level === newLevel)
+        const defaultFeaturesForLevel = levelData?.unlocksFeatures || []
+        // Combine existing + new default features, deduplicate with Set
+        const combined = [...state.userProgress.unlockedFeatures, ...defaultFeaturesForLevel]
+        newFeatures = Array.from(new Set(combined))
       }
       
       // Award cosmetic XP to match the new level
