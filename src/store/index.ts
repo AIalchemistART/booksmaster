@@ -59,6 +59,8 @@ interface AppState extends GamificationSlice, MileageSlice, AIAccuracySlice {
   // UI Preferences
   darkMode: boolean
   toggleDarkMode: () => void
+  receiptGroupingMode: 'date' | 'batch'
+  setReceiptGroupingMode: (mode: 'date' | 'batch') => void
 
   // Transactions
   transactions: Transaction[]
@@ -153,6 +155,8 @@ export const useStore = create<AppState>()(
         }
         return { darkMode: newDarkMode }
       }),
+      receiptGroupingMode: 'date',
+      setReceiptGroupingMode: (mode: 'date' | 'batch') => set({ receiptGroupingMode: mode }),
 
       // Transactions
       transactions: [],

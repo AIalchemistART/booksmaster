@@ -34,7 +34,7 @@ const BatchReceiptScanner = dynamic(
 )
 
 export default function ReceiptsPage() {
-  const { receipts, addReceipt, deleteReceipt, updateReceipt, completeAction, completeBatchAction, unlockAchievement } = useStore()
+  const { receipts, addReceipt, deleteReceipt, updateReceipt, completeAction, completeBatchAction, unlockAchievement, receiptGroupingMode, setReceiptGroupingMode } = useStore()
   const { showIntro, closeIntro } = useFirstVisit('receipts')
   const { showModal: showFileSystemModal, requireFileSystem, handleSetupComplete: handleFileSystemSetup, handleCancel: handleFileSystemCancel } = useFileSystemCheck()
   const { showModal: showGeminiModal, requireGeminiApiKey, handleSetupComplete: handleGeminiSetup, handleSkip: handleGeminiSkip } = useGeminiApiKeyCheck()
@@ -60,7 +60,6 @@ export default function ReceiptsPage() {
   const [showInstructions, setShowInstructions] = useState(true)
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
   const [allowMultipleDates, setAllowMultipleDates] = useState(false)
-  const [groupingMode, setGroupingMode] = useState<'date' | 'batch'>('date')
   const [formData, setFormData] = useState({
     driveUrl: '',
     vendor: '',
@@ -346,7 +345,7 @@ export default function ReceiptsPage() {
   // Group receipts by date or batch
   const receiptsByDate = filteredReceipts.reduce((acc: Record<string, Receipt[]>, receipt: Receipt) => {
     let dateKey: string
-    if (groupingMode === 'batch') {
+    if (receiptGroupingMode === 'batch') {
       // Group by processedAt date (when batch was processed)
       dateKey = receipt.processedAt?.split('T')[0] || receipt.createdAt?.split('T')[0] || 'Unknown'
     } else {
@@ -455,7 +454,7 @@ export default function ReceiptsPage() {
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Scanned</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{receipts.length}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {receipts.filter((r: Receipt) => new Date(r.ocrDate || r.createdAt) >= new Date(new Date().getFullYear(), new Date().getMonth(), 1)).length} this month
+                  {receipts.filter((r: Receipt) => new Date(r.processedAt || r.createdAt) >= new Date(new Date().getFullYear(), new Date().getMonth(), 1)).length} this month
                 </p>
               </div>
               <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-900/30">
@@ -949,9 +948,9 @@ export default function ReceiptsPage() {
             <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-800 rounded-lg p-2">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Group by:</span>
               <button
-                onClick={() => setGroupingMode('date')}
+                onClick={() => setReceiptGroupingMode('date')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  groupingMode === 'date'
+                  receiptGroupingMode === 'date'
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
@@ -959,14 +958,14 @@ export default function ReceiptsPage() {
                 Receipt Date
               </button>
               <button
-                onClick={() => setGroupingMode('batch')}
+                onClick={() => setReceiptGroupingMode('batch')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  groupingMode === 'batch'
+                  receiptGroupingMode === 'batch'
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
-                Batch Processed
+                Processed Date
               </button>
             </div>
 

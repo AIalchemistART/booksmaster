@@ -122,6 +122,12 @@ export function BatchReceiptScanner({ onReceiptProcessed, onBatchComplete }: Bat
   const handleUseReceipt = (receipt: ProcessedReceipt) => {
     if (receipt.status === 'done') {
       onReceiptProcessed(receipt.extractedData)
+      // Auto-clear receipt after use
+      if (processorRef.current) {
+        processorRef.current.removeFromQueue(receipt.id)
+        setQueue(processorRef.current.getQueue())
+        setStats(processorRef.current.getStats())
+      }
     }
   }
 
