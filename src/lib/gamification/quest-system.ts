@@ -60,8 +60,8 @@ export const QUEST_DEFINITIONS: Record<QuestId, Omit<Quest, 'status' | 'progress
   
   validate_first_receipt: {
     id: 'validate_first_receipt',
-    title: 'Validate Your First Receipt',
-    description: 'Review and validate a scanned receipt to unlock Transactions',
+    title: 'Validate Your First Expense Receipt',
+    description: 'Review and validate an expense receipt to unlock Transactions',
     unlocks: 'transactions',
     unlocksLevel: 3,
     icon: '✅'
@@ -118,10 +118,14 @@ export function getActiveQuests(currentLevel: number, questProgress: QuestProgre
     })
   }
   
-  // Level 2: Show validate_first_receipt quest
+  // Level 2: Show both parallel quests (expense receipt OR supplemental document)
   if (currentLevel === 2) {
     quests.push({
       ...QUEST_DEFINITIONS.validate_first_receipt,
+      status: 'active'
+    })
+    quests.push({
+      ...QUEST_DEFINITIONS.upload_supplemental,
       status: 'active'
     })
   }
