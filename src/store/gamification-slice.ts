@@ -357,15 +357,33 @@ export const createGamificationSlice: StateCreator<
     const newAchievements = [...current, achievement]
     const state = get()
     
+    // Award XP from achievement
+    const currentProgress = state.userProgress
+    const xpGained = achievementDef.xpReward
+    const newTotalXP = currentProgress.totalXP + xpGained
+    
+    // CAP XP: Don't exceed next level requirement (90% cap)
+    const nextLevelData = LEVELS.find(l => l.level === currentProgress.currentLevel + 1)
+    const cappedXP = nextLevelData && newTotalXP >= nextLevelData.xpRequired
+      ? Math.floor(nextLevelData.xpRequired * 0.9)
+      : newTotalXP
+    
+    const updatedProgress: UserProgress = {
+      ...currentProgress,
+      totalXP: cappedXP,
+      currentXP: cappedXP
+    }
+    
     set({
       unlockedAchievements: newAchievements,
-      pendingAchievement: achievement
+      pendingAchievement: achievement,
+      userProgress: updatedProgress
     })
     
     // Save to file system
-    saveGamificationData(state.userProgress, newAchievements).catch(console.error)
+    saveGamificationData(updatedProgress, newAchievements).catch(console.error)
     
-    console.log(`🏆 Achievement Unlocked: ${achievement.title}`)
+    console.log(`🏆 Achievement Unlocked: ${achievement.title} (+${xpGained} XP)`)
   },
   
   dismissAchievement: () => {
