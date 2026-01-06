@@ -1113,22 +1113,22 @@ export default function ReceiptsPage() {
                           if (isSupplemental) {
                             manualLevelUp('supporting_documents')
                             completeQuest('upload_supplemental')
-                            console.log('[QUEST] ✅ First receipt (supplemental) - unlocking Supporting Documents')
+                            console.log('[QUEST] ✅ First receipt (supplemental) → Level 3, unlocking Supporting Documents')
                           } else {
                             manualLevelUp('transactions')
-                            console.log('[QUEST] ✅ First receipt (expense) - unlocking Transactions')
+                            console.log('[QUEST] ✅ First receipt (expense) → Level 3, unlocking Transactions')
                           }
                         }
-                        // First expense receipt (if first was supplemental)
-                        else if (!isSupplemental && validatedExpenseCount === 0 && !userProgress.unlockedFeatures.includes('transactions')) {
+                        // First expense receipt (if first was supplemental) → Level 4
+                        else if (!isSupplemental && validatedExpenseCount === 0 && !userProgress.unlockedFeatures.includes('transactions') && userProgress.currentLevel === 3) {
                           manualLevelUp('transactions')
-                          console.log('[QUEST] ✅ First expense receipt - unlocking Transactions')
+                          console.log('[QUEST] ✅ First expense receipt → Level 4, unlocking Transactions')
                         }
-                        // First supplemental doc (if first was expense)
-                        else if (isSupplemental && validatedSupplementalCount === 0 && !userProgress.unlockedFeatures.includes('supporting_documents')) {
+                        // First supplemental doc (if first was expense) → Level 4
+                        else if (isSupplemental && validatedSupplementalCount === 0 && !userProgress.unlockedFeatures.includes('supporting_documents') && userProgress.currentLevel === 3) {
                           manualLevelUp('supporting_documents')
                           completeQuest('upload_supplemental')
-                          console.log('[QUEST] ✅ First supplemental doc - unlocking Supporting Documents')
+                          console.log('[QUEST] ✅ First supplemental doc → Level 4, unlocking Supporting Documents')
                         }
                         
                         // Check for achievements
