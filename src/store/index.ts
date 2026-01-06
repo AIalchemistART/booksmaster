@@ -351,6 +351,7 @@ export const useStore = create<AppState>()(
         fiscalYearStartMonth: state.fiscalYearStartMonth,
         vendorDefaults: state.vendorDefaults,
         darkMode: state.darkMode,
+        receiptGroupingMode: state.receiptGroupingMode,
         // Exclude imageData from receipts to prevent localStorage quota exceeded
         // Images are stored in file system and restored on load
         receipts: state.receipts.map((r: Receipt) => {
