@@ -322,7 +322,16 @@ Thomas Books is a **contractor-focused bookkeeping application** that uses AI-po
 
 **Priority: Market Expansion**
 
-#### Phase 8: Bank Integration (Q1 2025)
+#### Phase 8: Marketing Content Development (Q1 2025)
+- [ ] **Email Welcome Sequence** - 4-email onboarding flow leveraging founder story
+- [ ] **Social Media Content** - Founder story threads for Twitter/X, Reddit, IndieHackers
+- [ ] **Pitch Deck** - Investor presentation with perpetual entrepreneur thesis
+- [ ] **Founder Story Integration** - Add to About Us page, homepage, launch posts
+- [ ] **Pull Quote Graphics** - Social media assets from founder testimonial
+
+**Content Sources:** See `docs/website-content/FOUNDER_STORY.md` and `docs/website-content/PHILOSOPHY.md`
+
+#### Phase 9: Bank Integration (Q1 2025)
 - [ ] **Plaid Connection** - Connect existing scaffolding
 - [ ] **Transaction Sync** - Auto-import bank transactions
 - [ ] **Reconciliation Workflow** - Match receipts to bank entries
