@@ -409,27 +409,10 @@ export const useStore = create<AppState>()(
             console.log(`[LEVEL MIGRATION] Data counts - Receipts: ${receiptCount}, Transactions: ${transactionCount}, Validated: ${validatedReceiptCount}`)
             console.log(`[LEVEL MIGRATION] Unlocked features:`, unlockedFeatures)
             
-            // Determine correct level based on unlocked features (manual level-up history)
-            if (unlockedFeatures.includes('categorization_report') || unlockedFeatures.includes('bank_accounts')) {
-              correctedLevel = Math.max(currentLevel, 6) as UserLevel
-              console.log('[LEVEL MIGRATION] Found Level 6 features in unlockedFeatures')
-            } else if (unlockedFeatures.includes('invoices') || unlockedFeatures.includes('reports')) {
-              correctedLevel = Math.max(currentLevel, 5) as UserLevel
-              console.log('[LEVEL MIGRATION] Found Level 5 features in unlockedFeatures')
-            } else if (unlockedFeatures.includes('categorization_changes')) {
-              correctedLevel = Math.max(currentLevel, 4) as UserLevel
-              console.log('[LEVEL MIGRATION] Found Level 4 features in unlockedFeatures')
-            } else if (unlockedFeatures.includes('supporting_documents') || unlockedFeatures.includes('transactions')) {
-              correctedLevel = Math.max(currentLevel, 3) as UserLevel
-              console.log('[LEVEL MIGRATION] Found Level 3 features in unlockedFeatures')
-            } else if (unlockedFeatures.includes('receipts')) {
-              correctedLevel = Math.max(currentLevel, 2) as UserLevel
-              console.log('[LEVEL MIGRATION] Found Level 2 features in unlockedFeatures')
-            }
-            
-            // Fallback: Check actual data if unlockedFeatures don't indicate level-ups
-            // This catches cases where the level was reset but data exists
-            if (correctedLevel === 1 && currentLevel === 1) {
+            // IMPORTANT: Level is determined by quest completion (manualLevelUp calls), NOT by features
+            // Features can unlock in any order (parallel paths), so we cannot infer level from features
+            // Only correct level if it's stuck at 1 despite having data
+            if (currentLevel === 1) {
               console.log('[LEVEL MIGRATION] Still at Level 1, checking actual data...')
               if (transactionCount > 0) {
                 correctedLevel = 3 as UserLevel
@@ -447,26 +430,16 @@ export const useStore = create<AppState>()(
               console.log(`[LEVEL MIGRATION] ✅ CORRECTING stale level ${currentLevel} → ${correctedLevel}`)
               state.userProgress.currentLevel = correctedLevel
               
-              // Update unlockedFeatures to match corrected level
-              // Note: Some features are condition-based, not level-based:
-              // - transactions: unlocks on first EXPENSE validation
-              // - supporting_documents: unlocks on first SUPPLEMENTAL validation
-              // - categorization_changes: unlocks on first edit (any document type)
-              const newFeatures = ['dashboard', 'settings']
-              if (correctedLevel >= 2) newFeatures.push('receipts')
-              // transactions: condition-based (expense validation), not level-based
-              // categorization_changes: condition-based (edit quest), not level-based
-              if (correctedLevel >= 5) newFeatures.push('invoices')
-              // supporting_documents: condition-based (supplemental validation), not level-based
-              if (correctedLevel >= 7) newFeatures.push('reports')
+              // Only ensure base features for the corrected level
+              // Preserve ALL other features (condition-based unlocks happen via quests)
+              const baseFeatures = ['dashboard', 'settings']
+              if (correctedLevel >= 2) baseFeatures.push('receipts')
               
-              // Preserve any condition-based features already unlocked
-              const conditionBasedFeatures = ['transactions', 'supporting_documents', 'categorization_changes']
-              const existingConditionFeatures = state.userProgress.unlockedFeatures.filter(f => conditionBasedFeatures.includes(f))
-              const combined = [...newFeatures, ...existingConditionFeatures]
+              // Merge base features with existing features (preserving all unlocks)
+              const combined = [...baseFeatures, ...state.userProgress.unlockedFeatures]
               state.userProgress.unlockedFeatures = Array.from(new Set(combined))
-              console.log('[LEVEL MIGRATION] Updated unlockedFeatures:', newFeatures)
-              console.log('[LEVEL MIGRATION] Note: Changes will be persisted by Zustand middleware')
+              console.log('[LEVEL MIGRATION] Updated unlockedFeatures to include base features:', baseFeatures)
+              console.log('[LEVEL MIGRATION] Preserved all existing features')
             } else {
               console.log('[LEVEL MIGRATION] ✅ Level is correct, no migration needed')
             }
