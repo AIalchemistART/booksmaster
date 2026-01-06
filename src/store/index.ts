@@ -448,12 +448,13 @@ export const useStore = create<AppState>()(
               state.userProgress.currentLevel = correctedLevel
               
               // Update unlockedFeatures to match corrected level
+              // Note: categorization_changes is NOT level-gated - it unlocks via edit quest only
               const newFeatures = ['dashboard', 'settings']
               if (correctedLevel >= 2) newFeatures.push('receipts')
               if (correctedLevel >= 3) newFeatures.push('transactions')
-              if (correctedLevel >= 4) newFeatures.push('categorization_changes')
+              // categorization_changes: condition-based (edit quest), not level-based
               if (correctedLevel >= 5) newFeatures.push('invoices')
-              if (correctedLevel >= 6) newFeatures.push('supporting_documents')
+              // supporting_documents: condition-based (validate supplemental), not level-based
               if (correctedLevel >= 7) newFeatures.push('reports')
               state.userProgress.unlockedFeatures = newFeatures
               console.log('[LEVEL MIGRATION] Updated unlockedFeatures:', newFeatures)

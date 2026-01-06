@@ -126,6 +126,17 @@ export default function SupportingDocumentsPage() {
   const saveEdit = () => {
     if (!viewingDoc) return
     
+    // Check what changed to determine if this should trigger edit quest
+    const anyFieldChanged = 
+      editFormData.documentType !== viewingDoc.documentType ||
+      editFormData.vendor !== (viewingDoc.ocrVendor || '') ||
+      editFormData.amount !== (viewingDoc.ocrAmount?.toString() || '') ||
+      editFormData.date !== (viewingDoc.ocrDate || '') ||
+      editFormData.transactionNumber !== (viewingDoc.transactionNumber || '') ||
+      editFormData.orderNumber !== (viewingDoc.orderNumber || '') ||
+      editFormData.invoiceNumber !== (viewingDoc.invoiceNumber || '') ||
+      editFormData.accountNumber !== (viewingDoc.accountNumber || '')
+    
     // Check if user is unchecking "Keep as supplemental" - should convert to transaction
     const wasSupplemental = viewingDoc.isSupplementalDoc
     const nowNotSupplemental = !editFormData.isSupplementalDoc
@@ -141,6 +152,18 @@ export default function SupportingDocumentsPage() {
       accountNumber: editFormData.accountNumber || undefined,
       isSupplementalDoc: editFormData.isSupplementalDoc
     })
+    
+    // Quest: Edit a supporting document → unlock Categorization Changes
+    if (anyFieldChanged) {
+      const { userProgress, questProgress, completeQuest, manualLevelUp } = useStore.getState()
+      console.log('[QUEST CHECK] Edit supporting doc - Level:', userProgress.currentLevel, 'Completed:', questProgress.completedQuests.includes('edit_transaction'))
+      
+      if (!questProgress.completedQuests.includes('edit_transaction') && userProgress.currentLevel >= 3) {
+        completeQuest('edit_transaction')
+        manualLevelUp('categorization_changes')
+        console.log('[QUEST] ✅ Completed edit_transaction quest via supporting doc edit - unlocking Categorization Changes')
+      }
+    }
     
     // If unchecking supplemental, convert to transaction
     if (wasSupplemental && nowNotSupplemental && !viewingDoc.linkedTransactionId) {
