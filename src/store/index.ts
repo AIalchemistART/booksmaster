@@ -448,15 +448,23 @@ export const useStore = create<AppState>()(
               state.userProgress.currentLevel = correctedLevel
               
               // Update unlockedFeatures to match corrected level
-              // Note: categorization_changes is NOT level-gated - it unlocks via edit quest only
+              // Note: Some features are condition-based, not level-based:
+              // - transactions: unlocks on first EXPENSE validation
+              // - supporting_documents: unlocks on first SUPPLEMENTAL validation
+              // - categorization_changes: unlocks on first edit (any document type)
               const newFeatures = ['dashboard', 'settings']
               if (correctedLevel >= 2) newFeatures.push('receipts')
-              if (correctedLevel >= 3) newFeatures.push('transactions')
+              // transactions: condition-based (expense validation), not level-based
               // categorization_changes: condition-based (edit quest), not level-based
               if (correctedLevel >= 5) newFeatures.push('invoices')
-              // supporting_documents: condition-based (validate supplemental), not level-based
+              // supporting_documents: condition-based (supplemental validation), not level-based
               if (correctedLevel >= 7) newFeatures.push('reports')
-              state.userProgress.unlockedFeatures = newFeatures
+              
+              // Preserve any condition-based features already unlocked
+              const conditionBasedFeatures = ['transactions', 'supporting_documents', 'categorization_changes']
+              const existingConditionFeatures = state.userProgress.unlockedFeatures.filter(f => conditionBasedFeatures.includes(f))
+              const combined = [...newFeatures, ...existingConditionFeatures]
+              state.userProgress.unlockedFeatures = Array.from(new Set(combined))
               console.log('[LEVEL MIGRATION] Updated unlockedFeatures:', newFeatures)
               console.log('[LEVEL MIGRATION] Note: Changes will be persisted by Zustand middleware')
             } else {
