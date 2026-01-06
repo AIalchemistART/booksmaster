@@ -416,10 +416,10 @@ export const useStore = create<AppState>()(
             } else if (unlockedFeatures.includes('invoices') || unlockedFeatures.includes('reports')) {
               correctedLevel = Math.max(currentLevel, 5) as UserLevel
               console.log('[LEVEL MIGRATION] Found Level 5 features in unlockedFeatures')
-            } else if (unlockedFeatures.includes('supporting_documents')) {
+            } else if (unlockedFeatures.includes('categorization_changes')) {
               correctedLevel = Math.max(currentLevel, 4) as UserLevel
               console.log('[LEVEL MIGRATION] Found Level 4 features in unlockedFeatures')
-            } else if (unlockedFeatures.includes('transactions')) {
+            } else if (unlockedFeatures.includes('supporting_documents') || unlockedFeatures.includes('transactions')) {
               correctedLevel = Math.max(currentLevel, 3) as UserLevel
               console.log('[LEVEL MIGRATION] Found Level 3 features in unlockedFeatures')
             } else if (unlockedFeatures.includes('receipts')) {
