@@ -1,6 +1,19 @@
 # Booksmaster
 
-A bookkeeping and custody accounting system for residential contractors.
+**AI-powered accounting software for perpetual entrepreneurs and sole proprietors.**
+
+## Market Positioning
+
+Booksmaster targets the 10-15M perpetual entrepreneurs in the US - contractors, freelancers, and serial business owners who cycle through multiple ventures over 5-10 years before finding sustained success. Unlike competitors (Xero, Wave, QuickBooks) who optimize for growth-trajectory businesses, we solve the recurring pain point that persists across all ventures: **receipt chaos**.
+
+**Key Differentiators:**
+- **First-to-market true AI parsing** - Gemini-powered contextual understanding vs. legacy OCR
+- **Built for reality, not growth fantasy** - No feature bloat, no unnecessary complexity
+- **Contractor-specific intelligence** - Manifest detection, document linking, itemization
+- **Export freedom** - QuickBooks/CSV/JSON export, no vendor lock-in
+- **Honest pricing** - $10-20/mo vs. $200-300/year competitors
+
+See `docs/MARKET_STRATEGY.md` for full market analysis and `docs/website-content/PHILOSOPHY.md` for customer-facing messaging.
 
 ## Features
 
