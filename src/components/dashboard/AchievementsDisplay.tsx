@@ -46,7 +46,7 @@ function AchievementCard({ id, isUnlocked, unlockedAt }: AchievementCardProps) {
       case 'automation_master': return 'Create 5 vendor category defaults'
       case 'first_invoice': return 'Create your first client invoice'
       case 'invoice_pro': return 'Create 10 invoices for your clients'
-      case 'supporting_docs': return 'Upload a payment receipt or manifest'
+      case 'supporting_docs': return 'Upload a supporting document'
       case 'category_trainer': return 'Make 10 category corrections to train AI'
       case 'batch_scanner': return 'Scan 10+ receipts in one batch upload'
       case 'report_generator': return 'Generate an expense report'

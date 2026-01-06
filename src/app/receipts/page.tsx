@@ -178,6 +178,19 @@ export default function ReceiptsPage() {
     }
     addReceipt(newReceipt)
     
+    // Check if this is a supporting document and unlock achievement
+    const isSupplementalDoc = data.documentType === 'manifest' || data.documentType === 'invoice' || data.documentType === 'bank_statement'
+    if (isSupplementalDoc) {
+      const suppDocsCount = receipts.filter(r => 
+        r.documentType === 'manifest' || 
+        r.documentType === 'invoice' || 
+        r.documentType === 'bank_statement'
+      ).length + 1 // +1 for the one we just added
+      if (suppDocsCount === 1) {
+        unlockAchievement('supporting_docs')
+      }
+    }
+    
     // NOTE: XP for batch processing is handled by completeBatchAction in handleBatchComplete
     // First receipt milestone is still tracked
     const newReceiptCount = receipts.length + 1

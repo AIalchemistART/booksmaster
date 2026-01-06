@@ -158,6 +158,15 @@ export const createGamificationSlice: StateCreator<
       console.log(`[LEVEL UP] Feature unlocked:`, unlockedFeature || 'default')
       console.log(`[LEVEL UP] All features unlocked:`, newFeatures)
       
+      // Unlock milestone achievements for reaching certain levels
+      if (newLevel === 3) {
+        get().unlockAchievement('level_3')
+        console.log('[LEVEL UP] ✅ Unlocked level_3 achievement')
+      } else if (newLevel === 6) {
+        get().unlockAchievement('level_6')
+        console.log('[LEVEL UP] ✅ Unlocked level_6 achievement')
+      }
+      
       // File system backup only - zustand persist handles localStorage
       saveGamificationData(newProgress, state.unlockedAchievements).catch(console.error)
       
