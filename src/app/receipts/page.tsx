@@ -530,6 +530,10 @@ export default function ReceiptsPage() {
           After converting receipts to transactions, always verify the data in the Transactions tab. Review vendor names, amounts, dates, 
           and other fields carefully to ensure accuracy.
         </p>
+        <p className="text-sm text-blue-900 dark:text-blue-200 mt-2">
+          <strong>📁 Tip:</strong> You can also upload supporting documents (manifests, contracts, invoices) here using the same workflow. 
+          The AI will automatically detect and categorize them separately from expense receipts, organizing them in the Supporting Documents tab.
+        </p>
       </div>
 
       {/* Batch Receipt Scanner */}

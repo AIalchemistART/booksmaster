@@ -16,8 +16,8 @@ export const TAB_INTROS: Record<string, { title: string; icon: string; heading: 
     title: 'Receipts',
     icon: '📸',
     heading: 'Receipt Scanning HQ',
-    content: 'This is where the magic happens! Upload photos of your receipts and let our AI-powered OCR extract the important details. Review and refine the results to teach the system your preferences—it gets smarter with every correction you make.',
-    tip: 'For best results, take clear photos with good lighting. The AI loves crisp images!'
+    content: 'This is where the magic happens! Upload photos of your receipts and let our AI-powered OCR extract the important details. Review and refine the results to teach the system your preferences—it gets smarter with every correction you make. You can also upload supporting documents like manifests, contracts, or invoices using the same workflow—just upload them here and they\'ll be automatically organized!',
+    tip: 'For best results, take clear photos with good lighting. The AI loves crisp images! Supporting docs like manifests are automatically detected and categorized.'
   },
   transactions: {
     title: 'Transactions',
