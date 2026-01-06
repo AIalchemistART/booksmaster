@@ -1078,35 +1078,57 @@ export default function ReceiptsPage() {
                         
                         // Check if this is the first validated receipt - unlock Level 3
                         const validatedCount = receipts.filter((r: any) => r.userValidated).length
-                        if (validatedCount === 0) {
-                          // First validation - intelligent feature unlock based on receipt type
-                          const { manualLevelUp, userProgress, completeQuest } = useStore.getState()
-                          if (userProgress.currentLevel === 2) {
-                            completeQuest('validate_first_receipt')
-                            
-                            // Debug: Log receipt properties
-                            console.log('[QUEST DEBUG] Receipt properties:', {
-                              id: receipt.id,
-                              isSupplementalDoc: receipt.isSupplementalDoc,
-                              documentType: receipt.documentType,
-                              ocrVendor: receipt.ocrVendor
-                            })
-                            
-                            // If first receipt is supplemental doc, unlock Supporting Documents
-                            // Otherwise unlock Transactions
-                            const isSupplemental = receipt.isSupplementalDoc || receipt.documentType === 'manifest' || receipt.documentType === 'invoice'
-                            console.log('[QUEST DEBUG] isSupplemental:', isSupplemental)
-                            
-                            if (isSupplemental) {
-                              manualLevelUp('supporting_documents')
-                              completeQuest('upload_supplemental')
-                              console.log('[QUEST] Completed validate_first_receipt quest - advancing to Level 3 (Supporting Documents)')
-                              console.log('[QUEST] Completed upload_supplemental quest - first supplemental document validated')
-                            } else {
-                              manualLevelUp('transactions')
-                              console.log('[QUEST] Completed validate_first_receipt quest - advancing to Level 3 (Transactions)')
-                            }
+                        const { manualLevelUp, userProgress, completeQuest } = useStore.getState()
+                        
+                        // Determine if this is a supplemental or expense receipt
+                        const isSupplemental = receipt.isSupplementalDoc || receipt.documentType === 'manifest' || receipt.documentType === 'invoice'
+                        
+                        // Check if this is the first expense receipt being validated
+                        const validatedExpenseCount = receipts.filter((r: any) => 
+                          r.userValidated && 
+                          !r.isSupplementalDoc && 
+                          r.documentType !== 'manifest' && 
+                          r.documentType !== 'invoice'
+                        ).length
+                        
+                        // Check if this is the first supplemental doc being validated
+                        const validatedSupplementalCount = receipts.filter((r: any) => 
+                          r.userValidated && 
+                          (r.isSupplementalDoc || r.documentType === 'manifest' || r.documentType === 'invoice')
+                        ).length
+                        
+                        console.log('[QUEST DEBUG] Receipt validation:', {
+                          id: receipt.id,
+                          isSupplemental,
+                          documentType: receipt.documentType,
+                          validatedExpenseCount,
+                          validatedSupplementalCount,
+                          currentLevel: userProgress.currentLevel
+                        })
+                        
+                        // First receipt overall (Level 2 → 3)
+                        if (validatedCount === 0 && userProgress.currentLevel === 2) {
+                          completeQuest('validate_first_receipt')
+                          
+                          if (isSupplemental) {
+                            manualLevelUp('supporting_documents')
+                            completeQuest('upload_supplemental')
+                            console.log('[QUEST] ✅ First receipt (supplemental) - unlocking Supporting Documents')
+                          } else {
+                            manualLevelUp('transactions')
+                            console.log('[QUEST] ✅ First receipt (expense) - unlocking Transactions')
                           }
+                        }
+                        // First expense receipt (if first was supplemental)
+                        else if (!isSupplemental && validatedExpenseCount === 0 && !userProgress.unlockedFeatures.includes('transactions')) {
+                          manualLevelUp('transactions')
+                          console.log('[QUEST] ✅ First expense receipt - unlocking Transactions')
+                        }
+                        // First supplemental doc (if first was expense)
+                        else if (isSupplemental && validatedSupplementalCount === 0 && !userProgress.unlockedFeatures.includes('supporting_documents')) {
+                          manualLevelUp('supporting_documents')
+                          completeQuest('upload_supplemental')
+                          console.log('[QUEST] ✅ First supplemental doc - unlocking Supporting Documents')
                         }
                         
                         // Check for achievements
