@@ -1099,7 +1099,9 @@ export default function ReceiptsPage() {
                             
                             if (isSupplemental) {
                               manualLevelUp('supporting_documents')
+                              completeQuest('upload_supplemental')
                               console.log('[QUEST] Completed validate_first_receipt quest - advancing to Level 3 (Supporting Documents)')
+                              console.log('[QUEST] Completed upload_supplemental quest - first supplemental document validated')
                             } else {
                               manualLevelUp('transactions')
                               console.log('[QUEST] Completed validate_first_receipt quest - advancing to Level 3 (Transactions)')
