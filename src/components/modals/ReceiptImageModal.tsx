@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { useStore, generateId } from '@/store'
-import { saveCorrectionsToFileSystem } from '@/lib/file-system-adapter'
+import type { Transaction, Receipt } from '@/types'
 import { formatCurrency } from '@/lib/utils'
-import type { Transaction, CategorizationCorrection, Receipt } from '@/types'
+import { saveCorrectionsToFileSystem } from '@/lib/file-system-adapter'
+import type { CategorizationCorrection } from '@/types'
+import { getCategoriesForType } from '@/lib/gemini-categorization'
 import { learnCardPaymentType } from '@/lib/payment-type-learning'
 import { BankStatementGuidanceModal } from '@/components/modals/BankStatementGuidanceModal'
 import { findPotentialDuplicates, getDuplicateWarningMessage, linkTransactions, unlinkTransactions, type PotentialDuplicate } from '@/lib/duplicate-detection'
@@ -764,9 +766,7 @@ export function ReceiptImageModal({
       console.log(`[AI ACCURACY] Validation recorded: ${fieldsEdited.length > 0 ? `${accuracyScore.toFixed(1)}% accurate (${correctFields}/${totalFields} fields correct, edited: ${fieldsEdited.join(', ')})` : 'PERFECT (100%)'}`)
     }
 
-    console.log('[VALIDATION] Saving transaction to store')
-    updateTransaction(updatedTransaction.id, updatedTransaction)
-    console.log('[VALIDATION] Transaction saved, calling onSave callback')
+    console.log('[VALIDATION] Calling onSave callback to save transaction')
     onSave(updatedTransaction)
     console.log('[VALIDATION] Closing modal')
     onClose()
@@ -1006,15 +1006,13 @@ export function ReceiptImageModal({
                     />
                   )}
 
-                  {categoryOptions.length > 0 && (
-                    <Select
-                      label="Category"
-                      options={categoryOptions}
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value as Transaction['category'] })}
-                      required
-                    />
-                  )}
+                  <Select
+                    label="Category"
+                    options={getCategoriesForType(formData.type as 'income' | 'expense').map(cat => ({ value: cat, label: cat }))}
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value as Transaction['category'] })}
+                    required
+                  />
 
                   <Input
                     label="Description"
@@ -1254,7 +1252,7 @@ export function ReceiptImageModal({
                     <div className="flex-1">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Date:</span>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {new Date(initialFormData.current.date).toLocaleDateString()} → {new Date(formData.date).toLocaleDateString()}
+                        {initialFormData.current.date} → {formData.date}
                       </div>
                     </div>
                   </div>
