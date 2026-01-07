@@ -157,16 +157,16 @@ export function ReceiptImageModal({
   // Update initial form data when transaction changes (navigation)
   useEffect(() => {
     if (transaction) {
-      console.log('[MODAL INIT] Transaction loaded:', {
-        id: transaction.id,
-        currentCategory: transaction.category,
-        originalCategory: transaction.originalCategory,
-        currentType: transaction.type,
-        originalType: transaction.originalType,
-        currentPaymentMethod: transaction.paymentMethod,
-        originalPaymentMethod: transaction.originalPaymentMethod,
-        wasManuallyEdited: transaction.wasManuallyEdited
-      })
+      // console.log('[MODAL INIT] Transaction loaded:', {
+      //   id: transaction.id,
+      //   currentCategory: transaction.category,
+      //   originalCategory: transaction.originalCategory,
+      //   currentType: transaction.type,
+      //   originalType: transaction.originalType,
+      //   currentPaymentMethod: transaction.paymentMethod,
+      //   originalPaymentMethod: transaction.originalPaymentMethod,
+      //   wasManuallyEdited: transaction.wasManuallyEdited
+      // })
       
       // Use original AI-parsed values if they exist (for showing changes from original in confirmation modal)
       // Otherwise fall back to current values (for transactions that haven't been edited yet)
@@ -182,11 +182,11 @@ export function ReceiptImageModal({
         notes: transaction.notes || ''
       }
       
-      console.log('[MODAL INIT] initialFormData set to:', {
-        category: initialFormData.current.category,
-        type: initialFormData.current.type,
-        paymentMethod: initialFormData.current.paymentMethod
-      })
+      // console.log('[MODAL INIT] initialFormData set to:', {
+      //   category: initialFormData.current.category,
+      //   type: initialFormData.current.type,
+      //   paymentMethod: initialFormData.current.paymentMethod
+      // })
       
       setFormData({
         date: transaction.date || '',
@@ -200,11 +200,11 @@ export function ReceiptImageModal({
         notes: transaction.notes || ''
       })
       
-      console.log('[MODAL INIT] formData set to:', {
-        category: transaction.category,
-        type: transaction.type,
-        paymentMethod: transaction.paymentMethod
-      })
+      // console.log('[MODAL INIT] formData set to:', {
+      //   category: transaction.category,
+      //   type: transaction.type,
+      //   paymentMethod: transaction.paymentMethod
+      // })
       
       setIsValidated(transaction.userValidated || false)
       setHasEdits(false) // Reset edits flag when transaction changes
@@ -407,9 +407,9 @@ export function ReceiptImageModal({
   }
 
   const handleInitiateSave = () => {
-    console.log('[VALIDATION] handleInitiateSave called')
+    // console.log('[VALIDATION] handleInitiateSave called')
     if (!transaction || !onSave) {
-      console.log('[VALIDATION] Missing transaction or onSave, returning')
+      // console.log('[VALIDATION] Missing transaction or onSave, returning')
       return
     }
     
@@ -425,33 +425,33 @@ export function ReceiptImageModal({
     
     const anyFieldChanged = dateChanged || descriptionChanged || amountChanged || typeChanged || categoryChanged || paymentMethodChanged || itemizationChanged || notesChanged
     
-    console.log('[VALIDATION] Field changes:', {
-      dateChanged,
-      descriptionChanged,
-      amountChanged,
-      typeChanged,
-      categoryChanged,
-      paymentMethodChanged,
-      itemizationChanged,
-      notesChanged,
-      anyFieldChanged,
-      isValidated,
-      transactionUserValidated: transaction.userValidated,
-      viewMode
-    })
+    // console.log('[VALIDATION] Field changes:', {
+    //   dateChanged,
+    //   descriptionChanged,
+    //   amountChanged,
+    //   typeChanged,
+    //   categoryChanged,
+    //   paymentMethodChanged,
+    //   itemizationChanged,
+    //   notesChanged,
+    //   anyFieldChanged,
+    //   isValidated,
+    //   transactionUserValidated: transaction.userValidated,
+    //   viewMode
+    // })
     
     // If no changes AND already validated, just close
     if (!anyFieldChanged && viewMode !== 'documentation') {
-      console.log('[VALIDATION] No field changes detected')
+      // console.log('[VALIDATION] No field changes detected')
       // Use transaction.userValidated directly instead of stale isValidated state
       if (transaction.userValidated) {
-        console.log('[VALIDATION] Transaction already validated, closing modal')
+        // console.log('[VALIDATION] Transaction already validated, closing modal')
         onClose()
         return
       }
       
       // If not validated, allow user to validate without making edits
-      console.log('[VALIDATION] Transaction not validated, calling handleConfirmedSave(true)')
+      // console.log('[VALIDATION] Transaction not validated, calling handleConfirmedSave(true)')
       handleConfirmedSave(true)
       return
     }
@@ -471,9 +471,9 @@ export function ReceiptImageModal({
   }
   
   const handleConfirmedSave = async (shouldVerify: boolean) => {
-    console.log('[VALIDATION] handleConfirmedSave called with shouldVerify:', shouldVerify)
+    // console.log('[VALIDATION] handleConfirmedSave called with shouldVerify:', shouldVerify)
     if (!transaction || !onSave) {
-      console.log('[VALIDATION] Missing transaction or onSave in handleConfirmedSave')
+      // console.log('[VALIDATION] Missing transaction or onSave in handleConfirmedSave')
       return
     }
     
@@ -482,7 +482,7 @@ export function ReceiptImageModal({
     
     // Update validation state based on user choice
     const finalValidationState = shouldVerify ? true : isValidated
-    console.log('[VALIDATION] finalValidationState:', finalValidationState, 'isValidated:', isValidated, 'transaction.userValidated:', transaction.userValidated)
+    // console.log('[VALIDATION] finalValidationState:', finalValidationState, 'isValidated:', isValidated, 'transaction.userValidated:', transaction.userValidated)
     
     const { receipts, deleteTransaction } = useStore.getState()
     const now = new Date().toISOString()
@@ -543,7 +543,7 @@ export function ReceiptImageModal({
       
       try {
         await saveCorrectionsToFileSystem([...categorizationCorrections, correction])
-        console.log('[CONVERSION] Saved receipt-to-documentation conversion to change log')
+        // console.log('[CONVERSION] Saved receipt-to-documentation conversion to change log')
       } catch (error) {
         console.error('[CONVERSION] Failed to save conversion:', error)
       }
