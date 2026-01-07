@@ -65,27 +65,27 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   }
 
   const handleComplete = async () => {
-    console.log('[WIZARD] handleComplete called')
-    console.log('[WIZARD] businessName:', businessName)
-    console.log('[WIZARD] selectedTheme:', selectedTheme)
-    console.log('[WIZARD] selectedJobType:', selectedJobType)
-    console.log('[WIZARD] fileSystemConfigured:', fileSystemConfigured)
-    console.log('[WIZARD] apiKey present:', !!apiKey)
+    // console.log('[WIZARD] handleComplete called')
+    // console.log('[WIZARD] businessName:', businessName)
+    // console.log('[WIZARD] selectedTheme:', selectedTheme)
+    // console.log('[WIZARD] selectedJobType:', selectedJobType)
+    // console.log('[WIZARD] fileSystemConfigured:', fileSystemConfigured)
+    // console.log('[WIZARD] apiKey present:', !!apiKey)
     
     // Save business info
     if (businessName.trim()) {
       store.setBusinessName(businessName.trim())
-      console.log('[WIZARD] Set business name:', businessName.trim())
+      // console.log('[WIZARD] Set business name:', businessName.trim())
     }
     if (businessType.trim()) {
       store.setBusinessType(businessType.trim())
-      console.log('[WIZARD] Set business type:', businessType.trim())
+      // console.log('[WIZARD] Set business type:', businessType.trim())
     }
     
     // Save job specialization
     if (selectedJobType) {
       store.selectTechPath(selectedJobType)
-      console.log('[WIZARD] Set tech path:', selectedJobType)
+      // console.log('[WIZARD] Set tech path:', selectedJobType)
     }
     
     // Apply selected theme (already applied on selection, but ensure it's saved)
@@ -98,10 +98,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       // Apply CSS class
       if (isDark) {
         document.documentElement.classList.add('dark')
-        console.log('[WIZARD] Set dark theme')
+        // console.log('[WIZARD] Set dark theme')
       } else {
         document.documentElement.classList.remove('dark')
-        console.log('[WIZARD] Set light theme')
+        // console.log('[WIZARD] Set light theme')
       }
     }
     
@@ -116,39 +116,39 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       store.setFiscalYearType('custom')
       store.setFiscalYearStartMonth(fiscalYearStartMonth)
     }
-    console.log('[WIZARD] Set fiscal year:', fiscalYearType)
+    // console.log('[WIZARD] Set fiscal year:', fiscalYearType)
     
     // Save API key to persistent storage (IndexedDB + localStorage)
     if (apiKey && apiKey.trim()) {
-      console.log('[WIZARD] Saving API key to persistent storage...')
-      console.log('[WIZARD] API key length:', apiKey.trim().length, 'chars')
+      // console.log('[WIZARD] Saving API key to persistent storage...')
+      // console.log('[WIZARD] API key length:', apiKey.trim().length, 'chars')
       await setGeminiApiKey(apiKey.trim()).catch(err => {
         console.error('[WIZARD ERROR] Failed to save API key:', err)
       })
-      console.log('[WIZARD] Saved API key to IndexedDB and localStorage')
+      // console.log('[WIZARD] Saved API key to IndexedDB and localStorage')
       
       // Verify save with detailed logging
       const savedKey = localStorage.getItem('gemini_api_key')
-      console.log('[WIZARD] Verified localStorage API key:', savedKey ? `PRESENT (${savedKey.length} chars)` : 'MISSING')
+      // console.log('[WIZARD] Verified localStorage API key:', savedKey ? `PRESENT (${savedKey.length} chars)` : 'MISSING')
       
       // Double-check IndexedDB
       const indexedKey = await getGeminiApiKey()
-      console.log('[WIZARD] Verified IndexedDB API key:', indexedKey ? `PRESENT (${indexedKey.length} chars)` : 'MISSING')
+      // console.log('[WIZARD] Verified IndexedDB API key:', indexedKey ? `PRESENT (${indexedKey.length} chars)` : 'MISSING')
       
       // Critical: Wait for Settings component to pick up the API key
       // Settings page renders immediately after wizard, needs time to load from storage
-      console.log('[WIZARD] Waiting 500ms for API key to propagate to Settings component...')
+      // console.log('[WIZARD] Waiting 500ms for API key to propagate to Settings component...')
       await new Promise(resolve => setTimeout(resolve, 500))
     } else {
-      console.log('[WIZARD] No API key to save (empty or whitespace)')
+      // console.log('[WIZARD] No API key to save (empty or whitespace)')
     }
     
     // Mark onboarding complete (no XP award - stay at Level 1)
     store.completeOnboarding()
-    console.log('[WIZARD] Marked onboarding complete - user stays at Level 1')
+    // console.log('[WIZARD] Marked onboarding complete - user stays at Level 1')
     
     // Unlock wizard-related achievements
-    console.log('[WIZARD] Unlocking wizard achievements...')
+    // console.log('[WIZARD] Unlocking wizard achievements...')
     store.unlockAchievement('onboarding_complete')
     if (selectedJobType) {
       store.unlockAchievement('job_type_selected')
@@ -163,14 +163,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     
     // Verify localStorage persistence
     const stored = localStorage.getItem('thomas-books-storage')
-    console.log('[WIZARD] localStorage thomas-books-storage present:', !!stored)
+    // console.log('[WIZARD] localStorage thomas-books-storage present:', !!stored)
     if (stored) {
       try {
         const parsed = JSON.parse(stored)
-        console.log('[WIZARD] Stored onboardingComplete:', parsed.state?.userProgress?.onboardingComplete)
-        console.log('[WIZARD] Stored businessName:', parsed.state?.businessName)
-        console.log('[WIZARD] Stored selectedTechPath:', parsed.state?.userProgress?.selectedTechPath)
-        console.log('[WIZARD] Stored darkMode:', parsed.state?.darkMode)
+        // console.log('[WIZARD] Stored onboardingComplete:', parsed.state?.userProgress?.onboardingComplete)
+        // console.log('[WIZARD] Stored businessName:', parsed.state?.businessName)
+        // console.log('[WIZARD] Stored selectedTechPath:', parsed.state?.userProgress?.selectedTechPath)
+        // console.log('[WIZARD] Stored darkMode:', parsed.state?.darkMode)
       } catch (e) {
         console.error('[WIZARD] Failed to parse stored data:', e)
       }
@@ -178,11 +178,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     
     // Verify API key persistence
     const verifyApiKey = localStorage.getItem('gemini_api_key')
-    console.log('[WIZARD] Verified API key in localStorage:', verifyApiKey ? 'PRESENT' : 'MISSING')
+    // console.log('[WIZARD] Verified API key in localStorage:', verifyApiKey ? 'PRESENT' : 'MISSING')
     
     // Additional delay to ensure Electron file system config saves
     if (fileSystemConfigured) {
-      console.log('[WIZARD] Waiting for file system config to persist...')
+      // console.log('[WIZARD] Waiting for file system config to persist...')
       await new Promise(resolve => setTimeout(resolve, 200))
     }
     
