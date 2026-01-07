@@ -14,6 +14,7 @@ import { getCategoriesForType } from '@/lib/gemini-categorization'
 import { learnCardPaymentType } from '@/lib/payment-type-learning'
 import { BankStatementGuidanceModal } from '@/components/modals/BankStatementGuidanceModal'
 import { findPotentialDuplicates, getDuplicateWarningMessage, linkTransactions, unlinkTransactions, type PotentialDuplicate } from '@/lib/duplicate-detection'
+import { FirstVisitIntro, useFirstVisit } from '@/components/gamification/FirstVisitIntro'
 
 interface ReceiptImageModalProps {
   imageData: string
@@ -43,6 +44,7 @@ export function ReceiptImageModal({
   hasNext = false
 }: ReceiptImageModalProps) {
   const { addCorrection, updateCorrection, categorizationCorrections, receipts, updateReceipt, recordValidation, updateTransaction } = useStore()
+  const { showIntro, closeIntro } = useFirstVisit('transaction-edit')
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -480,7 +482,7 @@ export function ReceiptImageModal({
       // Update receipt in store
       updateReceipt(linkedReceiptData.id, updatedReceipt)
       
-      // Track conversion in corrections for AI learning
+      // Track conversion in corrections for AI learning with full context
       const correction: CategorizationCorrection = {
         id: generateId(),
         transactionId: transaction.id,
@@ -488,14 +490,31 @@ export function ReceiptImageModal({
         vendor: docFormData.vendor,
         amount: docFormData.amount ? parseFloat(docFormData.amount) : transaction.amount,
         changes: {
+          // Track as special CONVERSION event with full transaction context
+          type: {
+            from: `Transaction (${transaction.type})`,
+            to: `Supporting Document (${docFormData.documentType})`
+          },
+          category: {
+            from: transaction.category || 'N/A',
+            to: 'N/A - Supporting Document'
+          },
           description: {
             from: transaction.description,
-            to: `[CONVERTED TO ${docFormData.documentType.toUpperCase()}] ${docFormData.vendor}`
-          }
+            to: `${docFormData.vendor} - ${docFormData.documentType.replace('_', ' ')}${docFormData.transactionNumber ? ` #${docFormData.transactionNumber}` : ''}${docFormData.orderNumber ? ` (Order: ${docFormData.orderNumber})` : ''}${docFormData.invoiceNumber ? ` (Invoice: ${docFormData.invoiceNumber})` : ''}`
+          },
+          amount: transaction.amount !== (docFormData.amount ? parseFloat(docFormData.amount) : transaction.amount) ? {
+            from: transaction.amount.toString(),
+            to: (docFormData.amount || transaction.amount.toString())
+          } : undefined,
+          date: transaction.date !== docFormData.date && docFormData.date ? {
+            from: transaction.date,
+            to: docFormData.date
+          } : undefined
         },
-        userNotes: `Converted from receipt/expense to supplemental documentation (${docFormData.documentType}). ${docFormData.notes || 'No additional notes.'}`,
+        userNotes: `CONVERSION: Changed from ${transaction.type} transaction (${transaction.category}) to ${docFormData.documentType.replace('_', ' ')} supporting document. Original expense removed from ledger. ${docFormData.notes ? `Notes: ${docFormData.notes}` : ''}`,
         receiptId: linkedReceiptData.id,
-        wasAutoCategorizationCorrection: true
+        wasAutoCategorizationCorrection: false // Mark as manual conversion, not auto-correction
       }
       
       addCorrection(correction)
@@ -1383,6 +1402,13 @@ export function ReceiptImageModal({
           isLargeAmount={transaction.amount >= 5000}
         />
       )}
+
+      {/* First-time tutorial */}
+      <FirstVisitIntro
+        tabId="transaction-edit"
+        isVisible={showIntro}
+        onClose={closeIntro}
+      />
     </div>
   )
 }

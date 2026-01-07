@@ -88,6 +88,13 @@ export const TAB_INTROS: Record<string, { title: string; icon: string; heading: 
     heading: 'Trophy Room',
     content: 'View all the achievements you\'ve earned on your bookkeeping journey! From first receipt to tax master, every milestone is celebrated here.',
     tip: 'Some achievements are hidden - keep exploring to find them all!'
+  },
+  'transaction-edit': {
+    title: 'Transaction Editor',
+    icon: '✏️',
+    heading: 'Edit & Validate Transactions',
+    content: 'This is where you review and correct AI-parsed transaction data. Edit any field that needs adjustment—date, amount, category, payment method, etc. Each correction you make teaches the AI to be more accurate in the future! Your edits are tracked for learning and audit purposes.',
+    tip: 'Important: Use the Receipt/Supporting Document toggle at the bottom if this isn\'t actually a business expense. Some receipts are better categorized as supporting documents (like account payments, manifests, or invoices). The toggle lets you convert this transaction to a supporting document, removing it from your expense tracking and filing it appropriately.'
   }
 }
 
