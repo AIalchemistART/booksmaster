@@ -73,12 +73,12 @@ export default function Dashboard() {
   const receiptLinkageRate = transactions.length > 0 ? (transactionsWithSuppDocs / transactions.length) * 100 : 0
   const linkedReceipts = transactionsWithSuppDocs
   
-  // Get current month's receipt count
+  // Get current month's transaction count
   const now = new Date()
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const receiptsThisMonth = receipts.filter((r: any) => {
-    const receiptDate = new Date(r.ocrDate || r.createdAt)
-    return receiptDate >= currentMonthStart
+  const transactionsThisMonth = transactions.filter((t: any) => {
+    const transactionDate = new Date(t.date)
+    return transactionDate >= currentMonthStart
   }).length
 
   // Income verification quality
@@ -212,9 +212,9 @@ export default function Dashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Receipts This Month</p>
-                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{receiptsThisMonth}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{receipts.length} total</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Transactions This Month</p>
+                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{transactionsThisMonth}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{transactions.length} total</p>
               </div>
               <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-900/30">
                 <Camera className="h-6 w-6 text-amber-600 dark:text-amber-400" />

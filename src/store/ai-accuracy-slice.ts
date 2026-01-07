@@ -94,7 +94,14 @@ function calculateSummariesFromDataPoints(dataPoints: AccuracyDataPoint[]): {
     const totalValidations = points.length
     const perfectParsing = points.filter(p => !p.requiresEdit).length
     const requiresEdits = points.filter(p => p.requiresEdit).length
-    const accuracyRate = totalValidations > 0 ? (perfectParsing / totalValidations) * 100 : 0
+    
+    // Use weighted field accuracy instead of binary perfect/not perfect
+    // Average the accuracyScore from each validation (e.g., 5/6 fields = 83.3%)
+    const totalAccuracy = points.reduce((sum, p) => {
+      // Use accuracyScore if available, otherwise fall back to binary (0 or 100)
+      return sum + (p.accuracyScore ?? (p.requiresEdit ? 0 : 100))
+    }, 0)
+    const accuracyRate = totalValidations > 0 ? totalAccuracy / totalValidations : 0
     
     const totalFieldsEdited = points.reduce((sum, p) => sum + (p.fieldsEdited?.length || 0), 0)
     const avgFieldsEdited = requiresEdits > 0 ? totalFieldsEdited / requiresEdits : 0
