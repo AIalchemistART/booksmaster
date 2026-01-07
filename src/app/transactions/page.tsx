@@ -105,42 +105,43 @@ export default function TransactionsPage() {
     )
   }
   
-  // Migration: Clear OCR-based payment methods (keep only learned card types)
-  useEffect(() => {
-    if (paymentMethodMigrated || transactions.length === 0) return
-    
-    const runMigration = async () => {
-      let clearedCount = 0
-      let keptCount = 0
-      
-      for (const t of transactions) {
-        if (!t.paymentMethod) continue
-        
-        // Check if this payment method came from learned card mapping
-        const linkedReceipt = t.receiptId ? receipts.find((r: ReceiptType) => r.id === t.receiptId) : null
-        let shouldKeep = false
-        
-        if (linkedReceipt?.ocrCardLastFour) {
-          const learned = await lookupCardPaymentType(linkedReceipt.ocrCardLastFour)
-          if (learned && learned.confidence >= 0.7 && learned.paymentType === t.paymentMethod) {
-            shouldKeep = true
-            keptCount++
-          }
-        }
-        
-        // Clear OCR payment methods
-        if (!shouldKeep) {
-          updateTransaction(t.id, { paymentMethod: undefined })
-          clearedCount++
-        }
-      }
-      
-      console.log(`[MIGRATION] Cleared ${clearedCount} OCR payment methods, kept ${keptCount} learned`)
-      setPaymentMethodMigrated(true)
-    }
-    
-    runMigration()
-  }, [transactions, receipts, paymentMethodMigrated, updateTransaction])
+  // MIGRATION DISABLED: Was deleting user-edited payment methods on every page load
+  // This migration cleared OCR payment methods but also removed manually-set values
+  // useEffect(() => {
+  //   if (paymentMethodMigrated || transactions.length === 0) return
+  //   
+  //   const runMigration = async () => {
+  //     let clearedCount = 0
+  //     let keptCount = 0
+  //     
+  //     for (const t of transactions) {
+  //       if (!t.paymentMethod) continue
+  //       
+  //       // Check if this payment method came from learned card mapping
+  //       const linkedReceipt = t.receiptId ? receipts.find((r: ReceiptType) => r.id === t.receiptId) : null
+  //       let shouldKeep = false
+  //       
+  //       if (linkedReceipt?.ocrCardLastFour) {
+  //         const learned = await lookupCardPaymentType(linkedReceipt.ocrCardLastFour)
+  //         if (learned && learned.confidence >= 0.7 && learned.paymentType === t.paymentMethod) {
+  //           shouldKeep = true
+  //           keptCount++
+  //         }
+  //       }
+  //       
+  //       // Clear OCR payment methods
+  //       if (!shouldKeep) {
+  //         updateTransaction(t.id, { paymentMethod: undefined })
+  //         clearedCount++
+  //       }
+  //     }
+  //     
+  //     console.log(`[MIGRATION] Cleared ${clearedCount} OCR payment methods, kept ${keptCount} learned`)
+  //     setPaymentMethodMigrated(true)
+  //   }
+  //   
+  //   runMigration()
+  // }, [transactions, receipts, paymentMethodMigrated, updateTransaction])
   
   const normalizePaymentMethod = (method: string | undefined): string | null => {
     if (!method) return null
