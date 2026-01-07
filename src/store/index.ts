@@ -169,10 +169,16 @@ export const useStore = create<AppState>()(
         }),
       updateTransaction: (id: string, updates: Partial<Transaction>) =>
         set((state) => {
+          console.log('[STORE] updateTransaction called:', JSON.stringify({ id, paymentMethod: updates.paymentMethod, description: updates.description }, null, 2))
           const newTransactions = state.transactions.map((t) =>
             t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t
           )
-          saveTransactionsToFileSystem(newTransactions).catch(console.error)
+          const updatedTx = newTransactions.find(t => t.id === id)
+          console.log('[STORE] Transaction after update:', JSON.stringify({ id: updatedTx?.id, paymentMethod: updatedTx?.paymentMethod, description: updatedTx?.description }, null, 2))
+          console.log('[STORE] Calling saveTransactionsToFileSystem with', newTransactions.length, 'transactions')
+          saveTransactionsToFileSystem(newTransactions).catch((err) => {
+            console.error('[STORE] ERROR saving transactions to file system:', err)
+          })
           return { transactions: newTransactions }
         }),
       deleteTransaction: (id: string) =>

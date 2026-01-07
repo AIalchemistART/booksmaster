@@ -1315,7 +1315,10 @@ export default function TransactionsPage() {
                           }
                         </td>
                         <td className="py-3 px-4 text-gray-700 dark:text-gray-300">
-                          {transaction.paymentMethod ? normalizePaymentMethod(transaction.paymentMethod) : '-'}
+                          {(() => {
+                            console.log(`[RENDER] Transaction ${transaction.id} payment method:`, JSON.stringify({ paymentMethod: transaction.paymentMethod, normalized: transaction.paymentMethod ? normalizePaymentMethod(transaction.paymentMethod) : '-' }))
+                            return transaction.paymentMethod ? normalizePaymentMethod(transaction.paymentMethod) : '-'
+                          })()}
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex justify-end gap-2">
@@ -1437,7 +1440,13 @@ export default function TransactionsPage() {
               setEditingTransaction(null)
             }}
             onSave={transaction ? (updated) => {
+              console.log('[TRANSACTIONS PAGE] Received updated transaction:', JSON.stringify({
+                id: updated.id,
+                paymentMethod: updated.paymentMethod,
+                description: updated.description
+              }, null, 2))
               updateTransaction(updated.id, updated)
+              console.log('[TRANSACTIONS PAGE] Called updateTransaction, closing modal')
               setEditingTransaction(null)
             } : undefined}
             categoryOptions={transaction?.type === 'expense' ? expenseCategoryOptions : incomeCategoryOptions}

@@ -557,12 +557,12 @@ export function ReceiptImageModal({
     console.log('[TRANSACTION UPDATE] originalType:', originalType, 'originalCategory:', originalCategory)
     
     const finalPaymentMethod = formData.paymentMethod && formData.paymentMethod !== '' ? (formData.paymentMethod as Transaction['paymentMethod']) : undefined
-    console.log('[PAYMENT METHOD] Saving payment method:', {
+    console.log('[PAYMENT METHOD] Saving payment method:', JSON.stringify({
       formValue: formData.paymentMethod,
       finalValue: finalPaymentMethod,
       isEmpty: formData.paymentMethod === '',
       original: transaction.paymentMethod
-    })
+    }, null, 2))
     
     const updatedTransaction: Transaction = {
       ...transaction,
