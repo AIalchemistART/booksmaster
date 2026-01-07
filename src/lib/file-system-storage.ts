@@ -47,7 +47,7 @@ export async function setupFileSystemStorage(): Promise<boolean> {
     return true
   } catch (error) {
     if ((error as Error).name === 'AbortError') {
-      console.log('User cancelled folder selection')
+      // console.log('User cancelled folder selection')
     } else if ((error as Error).message?.includes('system files')) {
       alert('Cannot select this folder - it contains system files. Please create a new folder in your Documents directory (e.g., C:\\Users\\YourName\\Documents\\Thomas-Books) and select that instead.')
     } else {
@@ -113,28 +113,28 @@ export async function loadDirectoryHandle(): Promise<FileSystemDirectoryHandle |
     })
     
     if (handle) {
-      console.log('[FILE SYSTEM] Found stored directory handle, checking permissions...')
+      // console.log('[FILE SYSTEM] Found stored directory handle, checking permissions...')
       
       // Check current permission state
       let permission = await (handle as any).queryPermission({ mode: 'readwrite' })
-      console.log('[FILE SYSTEM] Permission state:', permission)
+      // console.log('[FILE SYSTEM] Permission state:', permission)
       
       // If permission is 'prompt', request it automatically
       if (permission === 'prompt') {
-        console.log('[FILE SYSTEM] Permission not granted, requesting...')
+        // console.log('[FILE SYSTEM] Permission not granted, requesting...')
         permission = await (handle as any).requestPermission({ mode: 'readwrite' })
-        console.log('[FILE SYSTEM] Permission after request:', permission)
+        // console.log('[FILE SYSTEM] Permission after request:', permission)
       }
       
       if (permission === 'granted') {
-        console.log('[FILE SYSTEM] Permission granted, directory handle ready')
+        // console.log('[FILE SYSTEM] Permission granted, directory handle ready')
         rootDirHandle = handle
         return handle
       } else {
         console.warn('[FILE SYSTEM] Permission denied, cannot access directory')
       }
     } else {
-      console.log('[FILE SYSTEM] No stored directory handle found')
+      // console.log('[FILE SYSTEM] No stored directory handle found')
     }
     return null
   } catch (error) {
@@ -217,7 +217,7 @@ export async function loadReceiptImagesFromFileSystem(): Promise<Map<string, str
       }
     }
     
-    console.log(`[FILE SYSTEM] Loaded ${imageMap.size} receipt images from file system`)
+    // console.log(`[FILE SYSTEM] Loaded ${imageMap.size} receipt images from file system`)
     return imageMap
   } catch (error) {
     console.error('Error loading receipt images from file system:', error)
@@ -286,7 +286,7 @@ export async function saveReceiptsToFileSystem(receipts: any[]): Promise<boolean
       }
     }
 
-    console.log(`[FILE SYSTEM] Saved ${successCount} receipt images, ${failCount} failed`)
+    // console.log(`[FILE SYSTEM] Saved ${successCount} receipt images, ${failCount} failed`)
     return true
   } catch (error) {
     console.error('Error saving receipts to file system:', error)
@@ -371,7 +371,7 @@ export async function saveCorrectionsToFileSystem(corrections: any[]): Promise<b
     await writable.write(JSON.stringify(corrections, null, 2))
     await writable.close()
 
-    console.log(`Saved ${corrections.length} categorization corrections to file system`)
+    // console.log(`Saved ${corrections.length} categorization corrections to file system`)
     return true
   } catch (error) {
     console.error('Error saving corrections to file system:', error)
@@ -394,10 +394,10 @@ export async function loadCorrectionsFromFileSystem(): Promise<any[]> {
       const fileData = await file.getFile()
       const text = await fileData.text()
       const corrections = JSON.parse(text)
-      console.log(`Loaded ${corrections.length} categorization corrections from file system`)
+      // console.log(`Loaded ${corrections.length} categorization corrections from file system`)
       return corrections
     } catch (error) {
-      console.log('No corrections file found, returning empty array')
+      // console.log('No corrections file found, returning empty array')
       return []
     }
   } catch (error) {
@@ -420,7 +420,7 @@ export async function saveCardPaymentMappingsToFileSystem(mappings: any[]): Prom
     await writable.write(JSON.stringify(mappings, null, 2))
     await writable.close()
 
-    console.log(`Saved ${mappings.length} card payment type mappings to file system`)
+    // console.log(`Saved ${mappings.length} card payment type mappings to file system`)
     return true
   } catch (error) {
     console.error('Error saving card payment mappings to file system:', error)
@@ -443,10 +443,10 @@ export async function loadCardPaymentMappingsFromFileSystem(): Promise<any[]> {
       const fileData = await file.getFile()
       const text = await fileData.text()
       const mappings = JSON.parse(text)
-      console.log(`Loaded ${mappings.length} card payment type mappings from file system`)
+      // console.log(`Loaded ${mappings.length} card payment type mappings from file system`)
       return mappings
     } catch (error) {
-      console.log('No card payment mappings file found, returning empty array')
+      // console.log('No card payment mappings file found, returning empty array')
       return []
     }
   } catch (error) {
@@ -463,7 +463,7 @@ export async function deleteAllFiles(): Promise<boolean> {
     const rootDir = await getRootDirectory()
     if (!rootDir) return false
 
-    console.log('[WEB FS] Deleting all data files...')
+    // console.log('[WEB FS] Deleting all data files...')
 
     // Delete data files
     const dataFiles = [
@@ -482,7 +482,7 @@ export async function deleteAllFiles(): Promise<boolean> {
           currentDir = await currentDir.getDirectoryHandle(part, { create: false })
         }
         await currentDir.removeEntry(file)
-        console.log(`[WEB FS] Deleted ${dir}/${file}`)
+        // console.log(`[WEB FS] Deleted ${dir}/${file}`)
       } catch (error) {
         console.warn(`[WEB FS] Could not delete ${dir}/${file}:`, error)
       }
@@ -500,7 +500,7 @@ export async function deleteAllFiles(): Promise<boolean> {
           deleteCount++
         }
       }
-      console.log(`[WEB FS] Deleted ${deleteCount} receipt images`)
+      // console.log(`[WEB FS] Deleted ${deleteCount} receipt images`)
     } catch (error) {
       console.warn('[WEB FS] Could not delete receipt images:', error)
     }
@@ -517,12 +517,12 @@ export async function deleteAllFiles(): Promise<boolean> {
           deleteCount++
         }
       }
-      console.log(`[WEB FS] Deleted ${deleteCount} invoice images`)
+      // console.log(`[WEB FS] Deleted ${deleteCount} invoice images`)
     } catch (error) {
       console.warn('[WEB FS] Could not delete invoice images:', error)
     }
 
-    console.log('[WEB FS] All data files deleted successfully')
+    // console.log('[WEB FS] All data files deleted successfully')
     return true
   } catch (error) {
     console.error('[WEB FS] Error deleting files:', error)
@@ -570,7 +570,7 @@ export async function getConfiguredFolderPath(): Promise<string | null> {
   if (!handle) return null
   
   // Log for debugging - File System Access API doesn't expose full paths for security
-  console.log('Configured folder handle:', handle.name, handle.kind)
+  // console.log('Configured folder handle:', handle.name, handle.kind)
   
   return handle.name
 }
@@ -582,20 +582,20 @@ export async function debugFolderStructure(): Promise<void> {
   try {
     const handle = await loadDirectoryHandle()
     if (!handle) {
-      console.log('No folder configured')
+      // console.log('No folder configured')
       return
     }
     
-    console.log('=== File System Debug ===')
-    console.log('Folder name:', handle.name)
-    console.log('Folder kind:', handle.kind)
+    // console.log('=== File System Debug ===')
+    // console.log('Folder name:', handle.name)
+    // console.log('Folder kind:', handle.kind)
     
     // List all subdirectories
     const entries: string[] = []
     for await (const entry of (handle as any).values()) {
       entries.push(`${entry.kind === 'directory' ? '📁' : '📄'} ${entry.name}`)
     }
-    console.log('Contents:', entries)
+    // console.log('Contents:', entries)
     
   } catch (error) {
     console.error('Debug error:', error)
