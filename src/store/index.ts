@@ -29,7 +29,7 @@ function debouncedSaveReceipts(receipts: Receipt[]) {
   }
   
   receiptSaveTimer = setTimeout(() => {
-    console.log(`Debounced save: Saving ${receipts.length} receipts to file system`)
+    // console.log(`Debounced save: Saving ${receipts.length} receipts to file system`)
     saveReceiptsToFileSystem(receipts).catch((error) => {
       console.error('Debounced file system save failed, but receipts saved to memory:', error)
     })
@@ -169,13 +169,13 @@ export const useStore = create<AppState>()(
         }),
       updateTransaction: (id: string, updates: Partial<Transaction>) =>
         set((state) => {
-          console.log('[STORE] updateTransaction called:', JSON.stringify({ id, paymentMethod: updates.paymentMethod, description: updates.description }, null, 2))
+          // console.log('[STORE] updateTransaction called:', JSON.stringify({ id, paymentMethod: updates.paymentMethod, description: updates.description }, null, 2))
           const newTransactions = state.transactions.map((t) =>
             t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t
           )
-          const updatedTx = newTransactions.find(t => t.id === id)
-          console.log('[STORE] Transaction after update:', JSON.stringify({ id: updatedTx?.id, paymentMethod: updatedTx?.paymentMethod, description: updatedTx?.description }, null, 2))
-          console.log('[STORE] Calling saveTransactionsToFileSystem with', newTransactions.length, 'transactions')
+          // const updatedTx = newTransactions.find(t => t.id === id)
+          // console.log('[STORE] Transaction after update:', JSON.stringify({ id: updatedTx?.id, paymentMethod: updatedTx?.paymentMethod, description: updatedTx?.description }, null, 2))
+          // console.log('[STORE] Calling saveTransactionsToFileSystem with', newTransactions.length, 'transactions')
           saveTransactionsToFileSystem(newTransactions).catch((err) => {
             console.error('[STORE] ERROR saving transactions to file system:', err)
           })
@@ -247,13 +247,13 @@ export const useStore = create<AppState>()(
       receipts: [],
       addReceipt: (receipt: Receipt) =>
         set((state) => {
-          console.log('[STORE] ============================================')
-          console.log('[STORE] addReceipt() called - BEFORE')
-          console.log('[STORE] Current Level:', state.userProgress.currentLevel)
-          console.log('[STORE] Current XP:', state.userProgress.currentXP)
-          console.log('[STORE] Unlocked Features:', state.userProgress.unlockedFeatures)
-          console.log('[STORE] Receipt count before:', state.receipts.length)
-          console.log('[STORE] New receipt ID:', receipt.id)
+          // console.log('[STORE] ============================================')
+          // console.log('[STORE] addReceipt() called - BEFORE')
+          // console.log('[STORE] Current Level:', state.userProgress.currentLevel)
+          // console.log('[STORE] Current XP:', state.userProgress.currentXP)
+          // console.log('[STORE] Unlocked Features:', state.userProgress.unlockedFeatures)
+          // console.log('[STORE] Receipt count before:', state.receipts.length)
+          // console.log('[STORE] New receipt ID:', receipt.id)
 
           // Add the new receipt
           let newReceipts = [...state.receipts, receipt]
@@ -261,9 +261,9 @@ export const useStore = create<AppState>()(
           // Process any manifest or invoice documents
           newReceipts = processReceiptDocuments(newReceipts)
 
-          console.log('[STORE] Receipt count after:', newReceipts.length)
-          console.log('[STORE] addReceipt() returning - check if level changes...')
-          console.log('[STORE] ============================================')
+          // console.log('[STORE] Receipt count after:', newReceipts.length)
+          // console.log('[STORE] addReceipt() returning - check if level changes...')
+          // console.log('[STORE] ============================================')
 
           // Debounce file system saves to batch operations
           debouncedSaveReceipts(newReceipts)
@@ -294,7 +294,7 @@ export const useStore = create<AppState>()(
       // Restore receipt images from file system
       restoreReceiptImages: async () => {
         try {
-          console.log('[STORE] Restoring receipt images from file system...')
+          // console.log('[STORE] Restoring receipt images from file system...')
           
           // Get current receipts from the set callback to avoid circular reference
           let currentReceipts: Receipt[] = []
@@ -306,7 +306,7 @@ export const useStore = create<AppState>()(
           const imageMap = await loadReceiptImagesFromFileSystem(currentReceipts)
           
           if (imageMap.size === 0) {
-            console.log('[STORE] No receipt images found in file system')
+            // console.log('[STORE] No receipt images found in file system')
             return
           }
           
@@ -314,14 +314,14 @@ export const useStore = create<AppState>()(
             const updatedReceipts = state.receipts.map(receipt => {
               const imageData = imageMap.get(receipt.id)
               if (imageData && !receipt.imageData) {
-                console.log(`[STORE] Restored image for receipt ${receipt.id}`)
+                // console.log(`[STORE] Restored image for receipt ${receipt.id}`)
                 return { ...receipt, imageData }
               }
               return receipt
             })
             
             const restoredCount = updatedReceipts.filter(r => r.imageData).length
-            console.log(`[STORE] Restored ${restoredCount} receipt images from file system`)
+            // console.log(`[STORE] Restored ${restoredCount} receipt images from file system`)
             
             return { receipts: updatedReceipts }
           })
@@ -336,7 +336,7 @@ export const useStore = create<AppState>()(
         set((state) => {
           const newCorrections = [...state.categorizationCorrections, correction]
           // Save to file system will be handled by file-system-adapter
-          console.log('[STORE] Added categorization correction:', correction.id)
+          // console.log('[STORE] Added categorization correction:', correction.id)
           return { categorizationCorrections: newCorrections }
         }),
       updateCorrection: (transactionId: string, correction: CategorizationCorrection) =>
@@ -344,7 +344,7 @@ export const useStore = create<AppState>()(
           const existingIndex = state.categorizationCorrections.findIndex(c => c.transactionId === transactionId)
           if (existingIndex === -1) {
             // No existing correction, add as new
-            console.log('[STORE] No existing correction found, adding new:', correction.id)
+            // console.log('[STORE] No existing correction found, adding new:', correction.id)
             return { categorizationCorrections: [...state.categorizationCorrections, correction] }
           }
           
@@ -365,7 +365,7 @@ export const useStore = create<AppState>()(
           
           const newCorrections = [...state.categorizationCorrections]
           newCorrections[existingIndex] = updatedCorrection
-          console.log('[STORE] Updated existing correction:', updatedCorrection.id, 'with cumulative changes')
+          // console.log('[STORE] Updated existing correction:', updatedCorrection.id, 'with cumulative changes')
           return { categorizationCorrections: newCorrections }
         }),
       getCorrectionsForContext: () => {
@@ -407,16 +407,16 @@ export const useStore = create<AppState>()(
         monthlySummaries: state.monthlySummaries,
       }),
       onRehydrateStorage: () => (state) => {
-        console.log('[PERSIST] onRehydrateStorage callback called')
+        // console.log('[PERSIST] onRehydrateStorage callback called')
         // After store is rehydrated from localStorage, restore images from file system
         if (state) {
-          console.log('[STORE] Store rehydrated, restoring receipt images...')
-          console.log('[PERSIST] userProgress.onboardingComplete:', state.userProgress?.onboardingComplete)
-          console.log('[PERSIST] userProgress.currentLevel:', state.userProgress?.currentLevel)
-          console.log('[PERSIST] userProgress.totalXP:', state.userProgress?.totalXP)
-          console.log('[PERSIST] userProgress.unlockedFeatures:', state.userProgress?.unlockedFeatures)
-          console.log('[PERSIST] businessName:', state.businessName)
-          console.log('[PERSIST] darkMode:', state.darkMode)
+          // console.log('[STORE] Store rehydrated, restoring receipt images...')
+          // console.log('[PERSIST] userProgress.onboardingComplete:', state.userProgress?.onboardingComplete)
+          // console.log('[PERSIST] userProgress.currentLevel:', state.userProgress?.currentLevel)
+          // console.log('[PERSIST] userProgress.totalXP:', state.userProgress?.totalXP)
+          // console.log('[PERSIST] userProgress.unlockedFeatures:', state.userProgress?.unlockedFeatures)
+          // console.log('[PERSIST] businessName:', state.businessName)
+          // console.log('[PERSIST] darkMode:', state.darkMode)
           
           // Debug: Check what's in localStorage
           if (typeof window !== 'undefined') {
@@ -424,12 +424,12 @@ export const useStore = create<AppState>()(
             if (stored) {
               try {
                 const parsed = JSON.parse(stored)
-                console.log('[PERSIST DEBUG] localStorage userProgress:', parsed.state?.userProgress)
+                // console.log('[PERSIST DEBUG] localStorage userProgress:', parsed.state?.userProgress)
               } catch (e) {
                 console.error('[PERSIST DEBUG] Failed to parse localStorage:', e)
               }
             } else {
-              console.log('[PERSIST DEBUG] No localStorage data found')
+              // console.log('[PERSIST DEBUG] No localStorage data found')
             }
           }
           
@@ -444,17 +444,17 @@ export const useStore = create<AppState>()(
             const transactionCount = state.transactions?.length || 0
             const validatedReceiptCount = state.receipts?.filter((r: any) => r.userValidated === true).length || 0
             
-            console.log(`[LEVEL MIGRATION] ========================================`)
-            console.log(`[LEVEL MIGRATION] Starting migration check...`)
-            console.log(`[LEVEL MIGRATION] Current state - Level: ${currentLevel}, XP: ${totalXP}`)
-            console.log(`[LEVEL MIGRATION] Data counts - Receipts: ${receiptCount}, Transactions: ${transactionCount}, Validated: ${validatedReceiptCount}`)
-            console.log(`[LEVEL MIGRATION] Unlocked features:`, unlockedFeatures)
+            // console.log(`[LEVEL MIGRATION] ========================================`)
+            // console.log(`[LEVEL MIGRATION] Starting migration check...`)
+            // console.log(`[LEVEL MIGRATION] Current state - Level: ${currentLevel}, XP: ${totalXP}`)
+            // console.log(`[LEVEL MIGRATION] Data counts - Receipts: ${receiptCount}, Transactions: ${transactionCount}, Validated: ${validatedReceiptCount}`)
+            // console.log(`[LEVEL MIGRATION] Unlocked features:`, unlockedFeatures)
             
             // IMPORTANT: Level is determined by quest completion (manualLevelUp calls), NOT by features
             // Features can unlock in any order (parallel paths), so we cannot infer level from features
             // Only correct level if it's stuck at 1 despite having data
             if (currentLevel === 1) {
-              console.log('[LEVEL MIGRATION] Still at Level 1, checking actual data...')
+              // console.log('[LEVEL MIGRATION] Still at Level 1, checking actual data...')
               if (transactionCount > 0) {
                 correctedLevel = 3 as UserLevel
                 console.log(`[LEVEL MIGRATION] 🔍 Found ${transactionCount} transactions - correcting to Level 3`)
@@ -479,10 +479,10 @@ export const useStore = create<AppState>()(
               // Merge base features with existing features (preserving all unlocks)
               const combined = [...baseFeatures, ...state.userProgress.unlockedFeatures]
               state.userProgress.unlockedFeatures = Array.from(new Set(combined))
-              console.log('[LEVEL MIGRATION] Updated unlockedFeatures to include base features:', baseFeatures)
-              console.log('[LEVEL MIGRATION] Preserved all existing features')
+              // console.log('[LEVEL MIGRATION] Updated unlockedFeatures to include base features:', baseFeatures)
+              // console.log('[LEVEL MIGRATION] Preserved all existing features')
             } else {
-              console.log('[LEVEL MIGRATION] ✅ Level is correct, no migration needed')
+              // console.log('[LEVEL MIGRATION] ✅ Level is correct, no migration needed')
             }
             
             // QUEST MIGRATION: Restore completed quests based on current level
@@ -490,20 +490,20 @@ export const useStore = create<AppState>()(
               const completedQuests = [...(state.questProgress.completedQuests || [])]
               let questsUpdated = false
               
-              console.log('[QUEST MIGRATION] ========================================')
-              console.log('[QUEST MIGRATION] Current completed quests:', completedQuests)
-              console.log('[QUEST MIGRATION] User is at Level:', correctedLevel)
+              // console.log('[QUEST MIGRATION] ========================================')
+              // console.log('[QUEST MIGRATION] Current completed quests:', completedQuests)
+              // console.log('[QUEST MIGRATION] User is at Level:', correctedLevel)
               
               // Reconstruct completed quests based on level
               if (correctedLevel >= 2 && !completedQuests.includes('start_scanning')) {
                 completedQuests.push('start_scanning')
                 questsUpdated = true
-                console.log('[QUEST MIGRATION] ✅ Added start_scanning quest (Level 2+)')
+                // console.log('[QUEST MIGRATION] ✅ Added start_scanning quest (Level 2+)')
               }
               if (correctedLevel >= 3 && !completedQuests.includes('validate_first_receipt')) {
                 completedQuests.push('validate_first_receipt')
                 questsUpdated = true
-                console.log('[QUEST MIGRATION] ✅ Added validate_first_receipt quest (Level 3+)')
+                // console.log('[QUEST MIGRATION] ✅ Added validate_first_receipt quest (Level 3+)')
               }
               // Note: edit_transaction, validate_transaction, and upload_supplemental are PARALLEL quests (Levels 4-6)
               // They can be completed in any order
@@ -511,48 +511,42 @@ export const useStore = create<AppState>()(
               if (correctedLevel >= 7 && !completedQuests.includes('reach_milestones')) {
                 completedQuests.push('reach_milestones')
                 questsUpdated = true
-                console.log('[QUEST MIGRATION] ✅ Added reach_milestones quest (Level 7)')
               }
               
               if (questsUpdated) {
                 state.questProgress.completedQuests = completedQuests
-                console.log('[QUEST MIGRATION] ✅ Updated questProgress.completedQuests:', completedQuests)
-                console.log('[QUEST MIGRATION] Note: Changes will be persisted by Zustand middleware')
               } else {
-                console.log('[QUEST MIGRATION] ✅ Quest progress is correct, no migration needed')
               }
-              console.log('[QUEST MIGRATION] ========================================')
             }
-            console.log(`[LEVEL MIGRATION] ========================================`)
           }
           
-          console.log('[PERSIST] Final userProgress.currentLevel:', state.userProgress?.currentLevel)
-          console.log('[PERSIST] Final userProgress.unlockedFeatures:', state.userProgress?.unlockedFeatures)
-          console.log('[PERSIST] Final darkMode:', state.darkMode)
+          // console.log('[PERSIST] Final userProgress.currentLevel:', state.userProgress?.currentLevel)
+          // console.log('[PERSIST] Final userProgress.unlockedFeatures:', state.userProgress?.unlockedFeatures)
+          // console.log('[PERSIST] Final darkMode:', state.darkMode)
           
           // Recalculate AI accuracy summaries after rehydration
           if (state.calculateSummaries) {
-            console.log('[PERSIST] Recalculating AI accuracy summaries...')
+            // console.log('[PERSIST] Recalculating AI accuracy summaries...')
             state.calculateSummaries()
           }
           
           // Apply dark mode class if enabled - CRITICAL: Must run after all state mutations
           if (typeof document !== 'undefined') {
-            console.log('[DARK MODE] Current darkMode state:', state.darkMode)
-            console.log('[DARK MODE] Current document classes:', document.documentElement.className)
+            // console.log('[DARK MODE] Current darkMode state:', state.darkMode)
+            // console.log('[DARK MODE] Current document classes:', document.documentElement.className)
             
             if (state.darkMode) {
               document.documentElement.classList.add('dark')
-              console.log('[DARK MODE] ✅ Applied dark class')
+              // console.log('[DARK MODE] ✅ Applied dark class')
             } else {
               document.documentElement.classList.remove('dark')
-              console.log('[DARK MODE] ❌ Removed dark class')
+              // console.log('[DARK MODE] ❌ Removed dark class')
             }
             
-            console.log('[DARK MODE] Final document classes:', document.documentElement.className)
+            // console.log('[DARK MODE] Final document classes:', document.documentElement.className)
           }
         } else {
-          console.log('[PERSIST] No state to rehydrate - using defaults')
+          // console.log('[PERSIST] No state to rehydrate - using defaults')
         }
       },
     }
