@@ -219,7 +219,7 @@ export const createGamificationSlice: StateCreator<
       : newTotalXP
     
     if (cappedXP !== newTotalXP) {
-      console.log(`[XP] Capped at ${cappedXP} XP (90% of Level ${nextLevelData?.level} requirement: ${nextLevelData?.xpRequired})`)
+      // console.log(`[XP] Capped at ${cappedXP} XP (90% of Level ${nextLevelData?.level} requirement: ${nextLevelData?.xpRequired})`)
     }
     
     // For daily/repeatable actions, don't add to completedActions (to save memory)
