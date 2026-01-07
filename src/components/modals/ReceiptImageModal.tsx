@@ -157,6 +157,17 @@ export function ReceiptImageModal({
   // Update initial form data when transaction changes (navigation)
   useEffect(() => {
     if (transaction) {
+      console.log('[MODAL INIT] Transaction loaded:', {
+        id: transaction.id,
+        currentCategory: transaction.category,
+        originalCategory: transaction.originalCategory,
+        currentType: transaction.type,
+        originalType: transaction.originalType,
+        currentPaymentMethod: transaction.paymentMethod,
+        originalPaymentMethod: transaction.originalPaymentMethod,
+        wasManuallyEdited: transaction.wasManuallyEdited
+      })
+      
       // Use original AI-parsed values if they exist (for showing changes from original in confirmation modal)
       // Otherwise fall back to current values (for transactions that haven't been edited yet)
       initialFormData.current = {
@@ -170,6 +181,13 @@ export function ReceiptImageModal({
         itemization: transaction.itemization || '',
         notes: transaction.notes || ''
       }
+      
+      console.log('[MODAL INIT] initialFormData set to:', {
+        category: initialFormData.current.category,
+        type: initialFormData.current.type,
+        paymentMethod: initialFormData.current.paymentMethod
+      })
+      
       setFormData({
         date: transaction.date || '',
         description: transaction.description || '',
@@ -181,6 +199,13 @@ export function ReceiptImageModal({
         itemization: transaction.itemization || '',
         notes: transaction.notes || ''
       })
+      
+      console.log('[MODAL INIT] formData set to:', {
+        category: transaction.category,
+        type: transaction.type,
+        paymentMethod: transaction.paymentMethod
+      })
+      
       setIsValidated(transaction.userValidated || false)
       setHasEdits(false) // Reset edits flag when transaction changes
       
