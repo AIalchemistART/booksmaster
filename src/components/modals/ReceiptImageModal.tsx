@@ -871,7 +871,7 @@ export function ReceiptImageModal({
           </div>
 
           {/* Receipt/Documentation Toggle */}
-          {transaction && onSave && linkedReceipt && linkedDocToShow && (
+          {transaction && onSave && linkedReceipt && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
               <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-lg border-2 border-gray-200 dark:border-gray-700 overflow-hidden">
                 <button
@@ -894,7 +894,7 @@ export function ReceiptImageModal({
                   }`}
                 >
                   <FileText className="h-5 w-5" />
-                  <span>Documentation</span>
+                  <span>Supporting Document</span>
                 </button>
               </div>
             </div>
