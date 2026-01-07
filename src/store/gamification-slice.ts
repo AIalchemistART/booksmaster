@@ -80,7 +80,7 @@ export const createGamificationSlice: StateCreator<
     // NOTE: This is now handled by zustand persist automatically
     // This function is kept for backward compatibility but does nothing
     // zustand persist will rehydrate userProgress from localStorage on app start
-    console.log('[GAMIFICATION] Using zustand persist for state management')
+    // console.log('[GAMIFICATION] Using zustand persist for state management')
   },
 
   selectTechPath: (path: TechTreePath) => {
@@ -117,7 +117,7 @@ export const createGamificationSlice: StateCreator<
       
       // Max level check
       if (currentLevel >= 6) {
-        console.log('[LEVEL UP] Already at max level 6')
+        // console.log('[LEVEL UP] Already at max level 6')
         return state
       }
       
@@ -154,9 +154,9 @@ export const createGamificationSlice: StateCreator<
         currentXP: Math.max(cosmeticXP, state.userProgress.currentXP)
       }
       
-      console.log(`[LEVEL UP] Incremented from Level ${currentLevel} → Level ${newLevel} (cosmetic XP: ${cosmeticXP})`)
-      console.log(`[LEVEL UP] Feature unlocked:`, unlockedFeature || 'default')
-      console.log(`[LEVEL UP] All features unlocked:`, newFeatures)
+      // console.log(`[LEVEL UP] Incremented from Level ${currentLevel} → Level ${newLevel} (cosmetic XP: ${cosmeticXP})`)
+      // console.log(`[LEVEL UP] Feature unlocked:`, unlockedFeature || 'default')
+      // console.log(`[LEVEL UP] All features unlocked:`, newFeatures)
       
       // File system backup only - zustand persist handles localStorage
       saveGamificationData(newProgress, state.unlockedAchievements).catch(console.error)
@@ -166,7 +166,7 @@ export const createGamificationSlice: StateCreator<
         const stored = localStorage.getItem('thomas-books-storage')
         if (stored) {
           const parsed = JSON.parse(stored)
-          console.log('[LEVEL UP] Verified localStorage currentLevel:', parsed.state?.userProgress?.currentLevel)
+          // console.log('[LEVEL UP] Verified localStorage currentLevel:', parsed.state?.userProgress?.currentLevel)
         }
       }, 100)
       
@@ -181,10 +181,10 @@ export const createGamificationSlice: StateCreator<
     const finalLevel = get().userProgress.currentLevel
     if (finalLevel === 3) {
       get().unlockAchievement('level_3')
-      console.log('[LEVEL UP] ✅ Unlocked level_3 achievement')
+      // console.log('[LEVEL UP] ✅ Unlocked level_3 achievement')
     } else if (finalLevel === 6) {
       get().unlockAchievement('level_6')
-      console.log('[LEVEL UP] ✅ Unlocked level_6 achievement')
+      // console.log('[LEVEL UP] ✅ Unlocked level_6 achievement')
     }
   },
 
@@ -198,7 +198,7 @@ export const createGamificationSlice: StateCreator<
     
     // Skip batch actions here - they should use completeBatchAction
     if (isBatchAction) {
-      console.log(`[XP] Skipping batch action ${action} - use completeBatchAction instead`)
+      // console.log(`[XP] Skipping batch action ${action} - use completeBatchAction instead`)
       return { leveledUp: false, xpGained: 0 }
     }
     
@@ -208,7 +208,7 @@ export const createGamificationSlice: StateCreator<
     }
 
     // Award cosmetic XP only - PRESERVE manual level
-    console.log(`[XP BEFORE] ${action} - Current: Level ${currentProgress.currentLevel}, XP ${currentProgress.totalXP}`)
+    // console.log(`[XP BEFORE] ${action} - Current: Level ${currentProgress.currentLevel}, XP ${currentProgress.totalXP}`)
     const xpGained = XP_REWARDS[action]
     const newTotalXP = currentProgress.totalXP + xpGained
     
@@ -239,15 +239,15 @@ export const createGamificationSlice: StateCreator<
       // currentLevel is NOT modified - manual leveling only
     }
     
-    console.log(`[XP FINAL] ${action} - Final: Level ${finalProgress.currentLevel}, XP ${finalProgress.totalXP}, unlockedFeatures:`, finalProgress.unlockedFeatures)
+    // console.log(`[XP FINAL] ${action} - Final: Level ${finalProgress.currentLevel}, XP ${finalProgress.totalXP}, unlockedFeatures:`, finalProgress.unlockedFeatures)
     
     const state = get()
     set({ userProgress: finalProgress })
     // File system backup only - zustand persist handles localStorage
     saveGamificationData(finalProgress, state.unlockedAchievements).catch(console.error)
     
-    console.log(`[XP] ${action}: +${xpGained} XP (Total: ${finalProgress.totalXP}, Level: ${finalProgress.currentLevel})`)
-    console.log(`[XP VERIFY] After set() - store level:`, get().userProgress.currentLevel)
+    // console.log(`[XP] ${action}: +${xpGained} XP (Total: ${finalProgress.totalXP}, Level: ${finalProgress.currentLevel})`)
+    // console.log(`[XP VERIFY] After set() - store level:`, get().userProgress.currentLevel)
 
     return {
       leveledUp: false, // Manual leveling system - no auto level-ups
@@ -284,7 +284,7 @@ export const createGamificationSlice: StateCreator<
     }
     
     const newTotalXP = currentProgress.totalXP + xpGained
-    console.log(`[BATCH XP BEFORE] ${type} - Current: Level ${currentProgress.currentLevel}, XP ${currentProgress.totalXP}`)
+    // console.log(`[BATCH XP BEFORE] ${type} - Current: Level ${currentProgress.currentLevel}, XP ${currentProgress.totalXP}`)
     
     // CAP XP: Don't exceed next level requirement (maintain suspension of disbelief)
     const nextLevelData = LEVELS.find(l => l.level === currentProgress.currentLevel + 1)
@@ -293,7 +293,7 @@ export const createGamificationSlice: StateCreator<
       : newTotalXP
     
     if (cappedXP !== newTotalXP) {
-      console.log(`[XP] Capped at ${cappedXP} XP (90% of Level ${nextLevelData?.level} requirement: ${nextLevelData?.xpRequired})`)
+      // console.log(`[XP] Capped at ${cappedXP} XP (90% of Level ${nextLevelData?.level} requirement: ${nextLevelData?.xpRequired})`)
     }
     
     // CRITICAL: Preserve currentLevel - don't call calculateLevel()
@@ -305,7 +305,7 @@ export const createGamificationSlice: StateCreator<
       // unlockedFeatures stay as-is - manual leveling controls this
     }
     
-    console.log(`[BATCH XP FINAL] ${type} - Final: Level ${finalProgress.currentLevel}, XP ${finalProgress.totalXP}`)
+    // console.log(`[BATCH XP FINAL] ${type} - Final: Level ${finalProgress.currentLevel}, XP ${finalProgress.totalXP}`)
     
     const state = get()
     set({ 
@@ -314,8 +314,8 @@ export const createGamificationSlice: StateCreator<
     })
     saveGamificationData(finalProgress, state.unlockedAchievements).catch(console.error)
     
-    console.log(`[XP] Batch ${type} (${count} items): +${xpGained} XP (Total: ${finalProgress.totalXP}, Level: ${finalProgress.currentLevel})`)
-    console.log(`[BATCH XP VERIFY] After set() - store level:`, get().userProgress.currentLevel)
+    // console.log(`[XP] Batch ${type} (${count} items): +${xpGained} XP (Total: ${finalProgress.totalXP}, Level: ${finalProgress.currentLevel})`)
+    // console.log(`[BATCH XP VERIFY] After set() - store level:`, get().userProgress.currentLevel)
     
     return {
       leveledUp: false, // Manual leveling system - no auto level-ups
@@ -384,7 +384,7 @@ export const createGamificationSlice: StateCreator<
     // Save to file system
     saveGamificationData(updatedProgress, newAchievements).catch(console.error)
     
-    console.log(`🏆 Achievement Unlocked: ${achievement.title} (+${xpGained} XP)`)
+    // console.log(`🏆 Achievement Unlocked: ${achievement.title} (+${xpGained} XP)`)
   },
   
   dismissAchievement: () => {
@@ -425,7 +425,7 @@ export const createGamificationSlice: StateCreator<
         activeQuests: state.questProgress.activeQuests.filter(q => q !== questId)
       }
 
-      console.log(`[QUEST] Completed: ${questId}`)
+      // console.log(`[QUEST] Completed: ${questId}`)
       return { questProgress: newQuestProgress }
     })
   },
@@ -443,7 +443,7 @@ export const createGamificationSlice: StateCreator<
         }
       }
 
-      console.log(`[QUEST] Transaction ${transactionId} marked for ${questType}`)
+      // console.log(`[QUEST] Transaction ${transactionId} marked for ${questType}`)
       return { questProgress: newQuestProgress }
     })
   },
@@ -458,11 +458,11 @@ export const createGamificationSlice: StateCreator<
         }
       }
 
-      console.log(`[QUEST] Milestone ${type}: ${newQuestProgress.milestoneProgress[type]}`)
+      // console.log(`[QUEST] Milestone ${type}: ${newQuestProgress.milestoneProgress[type]}`)
 
       // Check if milestone quest is complete and trigger level up
       if (isMilestoneQuestComplete(newQuestProgress) && !state.questProgress.completedQuests.includes('reach_milestones')) {
-        console.log('[QUEST] Milestone quest complete! Unlocking Reports (Level 7)')
+        // console.log('[QUEST] Milestone quest complete! Unlocking Reports (Level 7)')
         
         // Complete the quest
         const finalQuestProgress = {
@@ -486,7 +486,7 @@ export const createGamificationSlice: StateCreator<
             currentXP: Math.max(cosmeticXP, state.userProgress.currentXP)
           }
           
-          console.log('[QUEST] Advanced from Level 6 → Level 7 (Reports unlocked)')
+          // console.log('[QUEST] Advanced from Level 6 → Level 7 (Reports unlocked)')
           
           saveGamificationData(newProgress, state.unlockedAchievements).catch(console.error)
           
