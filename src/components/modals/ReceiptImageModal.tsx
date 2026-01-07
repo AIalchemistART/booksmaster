@@ -594,22 +594,27 @@ export function ReceiptImageModal({
     })
 
     // Create categorization correction for AI learning if any field changed
+    // IMPORTANT: Compare against ORIGINAL OCR values, not previous edit values
+    // This allows reverting back to original to remove the change from corrections
     console.log('[EDIT QUEST DEBUG] Checking anyFieldChanged block - anyFieldChanged:', anyFieldChanged)
     if (anyFieldChanged) {
       console.log('[EDIT QUEST DEBUG] ENTERED anyFieldChanged block - this will create correction and potentially trigger edit quest')
-      console.log('[CORRECTION] Creating correction with changes:', {
-        dateChanged,
-        descriptionChanged,
-        amountChanged,
-        typeChanged,
-        categoryChanged,
-        paymentMethodChanged,
-        itemizationChanged,
-        notesChanged,
-        categorizationChanged
+      
+      // Compare current form values against ORIGINAL OCR/AI parsed values
+      const currentlyDiffersFromOriginal = {
+        date: originalDate && formData.date !== originalDate,
+        description: originalDescription && formData.description !== originalDescription,
+        amount: originalAmount !== undefined && parseFloat(formData.amount) !== originalAmount,
+        type: originalType && formData.type !== originalType,
+        category: originalCategory && formData.category !== originalCategory,
+        paymentMethod: originalPaymentMethod !== undefined && formData.paymentMethod !== originalPaymentMethod
+      }
+      
+      console.log('[CORRECTION] Checking differences from ORIGINAL values:', {
+        original: { date: originalDate, description: originalDescription, amount: originalAmount, type: originalType, category: originalCategory, paymentMethod: originalPaymentMethod },
+        current: { date: formData.date, description: formData.description, amount: formData.amount, type: formData.type, category: formData.category, paymentMethod: formData.paymentMethod },
+        differs: currentlyDiffersFromOriginal
       })
-      console.log('[CORRECTION] Initial values:', initialFormData.current)
-      console.log('[CORRECTION] New values:', formData)
       
       const correction: CategorizationCorrection = {
         id: generateId(),
@@ -618,18 +623,16 @@ export function ReceiptImageModal({
         vendor: formData.description,
         amount: parseFloat(formData.amount) || 0,
         changes: {
-          ...(dateChanged && { date: { from: initialFormData.current.date, to: formData.date } }),
-          ...(descriptionChanged && { description: { from: initialFormData.current.description, to: formData.description } }),
-          ...(amountChanged && { amount: { from: parseFloat(initialFormData.current.amount), to: parseFloat(formData.amount) || 0 } }),
-          ...(typeChanged && { type: { from: initialFormData.current.type as Transaction['type'], to: formData.type as Transaction['type'] } }),
-          ...(categoryChanged && { category: { from: initialFormData.current.category as Transaction['category'], to: formData.category as Transaction['category'] } }),
-          ...(paymentMethodChanged && { paymentMethod: { from: initialFormData.current.paymentMethod || '', to: formData.paymentMethod } }),
-          ...(itemizationChanged && { itemization: { from: initialFormData.current.itemization || '', to: formData.itemization } }),
-          ...(notesChanged && { notes: { from: initialFormData.current.notes || '', to: formData.notes } })
+          ...(currentlyDiffersFromOriginal.date && { date: { from: originalDate!, to: formData.date } }),
+          ...(currentlyDiffersFromOriginal.description && { description: { from: originalDescription!, to: formData.description } }),
+          ...(currentlyDiffersFromOriginal.amount && { amount: { from: originalAmount!, to: parseFloat(formData.amount) || 0 } }),
+          ...(currentlyDiffersFromOriginal.type && { type: { from: originalType!, to: formData.type as Transaction['type'] } }),
+          ...(currentlyDiffersFromOriginal.category && { category: { from: originalCategory!, to: formData.category as Transaction['category'] } }),
+          ...(currentlyDiffersFromOriginal.paymentMethod && { paymentMethod: { from: originalPaymentMethod || '', to: formData.paymentMethod } })
         },
         userNotes: formData.notes,
         receiptId: transaction.receiptId,
-        wasAutoCategorizationCorrection: categorizationChanged
+        wasAutoCategorizationCorrection: !!(currentlyDiffersFromOriginal.type || currentlyDiffersFromOriginal.category)
       }
       
       console.log('[CORRECTION] Created correction:', correction)
