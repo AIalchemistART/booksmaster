@@ -1315,7 +1315,7 @@ export default function TransactionsPage() {
                           }
                         </td>
                         <td className="py-3 px-4 text-gray-700 dark:text-gray-300">
-                          {transaction.paymentMethod || (linkedReceipt?.ocrPaymentMethod ? normalizePaymentMethod(linkedReceipt.ocrPaymentMethod) : '-')}
+                          {transaction.paymentMethod ? normalizePaymentMethod(transaction.paymentMethod) : '-'}
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex justify-end gap-2">

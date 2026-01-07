@@ -40,7 +40,7 @@ export function ReceiptImageModal({
   hasPrevious = false,
   hasNext = false
 }: ReceiptImageModalProps) {
-  const { addCorrection, updateCorrection, categorizationCorrections, receipts, updateReceipt, recordValidation } = useStore()
+  const { addCorrection, updateCorrection, categorizationCorrections, receipts, updateReceipt, recordValidation, updateTransaction } = useStore()
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -764,7 +764,9 @@ export function ReceiptImageModal({
       console.log(`[AI ACCURACY] Validation recorded: ${fieldsEdited.length > 0 ? `${accuracyScore.toFixed(1)}% accurate (${correctFields}/${totalFields} fields correct, edited: ${fieldsEdited.join(', ')})` : 'PERFECT (100%)'}`)
     }
 
-    console.log('[VALIDATION] Calling onSave with updated transaction')
+    console.log('[VALIDATION] Saving transaction to store')
+    updateTransaction(updatedTransaction.id, updatedTransaction)
+    console.log('[VALIDATION] Transaction saved, calling onSave callback')
     onSave(updatedTransaction)
     console.log('[VALIDATION] Closing modal')
     onClose()
