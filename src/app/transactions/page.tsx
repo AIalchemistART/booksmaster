@@ -397,35 +397,9 @@ export default function TransactionsPage() {
 
   // Convert receipt with AI categorization
   const convertWithCategorization = async (receipt: ReceiptType) => {
-    // Skip receipts without amounts - mark as supplemental docs instead
-    if (!receipt.ocrVendor || receipt.ocrAmount === undefined || receipt.ocrAmount === null) {
-      if (receipt.ocrAmount === undefined || receipt.ocrAmount === null || receipt.ocrAmount === 0) {
-        // Quest: Upload supplemental document → Level 6 (Supporting Documents)
-        // CRITICAL: Check count BEFORE updating receipt
-        const suppDocsCount = receipts.filter((r: any) => r.isSupplementalDoc).length
-        console.log('[QUEST CHECK] Supplemental doc - Current count:', suppDocsCount, 'Level:', useStore.getState().userProgress.currentLevel)
-        
-        updateReceipt(receipt.id, { isSupplementalDoc: true })
-        console.log('[CONVERSION] Marked receipt without total as supplemental doc:', receipt.id)
-        
-        // Track milestone for Level 7 quest
-        const { incrementMilestone } = useStore.getState()
-        incrementMilestone('supplementalDocs')
-        
-        if (suppDocsCount === 0) {
-          const { manualLevelUp, userProgress, completeQuest, questProgress } = useStore.getState()
-          console.log('[QUEST CHECK] First supplemental doc - Quest completed:', questProgress.completedQuests.includes('upload_supplemental'))
-          if (!questProgress.completedQuests.includes('upload_supplemental') && userProgress.currentLevel >= 3 && userProgress.currentLevel < 7) {
-            completeQuest('upload_supplemental')
-            manualLevelUp('supporting_documents')
-            console.log('[QUEST] ✅ Completed upload_supplemental quest - advancing to next level (Supporting Documents)')
-          } else {
-            console.log('[QUEST CHECK] Quest already completed, level too low, or already at max')
-          }
-        } else {
-          console.log('[QUEST CHECK] Not first supplemental doc, skipping quest trigger')
-        }
-      }
+    // Skip receipts without vendor or amount - they need manual entry, not auto-classification
+    if (!receipt.ocrVendor || receipt.ocrAmount === undefined || receipt.ocrAmount === null || receipt.ocrAmount === 0) {
+      console.log('[CONVERSION] Receipt missing vendor or amount - requires manual entry:', receipt.id)
       return
     }
     
