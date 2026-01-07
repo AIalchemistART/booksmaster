@@ -127,7 +127,7 @@ export class ReceiptProcessorQueue {
       // Create blob URL immediately to preserve file data
       // File objects can become invalid after being read once
       const blobUrl = URL.createObjectURL(file)
-      console.log(`[BLOB] Created blob URL for ${file.name}: ${blobUrl.substring(0, 50)}...`)
+      // console.log(`[BLOB] Created blob URL for ${file.name}: ${blobUrl.substring(0, 50)}...`)
       
       return {
         id: Math.random().toString(36).substr(2, 9),
@@ -196,7 +196,7 @@ export class ReceiptProcessorQueue {
     })
 
     if (cleaned > 0) {
-      console.log(`[PROCESSOR] Cleaned up ${cleaned} stalled receipt(s)`)
+      // console.log(`[PROCESSOR] Cleaned up ${cleaned} stalled receipt(s)`)
       this.isProcessing = false // Reset processing flag
     }
 
@@ -210,7 +210,7 @@ export class ReceiptProcessorQueue {
     const nextReceipt = this.queue.find(r => r.status === 'pending')
     if (!nextReceipt) {
       this.isProcessing = false
-      console.log('[PROCESSOR] Queue empty, processing stopped')
+      // console.log('[PROCESSOR] Queue empty, processing stopped')
       return
     }
 
@@ -222,7 +222,7 @@ export class ReceiptProcessorQueue {
     this.onProgressCallbacks.forEach(cb => cb(nextReceipt))
 
     const receiptStartTime = Date.now()
-    console.log(`[PROCESSOR] ===== Starting receipt ${nextReceipt.id} at ${new Date().toISOString()} =====`)
+    // console.log(`[PROCESSOR] ===== Starting receipt ${nextReceipt.id} at ${new Date().toISOString()} =====`)
 
     try {
       await this.processReceipt(nextReceipt)
@@ -230,7 +230,7 @@ export class ReceiptProcessorQueue {
       nextReceipt.status = 'done'
       nextReceipt.progress = 100
       nextReceipt.progressStatus = 'Complete!'
-      console.log(`[PROCESSOR] ===== Receipt ${nextReceipt.id} COMPLETED in ${receiptDuration}ms =====`)
+      // console.log(`[PROCESSOR] ===== Receipt ${nextReceipt.id} COMPLETED in ${receiptDuration}ms =====`)
       this.onCompleteCallbacks.forEach(cb => cb(nextReceipt))
     } catch (error) {
       const receiptDuration = Date.now() - receiptStartTime
@@ -246,9 +246,9 @@ export class ReceiptProcessorQueue {
     // Gemini categorization disabled in receipt flow, only OCR calls are made
     // With one Gemini call per receipt (OCR only), we can process much faster
     // 95 receipts will take ~10-12 minutes with OCR + heuristic categorization
-    console.log(`[PROCESSOR] Waiting 2000ms before next receipt at ${new Date().toISOString()}`)
+    // console.log(`[PROCESSOR] Waiting 2000ms before next receipt at ${new Date().toISOString()}`)
     setTimeout(() => {
-      console.log(`[PROCESSOR] Delay complete, processing next receipt at ${new Date().toISOString()}`)
+      // console.log(`[PROCESSOR] Delay complete, processing next receipt at ${new Date().toISOString()}`)
       this.processNext()
     }, 2000)
   }
@@ -260,17 +260,17 @@ export class ReceiptProcessorQueue {
     // Use blob URL if available (more reliable than File object which can become invalid)
     // If no blob URL, create one now from the File object
     let fileUrl = receipt.originalFileBlobUrl
-    console.log(`[BLOB] Receipt ${receipt.id} - originalFileBlobUrl: ${fileUrl ? fileUrl.substring(0, 50) + '...' : 'NULL'}`)
+    // console.log(`[BLOB] Receipt ${receipt.id} - originalFileBlobUrl: ${fileUrl ? fileUrl.substring(0, 50) + '...' : 'NULL'}`)
     if (!fileUrl) {
-      console.log(`[BLOB] No blob URL found, creating one for ${receipt.originalFile.name}`)
+      // console.log(`[BLOB] No blob URL found, creating one for ${receipt.originalFile.name}`)
       fileUrl = URL.createObjectURL(receipt.originalFile)
       receipt.originalFileBlobUrl = fileUrl
-      console.log(`[BLOB] Created fallback blob URL: ${fileUrl.substring(0, 50)}...`)
+      // console.log(`[BLOB] Created fallback blob URL: ${fileUrl.substring(0, 50)}...`)
     }
-    console.log(`[BLOB] Using blob URL for processing: ${fileUrl.substring(0, 50)}...`)
+    // console.log(`[BLOB] Using blob URL for processing: ${fileUrl.substring(0, 50)}...`)
     
     let file = receipt.originalFile
-    console.log(`[FILE] File object: name=${file.name}, type=${file.type}, size=${file.size}`)
+    // console.log(`[FILE] File object: name=${file.name}, type=${file.type}, size=${file.size}`)
 
     // Step 0: Convert HEIC to JPEG if needed (SAM requires web-compatible formats)
     // Check if file type is already browser-compatible
@@ -290,7 +290,7 @@ export class ReceiptProcessorQueue {
       receipt.progress = 5
       this.onProgressCallbacks.forEach(cb => cb(receipt))
       
-      console.log(`[HEIC] Converting ${file.name} (detected by ${isHEICByMimeType ? 'MIME type' : 'extension'})`)
+      // console.log(`[HEIC] Converting ${file.name} (detected by ${isHEICByMimeType ? 'MIME type' : 'extension'})`)
 
       try {
         const heic2any = await import('heic2any')
@@ -305,7 +305,7 @@ export class ReceiptProcessorQueue {
         file = new File([jpegBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { 
           type: 'image/jpeg' 
         })
-        console.log(`[HEIC] Successfully converted to JPEG: ${file.name}`)
+        // console.log(`[HEIC] Successfully converted to JPEG: ${file.name}`)
         receipt.progressStatus = 'HEIC converted to JPEG'
       } catch (error) {
         console.error('[HEIC] Conversion failed:', error)
@@ -323,36 +323,36 @@ export class ReceiptProcessorQueue {
 
     if (this.options.useSAM) {
       // Use SAM for intelligent cropping
-      console.log('[SAM] Starting SAM processing for:', file.name)
+      // console.log('[SAM] Starting SAM processing for:', file.name)
       receipt.progressStatus = 'Loading AI model...'
       this.onProgressCallbacks.forEach(cb => cb(receipt))
 
       if (!this.samModule) {
-        console.log('[SAM] Loading SAM module dynamically...')
+        // console.log('[SAM] Loading SAM module dynamically...')
         this.samModule = await import('./sam-segmentation')
-        console.log('[SAM] SAM module loaded successfully')
+        // console.log('[SAM] SAM module loaded successfully')
       } else {
-        console.log('[SAM] SAM module already loaded, reusing')
+        // console.log('[SAM] SAM module already loaded, reusing')
       }
 
       receipt.progressStatus = 'Detecting receipt borders...'
       receipt.progress = 20
       this.onProgressCallbacks.forEach(cb => cb(receipt))
 
-      console.log(`[SAM] Calling detectAndCropReceipt with blob URL: ${fileUrl.substring(0, 50)}...`)
+      // console.log(`[SAM] Calling detectAndCropReceipt with blob URL: ${fileUrl.substring(0, 50)}...`)
       const cropResult = await this.samModule.detectAndCropReceipt(
         fileUrl, // Use blob URL instead of File object for reliable access
         (progress, status) => {
-          console.log(`[SAM] Progress: ${Math.round(progress * 100)}% - ${status}`)
+          // console.log(`[SAM] Progress: ${Math.round(progress * 100)}% - ${status}`)
           receipt.progress = 20 + Math.round(progress * 0.3)
           receipt.progressStatus = status
           this.onProgressCallbacks.forEach(cb => cb(receipt))
         }
       )
 
-      console.log('[SAM] detectAndCropReceipt returned:', cropResult ? 'SUCCESS' : 'NULL')
+      // console.log('[SAM] detectAndCropReceipt returned:', cropResult ? 'SUCCESS' : 'NULL')
       if (cropResult) {
-        console.log('[SAM] Crop result dimensions:', cropResult.width, 'x', cropResult.height)
+        // console.log('[SAM] Crop result dimensions:', cropResult.width, 'x', cropResult.height)
         
         // Store original image URL (before cropping) to blob URL
         const originalResult = await preprocessReceipt(file, {
@@ -393,7 +393,7 @@ export class ReceiptProcessorQueue {
           enhanceContrast: this.options.enhanceContrast,
         })
         processedImageUrl = result.dataUrl
-        console.log('[SAM] Fallback preprocessing complete')
+        // console.log('[SAM] Fallback preprocessing complete')
       }
     } else {
       // Use basic preprocessing without SAM
