@@ -80,21 +80,21 @@ async function generateMaskAtPoint(
   point: [number, number]
 ): Promise<{ mask: any; score: number } | null> {
   try {
-    console.log(`[SAM-MASK] Generating mask for point:`, point)
+    // console.log(`[SAM-MASK] Generating mask for point:`, point)
     const input_points = [[[point[0], point[1]]]]
-    console.log(`[SAM-MASK] Processing inputs...`)
+    // console.log(`[SAM-MASK] Processing inputs...`)
     const inputs = await processor(rawImage, input_points)
-    console.log(`[SAM-MASK] Running model inference...`)
+    // console.log(`[SAM-MASK] Running model inference...`)
     const outputs = await model(inputs)
-    console.log(`[SAM-MASK] Post-processing masks...`)
+    // console.log(`[SAM-MASK] Post-processing masks...`)
     
     const masks = await processor.post_process_masks(
       outputs.pred_masks,
       inputs.original_sizes,
       inputs.reshaped_input_sizes
     )
-    console.log(`[SAM-MASK] Masks generated, validating...`)
-    console.log(`[SAM-MASK] Masks structure:`, masks)
+    // console.log(`[SAM-MASK] Masks generated, validating...`)
+    // console.log(`[SAM-MASK] Masks structure:`, masks)
     
     // Validate masks structure
     if (!masks || !masks[0]) {
@@ -104,13 +104,13 @@ async function generateMaskAtPoint(
     
     // Get the best mask (highest IoU score)
     const scores = outputs.iou_scores.data || outputs.iou_scores
-    console.log(`[SAM-MASK] Scores array:`, scores, 'length:', scores?.length)
+    // console.log(`[SAM-MASK] Scores array:`, scores, 'length:', scores?.length)
     const bestIdx = scores.indexOf(Math.max(...scores))
-    console.log(`[SAM-MASK] Best score index:`, bestIdx)
+    // console.log(`[SAM-MASK] Best score index:`, bestIdx)
     
     // masks is [Tensor] - access the first tensor
     const maskTensor = masks[0]
-    console.log(`[SAM-MASK] Mask tensor:`, maskTensor, 'dims:', maskTensor.dims)
+    // console.log(`[SAM-MASK] Mask tensor:`, maskTensor, 'dims:', maskTensor.dims)
     
     // For SAM, the tensor has shape [batch, num_masks, height, width]
     // dims[0] = batch (1), dims[1] = num_masks (3), dims[2] = height, dims[3] = width
@@ -119,7 +119,7 @@ async function generateMaskAtPoint(
     const maskWidth = maskTensor.dims[3]
     const maskSize = maskHeight * maskWidth
     
-    console.log(`[SAM-MASK] Extracting mask ${bestIdx} from tensor with ${numMasks} masks, size ${maskWidth}x${maskHeight}`)
+    // console.log(`[SAM-MASK] Extracting mask ${bestIdx} from tensor with ${numMasks} masks, size ${maskWidth}x${maskHeight}`)
     
     // Extract the specific mask data from the tensor
     // The data is laid out as: [batch0_mask0, batch0_mask1, batch0_mask2]
@@ -127,8 +127,8 @@ async function generateMaskAtPoint(
     const endIdx = startIdx + maskSize
     const maskData = maskTensor.data.slice(startIdx, endIdx)
     
-    console.log(`[SAM-MASK] Extracted mask data, length: ${maskData.length}, expected: ${maskSize}`)
-    console.log(`[SAM-MASK] Mask generated successfully, score:`, scores[bestIdx])
+    // console.log(`[SAM-MASK] Extracted mask data, length: ${maskData.length}, expected: ${maskSize}`)
+    // console.log(`[SAM-MASK] Mask generated successfully, score:`, scores[bestIdx])
     
     // Return a mask object with data property that downstream functions expect
     return {
@@ -359,23 +359,23 @@ export async function detectAndCropReceipt(
 ): Promise<ReceiptCropResult | null> {
   const sourceType = imageSource instanceof File ? 'File' : (imageSource.startsWith('blob:') ? 'blob URL' : 'data URL')
   const sourceInfo = imageSource instanceof File ? imageSource.name : imageSource.substring(0, 50) + '...'
-  console.log(`[SAM-DETECT] detectAndCropReceipt called with ${sourceType}: ${sourceInfo}`)
+  // console.log(`[SAM-DETECT] detectAndCropReceipt called with ${sourceType}: ${sourceInfo}`)
   
   // Ensure model is loaded
-  console.log('[SAM-DETECT] Loading SAM model...')
+  // console.log('[SAM-DETECT] Loading SAM model...')
   await loadSAMModel(onProgress)
-  console.log('[SAM-DETECT] SAM model loaded')
+  // console.log('[SAM-DETECT] SAM model loaded')
   
   onProgress?.(0, 'Analyzing image...')
   
   // Convert File to data URL if needed
   let imageUrl: string
   if (imageSource instanceof File) {
-    console.log(`[SAM-DETECT] Input is File (${imageSource.name}), converting to data URL...`)
+    // console.log(`[SAM-DETECT] Input is File (${imageSource.name}), converting to data URL...`)
     imageUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader()
       reader.onload = (e) => {
-        console.log('[SAM-DETECT] FileReader onload success')
+        // console.log('[SAM-DETECT] FileReader onload success')
         resolve(e.target?.result as string)
       }
       reader.onerror = (e) => {
@@ -384,22 +384,22 @@ export async function detectAndCropReceipt(
       }
       reader.readAsDataURL(imageSource)
     })
-    console.log('[SAM-DETECT] File converted to data URL, length:', imageUrl.length)
+    // console.log('[SAM-DETECT] File converted to data URL, length:', imageUrl.length)
   } else {
     imageUrl = imageSource
     const urlType = imageUrl.startsWith('blob:') ? 'blob URL' : 'data URL'
-    console.log(`[SAM-DETECT] Input is ${urlType}, length: ${imageUrl.length}`)
+    // console.log(`[SAM-DETECT] Input is ${urlType}, length: ${imageUrl.length}`)
   }
   
   // Load image using dynamic import
-  console.log(`[SAM-DETECT] Loading image with RawImage from URL: ${imageUrl.substring(0, 50)}...`)
+  // console.log(`[SAM-DETECT] Loading image with RawImage from URL: ${imageUrl.substring(0, 50)}...`)
   try {
     const { RawImage } = await getTransformers()
-    console.log('[SAM-DETECT] RawImage class loaded, calling RawImage.read()...')
+    // console.log('[SAM-DETECT] RawImage class loaded, calling RawImage.read()...')
     let rawImage = await RawImage.read(imageUrl)
     const originalWidth = rawImage.width
     const originalHeight = rawImage.height
-    console.log('[SAM-DETECT] RawImage.read() SUCCESS - dimensions:', originalWidth, 'x', originalHeight)
+    // console.log('[SAM-DETECT] RawImage.read() SUCCESS - dimensions:', originalWidth, 'x', originalHeight)
   } catch (error) {
     console.error('[SAM-DETECT] RawImage.read() FAILED:', error)
     throw error
@@ -419,7 +419,7 @@ export async function detectAndCropReceipt(
     samScale = MAX_DIMENSION / Math.max(originalWidth, originalHeight)
     const newWidth = Math.round(originalWidth * samScale)
     const newHeight = Math.round(originalHeight * samScale)
-    console.log(`[SAM-DETECT] Resizing image from ${originalWidth}x${originalHeight} to ${newWidth}x${newHeight} for SAM processing`)
+    // console.log(`[SAM-DETECT] Resizing image from ${originalWidth}x${originalHeight} to ${newWidth}x${newHeight} for SAM processing`)
     
     // Resize using canvas
     const resizeCanvas = document.createElement('canvas')
@@ -434,7 +434,7 @@ export async function detectAndCropReceipt(
     
     samImageUrl = resizeCanvas.toDataURL('image/jpeg', 0.9)
     rawImage = await RawImage.read(samImageUrl)
-    console.log('[SAM-DETECT] Image resized for SAM processing:', rawImage.width, 'x', rawImage.height)
+    // console.log('[SAM-DETECT] Image resized for SAM processing:', rawImage.width, 'x', rawImage.height)
   }
   
   const samWidth = rawImage.width
@@ -469,20 +469,20 @@ export async function detectAndCropReceipt(
   let bestMask: { mask: any; score: number } | null = null
   let bestArea = 0
   
-  console.log('[SAM-DETECT] Scanning', samplePoints.length, 'sample points for receipt...')
+  // console.log('[SAM-DETECT] Scanning', samplePoints.length, 'sample points for receipt...')
   for (let i = 0; i < samplePoints.length; i++) {
     const point = samplePoints[i]
-    console.log(`[SAM-DETECT] Scanning point ${i + 1}/${samplePoints.length}:`, point)
+    // console.log(`[SAM-DETECT] Scanning point ${i + 1}/${samplePoints.length}:`, point)
     onProgress?.(20 + Math.round((i / samplePoints.length) * 40), `Scanning point ${i + 1}/${samplePoints.length}...`)
     
     const result = await generateMaskAtPoint(rawImage, point)
-    console.log(`[SAM-DETECT] Point ${i + 1} result:`, result ? `score=${result.score.toFixed(3)}` : 'NULL')
+    // console.log(`[SAM-DETECT] Point ${i + 1} result:`, result ? `score=${result.score.toFixed(3)}` : 'NULL')
     
     if (result && result.score > 0.7) {
       const area = getMaskArea(result.mask)
       const bb = getBoundingBox(result.mask, samWidth, samHeight)
       const aspectRatio = bb.width / bb.height
-      console.log(`[SAM-DETECT] Point ${i + 1} passed score threshold. Area: ${area}, BBox: ${bb.width}x${bb.height}, AspectRatio: ${aspectRatio.toFixed(2)}`)
+      // console.log(`[SAM-DETECT] Point ${i + 1} passed score threshold. Area: ${area}, BBox: ${bb.width}x${bb.height}, AspectRatio: ${aspectRatio.toFixed(2)}`)
       
       // Receipts are typically portrait-oriented (taller than wide)
       // Accept aspect ratios from 0.3 (very tall) to 1.5 (slightly wide)
@@ -491,14 +491,14 @@ export async function detectAndCropReceipt(
         // But not too large (>60% is probably background/whole image)
         const imageArea = samWidth * samHeight
         const areaPercent = area / imageArea
-        console.log(`[SAM-DETECT] Point ${i + 1} aspect ratio OK. Area %: ${(areaPercent * 100).toFixed(1)}%`)
+        // console.log(`[SAM-DETECT] Point ${i + 1} aspect ratio OK. Area %: ${(areaPercent * 100).toFixed(1)}%`)
         
         if (areaPercent > 0.05 && areaPercent < 0.60 && area > bestArea) {
-          console.log(`[SAM-DETECT] Point ${i + 1} is new BEST mask (area: ${area} > ${bestArea})`)
+          // console.log(`[SAM-DETECT] Point ${i + 1} is new BEST mask (area: ${area} > ${bestArea})`)
           bestMask = result
           bestArea = area
         } else if (areaPercent >= 0.60) {
-          console.log(`[SAM-DETECT] Point ${i + 1} REJECTED - area too large (${(areaPercent * 100).toFixed(1)}% > 60%), likely background`)
+          // console.log(`[SAM-DETECT] Point ${i + 1} REJECTED - area too large (${(areaPercent * 100).toFixed(1)}% > 60%), likely background`)
         }
       }
     }
@@ -510,12 +510,12 @@ export async function detectAndCropReceipt(
     return null
   }
   
-  console.log('[SAM-DETECT] Best mask found with score:', bestMask.score.toFixed(3), 'area:', bestArea)
+  // console.log('[SAM-DETECT] Best mask found with score:', bestMask.score.toFixed(3), 'area:', bestArea)
   onProgress?.(70, 'Cropping receipt...')
   
   // Get bounding box from SAM (in SAM-resized coordinates)
   const samBoundingBox = getBoundingBox(bestMask.mask, samWidth, samHeight)
-  console.log('[SAM-DETECT] SAM bounding box (resized coords):', samBoundingBox)
+  // console.log('[SAM-DETECT] SAM bounding box (resized coords):', samBoundingBox)
   
   // Scale bounding box back to original image dimensions
   const boundingBox = {
@@ -524,7 +524,7 @@ export async function detectAndCropReceipt(
     width: Math.round(samBoundingBox.width / samScale),
     height: Math.round(samBoundingBox.height / samScale),
   }
-  console.log('[SAM-DETECT] Bounding box (original coords):', boundingBox)
+  // console.log('[SAM-DETECT] Bounding box (original coords):', boundingBox)
   
   // Add small padding around the receipt
   const padding = Math.min(originalWidth, originalHeight) * 0.02
