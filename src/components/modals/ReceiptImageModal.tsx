@@ -565,21 +565,21 @@ export function ReceiptImageModal({
     const itemizationChanged = (formData.itemization || '') !== (initialFormData.current.itemization || '')
     const notesChanged = (formData.notes || '') !== (initialFormData.current.notes || '')
     
-    console.log('[EDIT QUEST DEBUG] Individual field changes:', {
-      dateChanged,
-      descriptionChanged,
-      amountChanged,
-      typeChanged,
-      categoryChanged,
-      paymentMethodChanged,
-      itemizationChanged,
-      notesChanged
-    })
-    console.log('[EDIT QUEST DEBUG] pendingChanges:', pendingChanges)
-    console.log('[EDIT QUEST DEBUG] pendingChanges values:', pendingChanges ? Object.values(pendingChanges) : 'null')
+    // console.log('[EDIT QUEST DEBUG] Individual field changes:', {
+    //   dateChanged,
+    //   descriptionChanged,
+    //   amountChanged,
+    //   typeChanged,
+    //   categoryChanged,
+    //   paymentMethodChanged,
+    //   itemizationChanged,
+    //   notesChanged
+    // })
+    // console.log('[EDIT QUEST DEBUG] pendingChanges:', pendingChanges)
+    // console.log('[EDIT QUEST DEBUG] pendingChanges values:', pendingChanges ? Object.values(pendingChanges) : 'null')
     
     const anyFieldChanged = pendingChanges ? Object.values(pendingChanges).some(v => v) : false
-    console.log('[EDIT QUEST DEBUG] anyFieldChanged (from pendingChanges):', anyFieldChanged)
+    // console.log('[EDIT QUEST DEBUG] anyFieldChanged (from pendingChanges):', anyFieldChanged)
     
     // Track categorization changes for report
     // Set original values if this is the first edit (preserve OCR values for audit trail)
@@ -594,16 +594,16 @@ export function ReceiptImageModal({
     const categorizationChanged = typeChanged || categoryChanged
 
     const wasManuallyEditedValue = anyFieldChanged || transaction.wasManuallyEdited || false
-    console.log('[TRANSACTION UPDATE] anyFieldChanged:', anyFieldChanged, 'categorizationChanged:', categorizationChanged, 'wasManuallyEdited:', wasManuallyEditedValue)
-    console.log('[TRANSACTION UPDATE] originalType:', originalType, 'originalCategory:', originalCategory)
+    // console.log('[TRANSACTION UPDATE] anyFieldChanged:', anyFieldChanged, 'categorizationChanged:', categorizationChanged, 'wasManuallyEdited:', wasManuallyEditedValue)
+    // console.log('[TRANSACTION UPDATE] originalType:', originalType, 'originalCategory:', originalCategory)
     
     const finalPaymentMethod = formData.paymentMethod && formData.paymentMethod !== '' ? (formData.paymentMethod as Transaction['paymentMethod']) : undefined
-    console.log('[PAYMENT METHOD] Saving payment method:', JSON.stringify({
-      formValue: formData.paymentMethod,
-      finalValue: finalPaymentMethod,
-      isEmpty: formData.paymentMethod === '',
-      original: transaction.paymentMethod
-    }, null, 2))
+    // console.log('[PAYMENT METHOD] Saving payment method:', JSON.stringify({
+    //   formValue: formData.paymentMethod,
+    //   finalValue: finalPaymentMethod,
+    //   isEmpty: formData.paymentMethod === '',
+    //   original: transaction.paymentMethod
+    // }, null, 2))
     
     const updatedTransaction: Transaction = {
       ...transaction,
@@ -630,26 +630,26 @@ export function ReceiptImageModal({
       editedAt: anyFieldChanged ? now : transaction.editedAt
     }
     
-    console.log('[VALIDATION] Updated transaction:', {
-      id: updatedTransaction.id,
-      userValidated: updatedTransaction.userValidated,
-      validatedAt: updatedTransaction.validatedAt,
-      wasManuallyEdited: updatedTransaction.wasManuallyEdited
-    })
+    // console.log('[VALIDATION] Updated transaction:', {
+    //   id: updatedTransaction.id,
+    //   userValidated: updatedTransaction.userValidated,
+    //   validatedAt: updatedTransaction.validatedAt,
+    //   wasManuallyEdited: updatedTransaction.wasManuallyEdited
+    // })
     
-    console.log('[TRANSACTION UPDATE] Updated transaction:', {
-      id: updatedTransaction.id,
-      wasManuallyEdited: updatedTransaction.wasManuallyEdited,
-      originalType: updatedTransaction.originalType,
-      originalCategory: updatedTransaction.originalCategory
-    })
+    // console.log('[TRANSACTION UPDATE] Updated transaction:', {
+    //   id: updatedTransaction.id,
+    //   wasManuallyEdited: updatedTransaction.wasManuallyEdited,
+    //   originalType: updatedTransaction.originalType,
+    //   originalCategory: updatedTransaction.originalCategory
+    // })
 
     // Create categorization correction for AI learning if any field changed
     // IMPORTANT: Compare against ORIGINAL OCR values, not previous edit values
     // This allows reverting back to original to remove the change from corrections
-    console.log('[EDIT QUEST DEBUG] Checking anyFieldChanged block - anyFieldChanged:', anyFieldChanged)
+    // console.log('[EDIT QUEST DEBUG] Checking anyFieldChanged block - anyFieldChanged:', anyFieldChanged)
     if (anyFieldChanged) {
-      console.log('[EDIT QUEST DEBUG] ENTERED anyFieldChanged block - this will create correction and potentially trigger edit quest')
+      // console.log('[EDIT QUEST DEBUG] ENTERED anyFieldChanged block - this will create correction and potentially trigger edit quest')
       
       // Compare current form values against ORIGINAL OCR/AI parsed values
       const currentlyDiffersFromOriginal = {
@@ -661,11 +661,11 @@ export function ReceiptImageModal({
         paymentMethod: originalPaymentMethod !== undefined && formData.paymentMethod !== originalPaymentMethod
       }
       
-      console.log('[CORRECTION] Checking differences from ORIGINAL values:', {
-        original: { date: originalDate, description: originalDescription, amount: originalAmount, type: originalType, category: originalCategory, paymentMethod: originalPaymentMethod },
-        current: { date: formData.date, description: formData.description, amount: formData.amount, type: formData.type, category: formData.category, paymentMethod: formData.paymentMethod },
-        differs: currentlyDiffersFromOriginal
-      })
+      // console.log('[CORRECTION] Checking differences from ORIGINAL values:', {
+      //   original: { date: originalDate, description: originalDescription, amount: originalAmount, type: originalType, category: originalCategory, paymentMethod: originalPaymentMethod },
+      //   current: { date: formData.date, description: formData.description, amount: formData.amount, type: formData.type, category: formData.category, paymentMethod: formData.paymentMethod },
+      //   differs: currentlyDiffersFromOriginal
+      // })
       
       const correction: CategorizationCorrection = {
         id: generateId(),
@@ -686,7 +686,7 @@ export function ReceiptImageModal({
         wasAutoCategorizationCorrection: !!(currentlyDiffersFromOriginal.type || currentlyDiffersFromOriginal.category)
       }
       
-      console.log('[CORRECTION] Created correction:', correction)
+      // console.log('[CORRECTION] Created correction:', correction)
 
       // Update existing correction or add new (cumulative tracking)
       updateCorrection(transaction.id, correction)
@@ -695,7 +695,7 @@ export function ReceiptImageModal({
       const { categorizationCorrections: updatedCorrections } = useStore.getState()
       try {
         await saveCorrectionsToFileSystem(updatedCorrections)
-        console.log('[CORRECTION] Saved cumulative correction to file system for AI learning')
+        // console.log('[CORRECTION] Saved cumulative correction to file system for AI learning')
       } catch (error) {
         console.error('[CORRECTION] Failed to save to file system:', error)
       }
