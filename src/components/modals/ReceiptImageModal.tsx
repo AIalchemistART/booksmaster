@@ -483,36 +483,31 @@ export function ReceiptImageModal({
       updateReceipt(linkedReceiptData.id, updatedReceipt)
       
       // Track conversion in corrections for AI learning with full context
+      const docAmount = docFormData.amount ? parseFloat(docFormData.amount) : transaction.amount
       const correction: CategorizationCorrection = {
         id: generateId(),
         transactionId: transaction.id,
         timestamp: now,
         vendor: docFormData.vendor,
-        amount: docFormData.amount ? parseFloat(docFormData.amount) : transaction.amount,
+        amount: docAmount,
         changes: {
-          // Track as special CONVERSION event with full transaction context
-          type: {
-            from: `Transaction (${transaction.type})`,
-            to: `Supporting Document (${docFormData.documentType})`
-          },
-          category: {
-            from: transaction.category || 'N/A',
-            to: 'N/A - Supporting Document'
-          },
+          // Track description change showing conversion details
           description: {
             from: transaction.description,
-            to: `${docFormData.vendor} - ${docFormData.documentType.replace('_', ' ')}${docFormData.transactionNumber ? ` #${docFormData.transactionNumber}` : ''}${docFormData.orderNumber ? ` (Order: ${docFormData.orderNumber})` : ''}${docFormData.invoiceNumber ? ` (Invoice: ${docFormData.invoiceNumber})` : ''}`
+            to: `[CONVERTED] ${docFormData.vendor} - ${docFormData.documentType.replace('_', ' ')}${docFormData.transactionNumber ? ` #${docFormData.transactionNumber}` : ''}${docFormData.orderNumber ? ` (Order: ${docFormData.orderNumber})` : ''}${docFormData.invoiceNumber ? ` (Invoice: ${docFormData.invoiceNumber})` : ''}`
           },
-          amount: transaction.amount !== (docFormData.amount ? parseFloat(docFormData.amount) : transaction.amount) ? {
-            from: transaction.amount.toString(),
-            to: (docFormData.amount || transaction.amount.toString())
+          // Track amount change if it was edited during conversion
+          amount: transaction.amount !== docAmount ? {
+            from: transaction.amount,
+            to: docAmount
           } : undefined,
+          // Track date change if it was edited during conversion
           date: transaction.date !== docFormData.date && docFormData.date ? {
             from: transaction.date,
             to: docFormData.date
           } : undefined
         },
-        userNotes: `CONVERSION: Changed from ${transaction.type} transaction (${transaction.category}) to ${docFormData.documentType.replace('_', ' ')} supporting document. Original expense removed from ledger. ${docFormData.notes ? `Notes: ${docFormData.notes}` : ''}`,
+        userNotes: `CONVERSION TO SUPPORTING DOCUMENT: This ${transaction.type} transaction (Category: ${transaction.category}, Amount: $${transaction.amount.toFixed(2)}) was converted to a supporting document of type "${docFormData.documentType.replace('_', ' ')}". The original transaction was removed from the expense ledger and filed as documentation. ${docFormData.notes ? `User notes: ${docFormData.notes}` : ''}`,
         receiptId: linkedReceiptData.id,
         wasAutoCategorizationCorrection: false // Mark as manual conversion, not auto-correction
       }
