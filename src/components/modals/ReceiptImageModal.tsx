@@ -561,7 +561,7 @@ export function ReceiptImageModal({
       amount: parseFloat(formData.amount) || 0,
       type: formData.type as Transaction['type'],
       category: formData.category as Transaction['category'],
-      paymentMethod: formData.paymentMethod ? (formData.paymentMethod as Transaction['paymentMethod']) : undefined,
+      paymentMethod: formData.paymentMethod && formData.paymentMethod !== '' ? (formData.paymentMethod as Transaction['paymentMethod']) : undefined,
       incomeSource: formData.incomeSource ? (formData.incomeSource as Transaction['incomeSource']) : undefined,
       itemization: formData.itemization || undefined,
       notes: formData.notes || undefined,

@@ -242,11 +242,11 @@ export default function CategorizationReportPage() {
                         {/* Always show: Date */}
                         <td className="p-2 text-xs">
                           <div className="text-gray-900 dark:text-gray-100">
-                            {new Date(transaction.date).toLocaleDateString()}
+                            {transaction.date}
                           </div>
                           {dateChanged && (
                             <div className="text-orange-500 dark:text-orange-400 text-[10px] mt-1">
-                              ← {new Date(transaction.originalDate!).toLocaleDateString()}
+                              ← {transaction.originalDate}
                             </div>
                           )}
                         </td>
