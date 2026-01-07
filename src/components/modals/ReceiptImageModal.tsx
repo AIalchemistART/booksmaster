@@ -40,7 +40,7 @@ export function ReceiptImageModal({
   hasPrevious = false,
   hasNext = false
 }: ReceiptImageModalProps) {
-  const { addCorrection, categorizationCorrections, receipts, updateReceipt, recordValidation } = useStore()
+  const { addCorrection, updateCorrection, categorizationCorrections, receipts, updateReceipt, recordValidation } = useStore()
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -634,14 +634,14 @@ export function ReceiptImageModal({
       
       console.log('[CORRECTION] Created correction:', correction)
 
-      // Add to store
-      addCorrection(correction)
+      // Update existing correction or add new (cumulative tracking)
+      updateCorrection(transaction.id, correction)
 
       // Save all corrections to file system for AI context
-      const allCorrections = [...categorizationCorrections, correction]
+      const { categorizationCorrections: updatedCorrections } = useStore.getState()
       try {
-        await saveCorrectionsToFileSystem(allCorrections)
-        console.log('[CORRECTION] Saved correction to file system for AI learning')
+        await saveCorrectionsToFileSystem(updatedCorrections)
+        console.log('[CORRECTION] Saved cumulative correction to file system for AI learning')
       } catch (error) {
         console.error('[CORRECTION] Failed to save to file system:', error)
       }

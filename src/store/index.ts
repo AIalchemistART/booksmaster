@@ -95,6 +95,7 @@ interface AppState extends GamificationSlice, MileageSlice, AIAccuracySlice {
   // Categorization Corrections (for self-improving AI)
   categorizationCorrections: CategorizationCorrection[]
   addCorrection: (correction: CategorizationCorrection) => void
+  updateCorrection: (transactionId: string, correction: CategorizationCorrection) => void
   getCorrectionsForContext: () => CategorizationCorrection[]
 }
 
@@ -330,6 +331,35 @@ export const useStore = create<AppState>()(
           const newCorrections = [...state.categorizationCorrections, correction]
           // Save to file system will be handled by file-system-adapter
           console.log('[STORE] Added categorization correction:', correction.id)
+          return { categorizationCorrections: newCorrections }
+        }),
+      updateCorrection: (transactionId: string, correction: CategorizationCorrection) =>
+        set((state) => {
+          const existingIndex = state.categorizationCorrections.findIndex(c => c.transactionId === transactionId)
+          if (existingIndex === -1) {
+            // No existing correction, add as new
+            console.log('[STORE] No existing correction found, adding new:', correction.id)
+            return { categorizationCorrections: [...state.categorizationCorrections, correction] }
+          }
+          
+          const existing = state.categorizationCorrections[existingIndex]
+          // Merge changes cumulatively - keep all accumulated changes
+          const mergedChanges = {
+            ...existing.changes,
+            ...correction.changes
+          }
+          
+          const updatedCorrection: CategorizationCorrection = {
+            ...existing,
+            timestamp: correction.timestamp, // Update to latest edit time
+            changes: mergedChanges,
+            userNotes: correction.userNotes || existing.userNotes,
+            wasAutoCategorizationCorrection: existing.wasAutoCategorizationCorrection || correction.wasAutoCategorizationCorrection
+          }
+          
+          const newCorrections = [...state.categorizationCorrections]
+          newCorrections[existingIndex] = updatedCorrection
+          console.log('[STORE] Updated existing correction:', updatedCorrection.id, 'with cumulative changes')
           return { categorizationCorrections: newCorrections }
         }),
       getCorrectionsForContext: () => {
