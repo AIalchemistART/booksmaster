@@ -556,6 +556,14 @@ export function ReceiptImageModal({
     console.log('[TRANSACTION UPDATE] anyFieldChanged:', anyFieldChanged, 'categorizationChanged:', categorizationChanged, 'wasManuallyEdited:', wasManuallyEditedValue)
     console.log('[TRANSACTION UPDATE] originalType:', originalType, 'originalCategory:', originalCategory)
     
+    const finalPaymentMethod = formData.paymentMethod && formData.paymentMethod !== '' ? (formData.paymentMethod as Transaction['paymentMethod']) : undefined
+    console.log('[PAYMENT METHOD] Saving payment method:', {
+      formValue: formData.paymentMethod,
+      finalValue: finalPaymentMethod,
+      isEmpty: formData.paymentMethod === '',
+      original: transaction.paymentMethod
+    })
+    
     const updatedTransaction: Transaction = {
       ...transaction,
       date: formData.date,
@@ -563,7 +571,7 @@ export function ReceiptImageModal({
       amount: parseFloat(formData.amount) || 0,
       type: formData.type as Transaction['type'],
       category: formData.category as Transaction['category'],
-      paymentMethod: formData.paymentMethod && formData.paymentMethod !== '' ? (formData.paymentMethod as Transaction['paymentMethod']) : undefined,
+      paymentMethod: finalPaymentMethod,
       incomeSource: formData.incomeSource ? (formData.incomeSource as Transaction['incomeSource']) : undefined,
       itemization: formData.itemization || undefined,
       notes: formData.notes || undefined,
