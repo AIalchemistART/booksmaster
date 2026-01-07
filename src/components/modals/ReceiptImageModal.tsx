@@ -157,13 +157,15 @@ export function ReceiptImageModal({
   // Update initial form data when transaction changes (navigation)
   useEffect(() => {
     if (transaction) {
+      // Use original AI-parsed values if they exist (for showing changes from original in confirmation modal)
+      // Otherwise fall back to current values (for transactions that haven't been edited yet)
       initialFormData.current = {
-        date: transaction.date || '',
-        description: transaction.description || '',
-        amount: transaction.amount !== undefined ? transaction.amount.toFixed(2) : '',
-        type: transaction.type || 'expense',
-        category: transaction.category || 'other',
-        paymentMethod: transaction.paymentMethod || '',
+        date: transaction.originalDate || transaction.date || '',
+        description: transaction.originalDescription || transaction.description || '',
+        amount: transaction.originalAmount !== undefined ? transaction.originalAmount.toFixed(2) : (transaction.amount !== undefined ? transaction.amount.toFixed(2) : ''),
+        type: transaction.originalType || transaction.type || 'expense',
+        category: transaction.originalCategory || transaction.category || 'other',
+        paymentMethod: transaction.originalPaymentMethod || transaction.paymentMethod || '',
         incomeSource: transaction.incomeSource || '',
         itemization: transaction.itemization || '',
         notes: transaction.notes || ''
