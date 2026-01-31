@@ -1,4 +1,4 @@
-# Thomas Books
+# Booksmaster
 
 A bookkeeping and custody accounting system for residential contractors.
 
