@@ -1,6 +1,5 @@
-const { Resend } = require('resend');
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Forward newsletter subscriptions to AI Alchemist API
+// This allows Books Master signups to be stored in the main Supabase database
 
 exports.handler = async (event) => {
   // Only allow POST
@@ -14,34 +13,40 @@ exports.handler = async (event) => {
   try {
     const { email, name, interests } = JSON.parse(event.body);
 
-    const { data, error } = await resend.emails.send({
-      from: 'Booksmaster <manny@aialchemist.net>',
-      to: ['manny@aialchemist.net'],
-      subject: 'New Newsletter Subscription',
-      html: `
-        <h2>New Newsletter Subscription</h2>
-        <p><strong>Email:</strong> ${email}</p>
-        ${name ? `<p><strong>Name:</strong> ${name}</p>` : ''}
-        ${interests ? `<p><strong>Interested In:</strong> ${interests}</p>` : ''}
-        <p><em>Subscribed from: Booksmaster support page</em></p>
-      `,
+    // Forward to AI Alchemist newsletter API
+    const response = await fetch('https://www.aialchemist.net/api/newsletter/subscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        source: 'booksmaster' // Track that this came from Books Master
+      })
     });
 
-    if (error) {
+    const data = await response.json();
+
+    if (!response.ok) {
       return {
-        statusCode: 400,
-        body: JSON.stringify({ error: error.message })
+        statusCode: response.status,
+        body: JSON.stringify({ error: data.error || 'Failed to subscribe' })
       };
     }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, data })
+      body: JSON.stringify({ 
+        success: true, 
+        message: data.message || 'Successfully subscribed!',
+        metadata: { name, interests } // Keep for future use if needed
+      })
     };
   } catch (error) {
+    console.error('Newsletter subscription error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to send email' })
+      body: JSON.stringify({ error: 'Failed to process subscription' })
     };
   }
 };
