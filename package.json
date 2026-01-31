@@ -59,7 +59,7 @@
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "electron": "^39.2.7",
-    "electron-builder": "^26.0.12",
+    "electron-builder": "^26.6.0",
     "eslint": "^8.55.0",
     "eslint-config-next": "^14.0.4",
     "ignore-loader": "^0.1.2",
