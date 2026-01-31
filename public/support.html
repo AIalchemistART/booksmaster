@@ -69,10 +69,9 @@
             <ul class="nav-links">
                 <li><a href="index.html#why">Why Us</a></li>
                 <li><a href="index.html#features">Features</a></li>
-                <li><a href="index.html#compare">Compare</a></li>
-                <li><a href="index.html#pricing">Pricing</a></li>
-                <li><a href="index.html#faq">FAQ</a></li>
                 <li><a href="support.html">Support</a></li>
+                <li><a href="story.html">Our Story</a></li>
+                <li><a href="donate.html" style="background:linear-gradient(135deg,#FF6B9D,#2D1B4E);color:white!important;padding:0.6rem 1.5rem;border-radius:25px;font-weight:600">❤️ Donate</a></li>
                 <li><a href="BooksmasterSetup.exe" class="nav-cta" download>⚔️ Download</a></li>
             </ul>
         </div>
@@ -85,11 +84,42 @@
                 <p>Get help with Booksmaster or stay updated with the latest features</p>
             </div>
 
-            <div class="content-box">
-                <h2>📧 Join Our Mailing List</h2>
-                <p>Stay informed about new features, updates, and the upcoming mobile app launch. We'll notify you when macOS, Linux, and mobile versions become available.</p>
+            <div class="content-box" style="background:rgba(80,200,120,0.1);border-color:var(--green)">
+                <h2>❤️ Support Open Source Development</h2>
+                <p style="color:var(--parchment)"><strong>Booksmaster is free and open source (MIT License).</strong> If it helps you, please consider supporting development:</p>
                 
-                <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;margin:2rem 0">
+                    <div style="text-align:center">
+                        <div style="font-size:2.5rem;margin-bottom:0.5rem">�</div>
+                        <strong style="color:var(--green)">GitHub Sponsors</strong>
+                        <p style="font-size:0.9rem;margin:0.5rem 0">Recurring monthly support</p>
+                        <a href="https://github.com/sponsors/AIalchemistART" target="_blank" style="color:var(--gold);text-decoration:underline">Become a Sponsor →</a>
+                    </div>
+                    <div style="text-align:center">
+                        <div style="font-size:2.5rem;margin-bottom:0.5rem">☕</div>
+                        <strong style="color:var(--green)">Ko-fi</strong>
+                        <p style="font-size:0.9rem;margin:0.5rem 0">One-time or monthly</p>
+                        <a href="https://ko-fi.com/aialchemistart" target="_blank" style="color:var(--gold);text-decoration:underline">Support on Ko-fi →</a>
+                    </div>
+                    <div style="text-align:center">
+                        <div style="font-size:2.5rem;margin-bottom:0.5rem">💙</div>
+                        <strong style="color:var(--green)">PayPal</strong>
+                        <p style="font-size:0.9rem;margin:0.5rem 0">Direct donations</p>
+                        <a href="https://paypal.me/aialchemistart" target="_blank" style="color:var(--gold);text-decoration:underline">Donate via PayPal →</a>
+                    </div>
+                </div>
+                
+                <p style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid rgba(80,200,120,0.3);font-size:0.95rem">
+                    <strong>Need custom work?</strong> Consultation, custom features, training, and industry-specific builds available. 
+                    <a href="https://www.aialchemist.net" target="_blank" style="color:var(--gold);text-decoration:underline">Visit AIAlchemist.net →</a>
+                </p>
+            </div>
+
+            <div class="content-box">
+                <h2>� Join Our Mailing List</h2>
+                <p>Stay informed about new features, updates, and the upcoming mobile app. We'll notify you when macOS, Linux, and mobile versions become available.</p>
+                
+                <form id="newsletter-form">
                     <div class="form-group">
                         <label for="email">Email Address</label>
                         <input type="email" id="email" name="email" required placeholder="contractor@example.com">
@@ -103,6 +133,7 @@
                         <input type="text" id="interests" name="interests" placeholder="Mobile app, macOS version, etc.">
                     </div>
                     <button type="submit" class="btn btn-primary">Subscribe to Updates</button>
+                    <p id="newsletter-status" style="margin-top:1rem;font-size:0.9rem;"></p>
                 </form>
             </div>
 
@@ -110,7 +141,7 @@
                 <h2>💬 Contact Support</h2>
                 <p>Need help with Booksmaster? We're here to assist you with any questions or issues.</p>
                 
-                <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+                <form id="contact-form">
                     <div class="form-group">
                         <label for="contact-email">Email Address</label>
                         <input type="email" id="contact-email" name="email" required placeholder="your@email.com">
@@ -124,6 +155,7 @@
                         <textarea id="message" name="message" required placeholder="Please describe your issue or question in detail..."></textarea>
                     </div>
                     <button type="submit" class="btn btn-primary">Send Message</button>
+                    <p id="contact-status" style="margin-top:1rem;font-size:0.9rem;"></p>
                 </form>
                 
                 <p style="margin-top:2rem;font-size:0.9rem;color:var(--silver);">
@@ -132,28 +164,11 @@
             </div>
 
             <div class="content-box">
-                <h2>💼 Tax Preparers & Accountants</h2>
-                <p><strong>Free Access for Licensed Tax Professionals</strong></p>
-                <p>Are you a licensed tax preparer, CPA, or enrolled agent looking to recommend Booksmaster to your clients? We offer complimentary access during the 2026 tax year to help you evaluate the software.</p>
-                
-                <h3>Eligibility Requirements</h3>
-                <ul>
-                    <li>Valid license (CPA, EA, PTIN, or state tax preparer license)</li>
-                    <li>Professional email address or business website</li>
-                    <li>Intent to recommend to contractor clients</li>
-                </ul>
-                
-                <p style="margin-top:1.5rem;"><strong>To apply for free access:</strong> Contact us with your license number and professional credentials. We'll verify and provide you with full access to evaluate Booksmaster for your contractor clients.</p>
-                
-                <p style="font-size:0.9rem;color:var(--silver);margin-top:1rem;">Note: This program is designed to help tax professionals evaluate Booksmaster for their clients. General users should purchase the Founding Member ($70 lifetime) or Standard Offline ($200 lifetime) license.</p>
-            </div>
-
-            <div class="content-box">
                 <h2>❓ Common Questions</h2>
                 <div class="faq-section">
                     <div class="faq-item">
                         <h4>How do I get a Google AI key?</h4>
-                        <p>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a> to generate an API key. <strong>Important:</strong> We strongly recommend purchasing a Tier 1 paid account (approximately $2/month for typical usage) rather than using the free tier. The free tier has strict rate limits that cause failures when processing large batches of receipts.</p>
+                        <p>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a> to generate an API key. <strong>Important: Pay-as-you-go billing required</strong> (no subscription needed). The free tier has rate limits too restrictive for practical use and causes failures when processing batches of receipts. You only pay for actual usage—typical costs are minimal.</p>
                     </div>
                     <div class="faq-item">
                         <h4>Installation issues on Windows</h4>
@@ -169,7 +184,11 @@
                     </div>
                     <div class="faq-item">
                         <h4>When will mobile/cloud version launch?</h4>
-                        <p>The $70/year cloud version with mobile apps is planned for Q2-Q3 2026. Join our mailing list above to be notified when it launches.</p>
+                        <p>Optional cloud sync and mobile apps are planned for Q2-Q3 2026 as add-on features. The desktop app will always remain free and open source. Join our mailing list above to be notified when additional features launch.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Is Booksmaster really free?</h4>
+                        <p>Yes! MIT licensed and free forever. No subscriptions, no paywalls, no hidden costs. Download, use, modify, and share freely. If it helps you, consider <a href="#" style="color:var(--gold)">supporting development</a> via donations.</p>
                     </div>
                 </div>
             </div>
@@ -196,5 +215,91 @@
             <a href="support.html">Support</a>
         </div>
     </footer>
+
+    <script>
+        // Newsletter form handler
+        document.getElementById('newsletter-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const status = document.getElementById('newsletter-status');
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.textContent;
+            
+            btn.disabled = true;
+            btn.textContent = 'Subscribing...';
+            status.textContent = '';
+            
+            const formData = {
+                email: document.getElementById('email').value,
+                name: document.getElementById('name').value,
+                interests: document.getElementById('interests').value
+            };
+            
+            try {
+                const response = await fetch('/.netlify/functions/newsletter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    status.style.color = 'var(--green)';
+                    status.textContent = '✓ Thank you for subscribing! We\'ll keep you updated.';
+                    e.target.reset();
+                } else {
+                    const error = await response.json();
+                    status.style.color = 'var(--red)';
+                    status.textContent = '✗ ' + (error.error || 'Failed to subscribe. Please try again.');
+                }
+            } catch (error) {
+                status.style.color = 'var(--red)';
+                status.textContent = '✗ Network error. Please check your connection and try again.';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+        
+        // Contact form handler
+        document.getElementById('contact-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const status = document.getElementById('contact-status');
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.textContent;
+            
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            status.textContent = '';
+            
+            const formData = {
+                email: document.getElementById('contact-email').value,
+                subject: document.getElementById('subject').value,
+                message: document.getElementById('message').value
+            };
+            
+            try {
+                const response = await fetch('/.netlify/functions/contact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    status.style.color = 'var(--green)';
+                    status.textContent = '✓ Message sent! We\'ll respond within 24-48 hours.';
+                    e.target.reset();
+                } else {
+                    const error = await response.json();
+                    status.style.color = 'var(--red)';
+                    status.textContent = '✗ ' + (error.error || 'Failed to send message. Please try again.');
+                }
+            } catch (error) {
+                status.style.color = 'var(--red)';
+                status.textContent = '✗ Network error. Please check your connection and try again.';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+    </script>
 </body>
 </html>

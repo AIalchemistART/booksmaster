@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Booksmaster - Donate</title>
+    <meta name="description" content="Support Booksmaster development. Free and open source bookkeeping software sustained by community donations.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--gold:#D4AF37;--purple:#2D1B4E;--blue:#4A5899;--parchment:#F4ECD8;--silver:#C0C0C0;--green:#50C878;--red:#DC143C;--rose:#FF6B9D;--cyan:#00D4FF}
+        html{scroll-behavior:smooth}
+        body{font-family:'Inter',sans-serif;background:var(--purple);color:var(--parchment);line-height:1.7;min-height:100vh}
+        
+        nav{position:fixed;top:0;width:100%;background:rgba(45,27,78,0.98);backdrop-filter:blur(10px);z-index:1000;border-bottom:2px solid var(--gold)}
+        .nav-container{max-width:1400px;margin:0 auto;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center}
+        .logo{font-family:'Cinzel',serif;font-size:1.5rem;font-weight:700;color:var(--gold);text-decoration:none}
+        .nav-links{display:flex;gap:1.5rem;list-style:none;align-items:center}
+        .nav-links a{color:var(--parchment);text-decoration:none;font-weight:500;font-size:0.9rem;transition:color 0.3s}
+        .nav-links a:hover{color:var(--gold)}
+        .nav-cta{background:var(--gold);color:var(--purple)!important;padding:0.6rem 1.5rem;border-radius:25px;font-weight:600}
+        .nav-donate{background:linear-gradient(135deg,var(--rose),var(--purple))!important;color:white!important;padding:0.6rem 1.5rem;border-radius:25px;font-weight:600}
+        
+        main{padding-top:100px;padding-bottom:4rem}
+        .container{max-width:900px;margin:0 auto;padding:0 2rem}
+        
+        .hero-section{text-align:center;margin-bottom:4rem}
+        .hero-section h1{font-family:'Cinzel',serif;font-size:3rem;margin-bottom:1rem}
+        .hero-section h1 span{background:linear-gradient(135deg,var(--rose),var(--gold),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .hero-section p{font-size:1.2rem;color:var(--silver);max-width:600px;margin:0 auto}
+        
+        /* Eye-catching CTA */
+        .cta-wrapper{position:relative;max-width:700px;margin:0 auto 4rem}
+        .cta-glow{position:absolute;inset:-4px;background:linear-gradient(135deg,var(--rose),var(--gold),var(--cyan),var(--rose));border-radius:30px;filter:blur(15px);opacity:0.6;animation:pulse 3s ease-in-out infinite}
+        @keyframes pulse{0%,100%{opacity:0.4;transform:scale(1)}50%{opacity:0.7;transform:scale(1.02)}}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+        @keyframes sparkle{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:1;transform:scale(1.2)}}
+        
+        .cta-card{position:relative;background:linear-gradient(135deg,rgba(45,27,78,0.95),rgba(74,88,153,0.9));border:2px solid var(--gold);border-radius:25px;padding:3rem;text-align:center;overflow:hidden}
+        .cta-card::before{content:'✨';position:absolute;top:20px;right:30px;font-size:1.5rem;animation:sparkle 2s ease-in-out infinite}
+        .cta-card::after{content:'💫';position:absolute;bottom:20px;left:30px;font-size:1.2rem;animation:sparkle 2s ease-in-out infinite 0.5s}
+        
+        .cta-icon{width:80px;height:80px;background:linear-gradient(135deg,var(--rose),var(--gold));border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;animation:float 3s ease-in-out infinite;box-shadow:0 10px 40px rgba(255,107,157,0.4)}
+        
+        .cta-title{font-family:'Cinzel',serif;font-size:2rem;margin-bottom:0.75rem;color:var(--gold)}
+        .cta-subtitle{font-size:1.1rem;color:var(--parchment);margin-bottom:2rem;line-height:1.6}
+        .cta-subtitle strong{color:var(--gold)}
+        
+        .cta-button{display:inline-flex;align-items:center;gap:0.75rem;padding:1.25rem 3rem;background:linear-gradient(135deg,var(--rose),var(--gold));color:var(--purple);font-size:1.2rem;font-weight:700;text-decoration:none;border-radius:50px;transition:all 0.3s;box-shadow:0 8px 30px rgba(212,175,55,0.5)}
+        .cta-button:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 12px 40px rgba(212,175,55,0.7)}
+        .cta-button svg{width:24px;height:24px;transition:transform 0.3s}
+        .cta-button:hover svg{transform:translateX(5px)}
+        
+        .cta-footer{margin-top:1.5rem;font-size:0.9rem;color:var(--silver)}
+        
+        /* Why Support Section */
+        .section-header{text-align:center;margin-bottom:2.5rem}
+        .section-header h2{font-family:'Cinzel',serif;font-size:2rem;color:var(--gold);margin-bottom:0.5rem}
+        .section-header p{color:var(--silver)}
+        
+        .reasons-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;margin-bottom:4rem}
+        .reason-card{background:rgba(244,236,216,0.08);border:2px solid rgba(212,175,55,0.3);border-radius:20px;padding:2rem;text-align:center;transition:all 0.3s}
+        .reason-card:hover{border-color:var(--gold);transform:translateY(-5px)}
+        .reason-icon{font-size:2.5rem;margin-bottom:1rem}
+        .reason-card h3{font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;margin-bottom:0.5rem}
+        .reason-card p{color:var(--silver);font-size:0.9rem}
+        
+        /* What You Support */
+        .support-box{background:linear-gradient(135deg,rgba(80,200,120,0.15),rgba(0,212,255,0.1));border:2px solid var(--green);border-radius:25px;padding:2.5rem;margin-bottom:4rem}
+        .support-box h3{font-family:'Cinzel',serif;color:var(--green);font-size:1.5rem;margin-bottom:1.5rem;text-align:center}
+        .support-list{list-style:none}
+        .support-list li{display:flex;align-items:flex-start;gap:1rem;padding:0.75rem 0;color:var(--parchment)}
+        .support-list li::before{content:'✓';color:var(--green);font-weight:bold;font-size:1.2rem}
+        .support-list strong{color:var(--gold)}
+        
+        /* Value Proposition */
+        .value-box{background:rgba(212,175,55,0.1);border:2px solid var(--gold);border-radius:20px;padding:2rem;text-align:center;margin-bottom:4rem}
+        .value-box h3{color:var(--gold);margin-bottom:1rem}
+        .value-box p{color:var(--silver);line-height:1.8}
+        .value-box strong{color:var(--green)}
+        .value-box em{color:var(--gold);font-style:normal;font-weight:600}
+        
+        /* Quote */
+        .quote-section{text-align:center;margin-bottom:3rem}
+        .quote-section p{font-family:'Lora',serif;font-size:1.2rem;font-style:italic;color:var(--parchment);margin-bottom:0.5rem}
+        .quote-section span{color:var(--silver);font-size:0.9rem}
+        
+        footer{background:rgba(0,0,0,0.5);padding:3rem 2rem;border-top:2px solid var(--gold);text-align:center}
+        footer h3{font-family:'Cinzel',serif;color:var(--gold);font-size:1.3rem;margin-bottom:1rem}
+        footer p{color:var(--silver);font-size:0.9rem;margin-bottom:0.5rem}
+        .footer-links{display:flex;gap:2rem;justify-content:center;margin-top:1rem;flex-wrap:wrap}
+        .footer-links a{color:var(--silver);text-decoration:none;font-size:0.9rem}
+        .footer-links a:hover{color:var(--gold)}
+        
+        @media(max-width:768px){
+            .nav-links{display:none}
+            .hero-section h1{font-size:2rem}
+            .cta-card{padding:2rem}
+            .cta-title{font-size:1.5rem}
+            .cta-button{padding:1rem 2rem;font-size:1rem}
+            .reasons-grid{grid-template-columns:1fr}
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="logo">📖 Booksmaster</a>
+            <ul class="nav-links">
+                <li><a href="index.html#why">Why Us</a></li>
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="support.html">Support</a></li>
+                <li><a href="story.html">Our Story</a></li>
+                <li><a href="donate.html" class="nav-donate">❤️ Donate</a></li>
+                <li><a href="BooksmasterSetup.exe" class="nav-cta" download>⚔️ Download</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <div class="container">
+            <!-- Hero -->
+            <div class="hero-section">
+                <h1>Support <span>Open Source</span></h1>
+                <p>Booksmaster is free forever. Your support keeps development going and helps contractors everywhere.</p>
+            </div>
+
+            <!-- Eye-Catching CTA -->
+            <div class="cta-wrapper">
+                <div class="cta-glow"></div>
+                <div class="cta-card">
+                    <div class="cta-icon">❤️</div>
+                    <h2 class="cta-title">Support Booksmaster</h2>
+                    <p class="cta-subtitle">
+                        If Booksmaster saves you <strong>$100 at tax time</strong>, 
+                        consider donating <strong>$10</strong> to keep it free and open source for everyone.
+                    </p>
+                    <a href="https://aialchemist.net/donate" target="_blank" rel="noopener noreferrer" class="cta-button">
+                        <span>Support Development</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                    </a>
+                    <p class="cta-footer">💫 Sustained by community support, built with ❤️</p>
+                </div>
+            </div>
+
+            <!-- Why Support -->
+            <div class="section-header">
+                <h2>Why Your Support Matters</h2>
+                <p>Every donation directly fuels development</p>
+            </div>
+            
+            <div class="reasons-grid">
+                <div class="reason-card">
+                    <div class="reason-icon">🚀</div>
+                    <h3>Faster Updates</h3>
+                    <p>More time for bug fixes, new features, and improvements you actually need</p>
+                </div>
+                <div class="reason-card">
+                    <div class="reason-icon">🛡️</div>
+                    <h3>Long-term Support</h3>
+                    <p>Ensures Booksmaster stays maintained and secure for years to come</p>
+                </div>
+                <div class="reason-card">
+                    <div class="reason-icon">🌟</div>
+                    <h3>Community Growth</h3>
+                    <p>Expands documentation, tutorials, and resources for everyone</p>
+                </div>
+            </div>
+
+            <!-- What You Support -->
+            <div class="support-box">
+                <h3>What You're Supporting</h3>
+                <ul class="support-list">
+                    <li><strong>AI-powered receipt scanning</strong> — 94% accuracy with Gemini Vision</li>
+                    <li><strong>Privacy-first architecture</strong> — Your data stays on your device</li>
+                    <li><strong>Gamification system</strong> — Making bookkeeping less painful</li>
+                    <li><strong>Tax-ready reports</strong> — Schedule C, quarterly estimates, QuickBooks export</li>
+                    <li><strong>Free forever</strong> — No subscriptions, no paywalls, no vendor lock-in</li>
+                    <li><strong>Open source (MIT)</strong> — Fork it, modify it, make it yours</li>
+                </ul>
+            </div>
+
+            <!-- Value Proposition -->
+            <div class="value-box">
+                <h3>💰 The Real Value</h3>
+                <p>
+                    Manual receipt entry: 10 min/receipt → 30 sec with AI = <strong>30 hours saved/year</strong><br>
+                    At $50/hr contractor rate = <strong>$1,500+ value</strong><br>
+                    Plus: Lower tax prep fees ($300+), avoid software costs ($360+/year)<br><br>
+                    <em>Total value: $2,000-5,000/year. Cost to you: $0.</em>
+                </p>
+            </div>
+
+            <!-- Quote -->
+            <div class="quote-section">
+                <p>"Built by contractors, for contractors. Thank you for believing in open source."</p>
+                <span>— Manny, Creator of Booksmaster</span>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <h3>📖 Booksmaster</h3>
+        <p>Free & Open Source Bookkeeping for Independent Contractors</p>
+        <p style="margin-top:1rem">© 2026 AIAlchemistART. MIT License.</p>
+        <div class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="support.html">Support</a>
+            <a href="story.html">Our Story</a>
+            <a href="privacy.html">Privacy</a>
+            <a href="terms.html">Terms</a>
+            <a href="https://github.com/AIalchemistART/booksmaster" target="_blank">GitHub</a>
+        </div>
+    </footer>
+</body>
+</html>

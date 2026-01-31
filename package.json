@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -38,6 +39,7 @@
     "react-dom": "^18.2.0",
     "react-plaid-link": "^4.1.1",
     "recharts": "^2.10.3",
+    "resend": "^6.9.1",
     "tailwind-merge": "^2.1.0",
     "tesseract.js": "^6.0.1",
     "xlsx": "^0.18.5",
@@ -48,6 +50,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@types/file-saver": "^2.0.7",
+    "@types/heic-convert": "^2.1.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.10.4",
     "@types/react": "^18.2.45",
@@ -89,29 +92,46 @@
     ],
     "extraResources": [
       {
+        "from": "node_modules/heic-to",
+        "to": "node_modules/heic-to",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
         "from": "node_modules/heic-convert",
         "to": "node_modules/heic-convert",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "node_modules/heic-decode",
         "to": "node_modules/heic-decode",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "node_modules/libheif-js",
         "to": "node_modules/libheif-js",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "node_modules/jpeg-js",
         "to": "node_modules/jpeg-js",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "node_modules/pngjs",
         "to": "node_modules/pngjs",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
