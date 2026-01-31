@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Support & Contact - Booksmaster</title>
     <meta name="description" content="Get help with Booksmaster or join our mailing list for updates.">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -220,14 +221,25 @@
         // Check subscription status
         let checkTimeout;
         async function checkSubscriptionStatus(email) {
-            if (!email || !email.includes('@')) return;
+            if (!email || !email.includes('@') || !email.includes('.')) return;
             
             const status = document.getElementById('newsletter-status');
             const btn = document.querySelector('#newsletter-form button[type="submit"]');
             
             try {
                 const response = await fetch(`https://ai-alchemist.netlify.app/api/newsletter/check?email=${encodeURIComponent(email)}`);
+                
+                if (!response.ok) {
+                    console.warn('Check endpoint returned:', response.status);
+                    // If endpoint fails, allow signup
+                    status.textContent = '';
+                    btn.disabled = false;
+                    btn.textContent = 'Subscribe to Updates';
+                    return;
+                }
+                
                 const data = await response.json();
+                console.log('Subscription status:', data);
                 
                 if (data.subscribed) {
                     status.style.color = 'var(--green)';
@@ -249,13 +261,22 @@
                 // On error, allow signup
                 status.textContent = '';
                 btn.disabled = false;
+                btn.textContent = 'Subscribe to Updates';
             }
         }
         
         // Check status on email input
         document.getElementById('email').addEventListener('input', (e) => {
             clearTimeout(checkTimeout);
-            checkTimeout = setTimeout(() => checkSubscriptionStatus(e.target.value), 500);
+            checkTimeout = setTimeout(() => checkSubscriptionStatus(e.target.value), 800);
+        });
+        
+        // Check status on page load if email field has value
+        window.addEventListener('load', () => {
+            const emailField = document.getElementById('email');
+            if (emailField && emailField.value) {
+                checkSubscriptionStatus(emailField.value);
+            }
         });
         
         // Newsletter form handler
