@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 Thomas Cline (AIalchemistART)
+Copyright (c) 2026 Matthew "Manny" Walker
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,24 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-## IMPORTANT DISCLAIMER
-
-Booksmaster is a bookkeeping tool, NOT tax preparation software or professional
-accounting advice. 
-
-**User Responsibilities:**
-- You are solely responsible for the accuracy of your tax filings
-- AI-powered categorization may contain errors and must be reviewed
-- Always consult with a qualified CPA or tax professional before filing taxes
-- Verify all amounts, dates, and categorizations before use
-- This software does not guarantee IRS compliance
-
-**No Warranty:**
-The software is provided "as is" without warranty of any kind. The authors are
-not liable for any tax penalties, audit issues, or financial losses resulting
-from use of this software.
-
-**Use at Your Own Risk.**
