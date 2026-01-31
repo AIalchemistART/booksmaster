@@ -217,6 +217,47 @@
     </footer>
 
     <script>
+        // Check subscription status
+        let checkTimeout;
+        async function checkSubscriptionStatus(email) {
+            if (!email || !email.includes('@')) return;
+            
+            const status = document.getElementById('newsletter-status');
+            const btn = document.querySelector('#newsletter-form button[type="submit"]');
+            
+            try {
+                const response = await fetch(`https://ai-alchemist.netlify.app/api/newsletter/check?email=${encodeURIComponent(email)}`);
+                const data = await response.json();
+                
+                if (data.subscribed) {
+                    status.style.color = 'var(--green)';
+                    status.innerHTML = '✓ Thank you! You\'ll receive updates soon.';
+                    btn.disabled = true;
+                    btn.textContent = 'Already Subscribed';
+                } else if (data.status === 'unsubscribed') {
+                    status.style.color = 'var(--silver)';
+                    status.textContent = '';
+                    btn.disabled = false;
+                    btn.textContent = 'Subscribe to Updates';
+                } else {
+                    status.textContent = '';
+                    btn.disabled = false;
+                    btn.textContent = 'Subscribe to Updates';
+                }
+            } catch (error) {
+                console.error('Subscription check error:', error);
+                // On error, allow signup
+                status.textContent = '';
+                btn.disabled = false;
+            }
+        }
+        
+        // Check status on email input
+        document.getElementById('email').addEventListener('input', (e) => {
+            clearTimeout(checkTimeout);
+            checkTimeout = setTimeout(() => checkSubscriptionStatus(e.target.value), 500);
+        });
+        
         // Newsletter form handler
         document.getElementById('newsletter-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -245,15 +286,17 @@
                     status.style.color = 'var(--green)';
                     status.textContent = '✓ Thank you for subscribing! We\'ll keep you updated.';
                     e.target.reset();
+                    btn.textContent = 'Already Subscribed';
                 } else {
                     const error = await response.json();
                     status.style.color = 'var(--red)';
                     status.textContent = '✗ ' + (error.error || 'Failed to subscribe. Please try again.');
+                    btn.disabled = false;
+                    btn.textContent = originalText;
                 }
             } catch (error) {
                 status.style.color = 'var(--red)';
                 status.textContent = '✗ Network error. Please check your connection and try again.';
-            } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
