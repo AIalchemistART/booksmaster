@@ -14,7 +14,7 @@ exports.handler = async (event) => {
     const { email, name, interests } = JSON.parse(event.body);
 
     // Forward to AI Alchemist newsletter API
-    const response = await fetch('https://www.aialchemist.net/api/newsletter/subscribe', {
+    const response = await fetch('https://aialchemist.net/api/newsletter/subscribe', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
