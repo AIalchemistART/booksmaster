@@ -69,7 +69,7 @@ Common NAICS codes for reference (choose most specific):
 If description is vague or matches multiple codes, choose the most common for self-employed individuals.`
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1alpha/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
