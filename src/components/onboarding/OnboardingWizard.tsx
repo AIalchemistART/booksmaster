@@ -506,7 +506,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                             setBusinessType(result.description)
                           } catch (error) {
                             console.error('NAICS lookup error:', error)
-                            setNaicsError('Could not find NAICS code. Please try a different description or skip this step.')
+                            // Check if error is due to missing API key
+                            const errorMessage = error instanceof Error ? error.message : String(error)
+                            if (errorMessage.includes('API key required') || errorMessage.includes('API key')) {
+                              // Show API key modal
+                              setShowApiKeyModal(true)
+                            } else {
+                              setNaicsError('Could not find NAICS code. Please try a different description or skip this step.')
+                            }
                           } finally {
                             setNaicsLoading(false)
                           }
@@ -645,7 +652,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                             setAdditionalNaicsDescription('')
                           } catch (error) {
                             console.error('Additional NAICS lookup error:', error)
-                            setAdditionalNaicsError('Could not find NAICS code. Please try a different description.')
+                            // Check if error is due to missing API key
+                            const errorMessage = error instanceof Error ? error.message : String(error)
+                            if (errorMessage.includes('API key required') || errorMessage.includes('API key')) {
+                              // Show API key modal
+                              setShowApiKeyModal(true)
+                            } else {
+                              setAdditionalNaicsError('Could not find NAICS code. Please try a different description.')
+                            }
                           } finally {
                             setAdditionalNaicsLoading(false)
                           }
