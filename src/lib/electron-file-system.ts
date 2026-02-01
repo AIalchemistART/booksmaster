@@ -18,6 +18,13 @@ interface ElectronAPI {
   fsReaddir: (path: string) => Promise<{ success: boolean; files?: string[]; error?: string }>
   fsDeleteFile: (path: string) => Promise<{ success: boolean; error?: string }>
   clearAllAppData: () => Promise<{ success: boolean; error?: string }>
+  saveBatchReceiptImage: (receiptId: string, imageData: string) => Promise<{ success: boolean; path?: string; error?: string }>
+  loadBatchReceiptImage: (receiptId: string) => Promise<{ success: boolean; data?: string; error?: string }>
+  saveBatchReceiptMetadata: (receiptId: string, metadata: any) => Promise<{ success: boolean; path?: string; error?: string }>
+  loadBatchReceiptMetadata: (receiptId: string) => Promise<{ success: boolean; data?: any; error?: string }>
+  deleteBatchReceiptImage: (receiptId: string) => Promise<{ success: boolean; error?: string }>
+  clearBatchReceiptTemp: () => Promise<{ success: boolean; error?: string }>
+  openExternal: (url: string) => Promise<{ success: boolean; error?: string }>
   isElectron: boolean
 }
 
@@ -280,13 +287,13 @@ export async function saveCustodyExpensesToFileSystem(expenses: CustodyExpense[]
 export async function saveCorrectionsToFileSystem(corrections: CategorizationCorrection[]): Promise<void> {
   try {
     const api = getElectronAPI()
-    // console.log(`[ELECTRON FS] Saving ${corrections.length} categorization corrections...`)
+    console.log(`[ELECTRON FS] Saving ${corrections.length} categorization corrections...`)
     
     const filePath = 'ai-learning/categorization-corrections.json'
     const result = await api.fsWriteFile(filePath, JSON.stringify(corrections, null, 2))
     
     if (result.success) {
-      // console.log('[ELECTRON FS] Categorization corrections saved successfully')
+      console.log(`[ELECTRON FS] Saved ${corrections.length} corrections to ${filePath}`)
     } else {
       console.error('[ELECTRON FS] Error saving corrections:', result.error)
     }
@@ -302,17 +309,20 @@ export async function saveCorrectionsToFileSystem(corrections: CategorizationCor
 export async function loadCorrectionsFromFileSystem(): Promise<CategorizationCorrection[]> {
   try {
     const api = getElectronAPI()
-    // console.log('[ELECTRON FS] Loading categorization corrections...')
+    console.log('[ELECTRON FS] Loading categorization corrections...')
     
     const filePath = 'ai-learning/categorization-corrections.json'
     const result = await api.fsReadFile(filePath)
     
     if (result.success && result.data) {
       const corrections = JSON.parse(result.data)
-      // console.log(`[ELECTRON FS] Loaded ${corrections.length} corrections`)
+      console.log(`[ELECTRON FS] Loaded ${corrections.length} corrections from ${filePath}`)
+      if (corrections.length > 0) {
+        console.log(`[ELECTRON FS] Latest correction: ${corrections[corrections.length - 1].vendor} at ${corrections[corrections.length - 1].timestamp}`)
+      }
       return corrections
     } else {
-      // console.log('[ELECTRON FS] No corrections file found, returning empty array')
+      console.log(`[ELECTRON FS] No corrections file found at ${filePath}, returning empty array`)
       return []
     }
   } catch (error) {

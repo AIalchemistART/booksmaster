@@ -1,7 +1,8 @@
-const { app, BrowserWindow, ipcMain, dialog, protocol } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, protocol, shell } = require('electron')
 const path = require('path')
 const fs = require('fs').promises
 const fsSync = require('fs')
+const os = require('os')
 const heicConvert = require('heic-convert')
 
 let mainWindow = null
@@ -368,6 +369,201 @@ ipcMain.handle('convert-heic', async (event, arrayBuffer) => {
       success: false, 
       error: error.message 
     }
+  }
+})
+
+// Batch receipt temp folder storage
+// Use app's temp directory for batch receipt images to avoid localStorage quota
+const batchReceiptTempDir = path.join(app.getPath('temp'), 'booksmaster-batch-receipts')
+console.log('[BATCH TEMP] Temp folder path:', batchReceiptTempDir)
+
+// Ensure temp directory exists
+function ensureBatchTempDir() {
+  if (!fsSync.existsSync(batchReceiptTempDir)) {
+    fsSync.mkdirSync(batchReceiptTempDir, { recursive: true })
+    console.log('[BATCH TEMP] Created temp directory:', batchReceiptTempDir)
+  }
+}
+
+// Save batch receipt image to temp folder
+ipcMain.handle('save-batch-receipt-image', async (event, receiptId, imageData) => {
+  try {
+    ensureBatchTempDir()
+    const filePath = path.join(batchReceiptTempDir, `${receiptId}.jpg`)
+    
+    // imageData is base64 data URL (data:image/jpeg;base64,...)
+    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '')
+    const buffer = Buffer.from(base64Data, 'base64')
+    
+    await fs.writeFile(filePath, buffer)
+    console.log('[BATCH TEMP] Saved receipt image:', receiptId)
+    return { success: true, path: filePath }
+  } catch (error) {
+    console.error('[BATCH TEMP] Failed to save receipt image:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+// Load batch receipt image from temp folder
+ipcMain.handle('load-batch-receipt-image', async (event, receiptId) => {
+  try {
+    const filePath = path.join(batchReceiptTempDir, `${receiptId}.jpg`)
+    const buffer = await fs.readFile(filePath)
+    const base64 = buffer.toString('base64')
+    const dataUrl = `data:image/jpeg;base64,${base64}`
+    
+    console.log('[BATCH TEMP] Loaded receipt image:', receiptId)
+    return { success: true, data: dataUrl }
+  } catch (error) {
+    console.error('[BATCH TEMP] Failed to load receipt image:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+// Save batch receipt metadata JSON to temp folder
+ipcMain.handle('save-batch-receipt-metadata', async (event, receiptId, metadata) => {
+  try {
+    ensureBatchTempDir()
+    const filePath = path.join(batchReceiptTempDir, `${receiptId}.json`)
+    await fs.writeFile(filePath, JSON.stringify(metadata))
+    console.log('[BATCH TEMP] Saved receipt metadata:', receiptId)
+    return { success: true, path: filePath }
+  } catch (error) {
+    console.error('[BATCH TEMP] Failed to save receipt metadata:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+// Load batch receipt metadata JSON from temp folder
+ipcMain.handle('load-batch-receipt-metadata', async (event, receiptId) => {
+  try {
+    const filePath = path.join(batchReceiptTempDir, `${receiptId}.json`)
+    const data = await fs.readFile(filePath, 'utf8')
+    const metadata = JSON.parse(data)
+    console.log('[BATCH TEMP] Loaded receipt metadata:', receiptId)
+    return { success: true, data: metadata }
+  } catch (error) {
+    console.error('[BATCH TEMP] Failed to load receipt metadata:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+// Delete batch receipt image from temp folder
+ipcMain.handle('delete-batch-receipt-image', async (event, receiptId) => {
+  try {
+    const imagePath = path.join(batchReceiptTempDir, `${receiptId}.jpg`)
+    const metadataPath = path.join(batchReceiptTempDir, `${receiptId}.json`)
+    
+    // Delete both image and metadata files
+    const deletePromises = []
+    if (fsSync.existsSync(imagePath)) {
+      deletePromises.push(fs.unlink(imagePath))
+    }
+    if (fsSync.existsSync(metadataPath)) {
+      deletePromises.push(fs.unlink(metadataPath))
+    }
+    
+    await Promise.all(deletePromises)
+    console.log('[BATCH TEMP] Deleted receipt files:', receiptId)
+    return { success: true }
+  } catch (error) {
+    // Ignore errors if file doesn't exist
+    return { success: true }
+  }
+})
+
+// Clear all batch receipt temp files
+ipcMain.handle('clear-batch-receipt-temp', async () => {
+  try {
+    if (fsSync.existsSync(batchReceiptTempDir)) {
+      const files = await fs.readdir(batchReceiptTempDir)
+      await Promise.all(files.map(file => 
+        fs.unlink(path.join(batchReceiptTempDir, file)).catch(() => {})
+      ))
+      console.log('[BATCH TEMP] Cleared all temp receipt images')
+    }
+    return { success: true }
+  } catch (error) {
+    console.error('[BATCH TEMP] Failed to clear temp folder:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+// Open external URL in default browser
+ipcMain.handle('open-external', async (event, url) => {
+  try {
+    console.log('[ELECTRON] Opening external URL:', url)
+    await shell.openExternal(url)
+    return { success: true }
+  } catch (error) {
+    console.error('[ELECTRON] Failed to open external URL:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+// Print with preview - generates PDF and opens with system viewer
+ipcMain.handle('print-preview', async (event, htmlContent) => {
+  let printWindow = null
+  
+  try {
+    console.log('[ELECTRON PRINT] Creating PDF for print preview')
+    
+    // Create a hidden window for PDF generation
+    printWindow = new BrowserWindow({
+      width: 800,
+      height: 1100,
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true
+      }
+    })
+    
+    // Load the HTML content
+    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`)
+    
+    // Wait for content to fully render
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    console.log('[ELECTRON PRINT] Generating PDF')
+    
+    // Generate PDF
+    const pdfData = await printWindow.webContents.printToPDF({
+      printBackground: true,
+      margins: {
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0
+      }
+    })
+    
+    // Save to temp directory
+    const tempDir = os.tmpdir()
+    const pdfPath = path.join(tempDir, `booksmaster-invoice-${Date.now()}.pdf`)
+    await fs.writeFile(pdfPath, pdfData)
+    
+    console.log('[ELECTRON PRINT] PDF saved to:', pdfPath)
+    console.log('[ELECTRON PRINT] Opening PDF with system viewer')
+    
+    // Open with system default PDF viewer (which has print preview)
+    await shell.openPath(pdfPath)
+    
+    // Clean up window
+    if (printWindow && !printWindow.isDestroyed()) {
+      printWindow.destroy()
+    }
+    
+    return { success: true, pdfPath }
+    
+  } catch (error) {
+    console.error('[ELECTRON PRINT] Failed to generate PDF:', error)
+    
+    if (printWindow && !printWindow.isDestroyed()) {
+      printWindow.destroy()
+    }
+    
+    return { success: false, error: error.message }
   }
 })
 

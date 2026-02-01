@@ -5,11 +5,15 @@ import { useStore } from '@/store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { CheckCircle, ArrowRight, ArrowLeft, Sparkles, Rocket, Moon, Sun, Briefcase, Calendar, FolderOpen } from 'lucide-react'
+import { CheckCircle, ArrowRight, ArrowLeft, Sparkles, Rocket, Moon, Sun, Briefcase, Calendar, FolderOpen, X } from 'lucide-react'
 import { JOB_TYPE_LABELS, type TechTreePath } from '@/lib/gamification/leveling-system'
 import { setupFileSystemStorage } from '@/lib/file-system-adapter'
 import { setGeminiApiKey, getGeminiApiKey } from '@/lib/persistent-storage'
 import { CustomJobDescriptionDialog } from '@/components/gamification/CustomJobDescriptionDialog'
+import { GeminiApiKeyRequiredModal } from '@/components/modals/GeminiApiKeyRequiredModal'
+import { DonationModal } from '@/components/modals/DonationModal'
+import { lookupNAICS, type NAICSResult } from '@/lib/naics-lookup'
+import { logger } from '@/lib/logger'
 
 interface OnboardingWizardProps {
   onComplete: () => void
@@ -20,8 +24,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [businessName, setBusinessName] = useState('')
   const [businessType, setBusinessType] = useState('')
+  const [businessDescription, setBusinessDescription] = useState('')
+  const [naicsResult, setNaicsResult] = useState<NAICSResult | null>(null)
+  const [naicsLoading, setNaicsLoading] = useState(false)
+  const [naicsError, setNaicsError] = useState('')
+  const [additionalNaicsResults, setAdditionalNaicsResults] = useState<NAICSResult[]>([])
+  const [additionalNaicsDescription, setAdditionalNaicsDescription] = useState('')
+  const [additionalNaicsLoading, setAdditionalNaicsLoading] = useState(false)
+  const [additionalNaicsError, setAdditionalNaicsError] = useState('')
   const [selectedTheme, setSelectedTheme] = useState<'light' | 'dark' | null>(null)
   const [selectedJobType, setSelectedJobType] = useState<TechTreePath | ''>('')
+  const [additionalJobTypes, setAdditionalJobTypes] = useState<TechTreePath[]>([])
   const [showCustomJobDialog, setShowCustomJobDialog] = useState(false)
   const [fiscalYearType, setFiscalYearType] = useState<'calendar' | 'federal' | 'custom'>('calendar')
   const [fiscalYearStartMonth, setFiscalYearStartMonth] = useState(1)
@@ -30,15 +43,33 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '')
   const [unlockedFeatures, setUnlockedFeatures] = useState<Set<number>>(new Set())
   const [showConfetti, setShowConfetti] = useState(false)
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false)
+  const [pendingCustomJobDialog, setPendingCustomJobDialog] = useState(false)
+  const [showDonationModal, setShowDonationModal] = useState(() => {
+    // Check if user has seen the welcome donation modal
+    const hasSeenWelcome = localStorage.getItem('hasSeenWelcomeDonationModal')
+    return !hasSeenWelcome
+  })
 
-  const totalSteps = 8
+  const totalSteps = 9 // Added step for additional job types
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1)
+      let nextStep = currentStep + 1
+      
+      // Skip Step 8 (API key) if user already set it up via early modal
+      if (nextStep === 8) {
+        const existingApiKey = localStorage.getItem('gemini-api-key')
+        if (existingApiKey) {
+          logger.debug('[ONBOARDING] Skipping API key step - already configured')
+          nextStep = 9 // Skip to final step
+        }
+      }
+      
+      setCurrentStep(nextStep)
       
       // Trigger confetti when entering Step 7 (feature unlocks)
-      if (currentStep === 6) {
+      if (currentStep === 7) {
         setShowConfetti(true)
         setTimeout(() => setShowConfetti(false), 4000)
       }
@@ -47,10 +78,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       if (currentStep === 3 && businessName) {
         store.completeAction('completeProfile')
       }
-      if (currentStep === 4 && fiscalYearType) {
+      if (currentStep === 5 && fiscalYearType) {
         store.completeAction('setFiscalYear')
       }
-      if (currentStep === 7 && apiKey) {
+      if (currentStep === 8 && apiKey) {
         store.completeAction('connectApiKey')
       }
     } else {
@@ -60,7 +91,18 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const handleBack = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
+      let prevStep = currentStep - 1
+      
+      // Skip Step 8 (API key) when going backwards if already configured
+      if (prevStep === 8) {
+        const existingApiKey = localStorage.getItem('gemini-api-key')
+        if (existingApiKey) {
+          logger.debug('[ONBOARDING] Skipping API key step (backwards) - already configured')
+          prevStep = 7 // Go back to step before API key
+        }
+      }
+      
+      setCurrentStep(prevStep)
     }
   }
 
@@ -82,10 +124,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       // console.log('[WIZARD] Set business type:', businessType.trim())
     }
     
-    // Save job specialization
+    // Save job specialization(s)
     if (selectedJobType) {
-      store.selectTechPath(selectedJobType)
-      // console.log('[WIZARD] Set tech path:', selectedJobType)
+      const allJobTypes = [selectedJobType, ...additionalJobTypes]
+      store.setJobTypes(allJobTypes)
+      // console.log('[WIZARD] Set tech paths:', allJobTypes)
     }
     
     // Apply selected theme (already applied on selection, but ensure it's saved)
@@ -143,6 +186,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       // console.log('[WIZARD] No API key to save (empty or whitespace)')
     }
     
+    // Save NAICS business info if available
+    if (naicsResult) {
+      store.setBusinessInfo(
+        naicsResult.code,
+        naicsResult.title,
+        businessDescription,
+        naicsResult.sector
+      )
+      // console.log('[WIZARD] Saved NAICS business info:', naicsResult)
+    }
+    
     // Mark onboarding complete (no XP award - stay at Level 1)
     store.completeOnboarding()
     // console.log('[WIZARD] Marked onboarding complete - user stays at Level 1')
@@ -150,7 +204,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     // Unlock wizard-related achievements
     // console.log('[WIZARD] Unlocking wizard achievements...')
     store.unlockAchievement('onboarding_complete')
-    if (selectedJobType) {
+    if (selectedJobType || naicsResult) {
       store.unlockAchievement('job_type_selected')
     }
     if (apiKey && apiKey.trim()) {
@@ -196,17 +250,19 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       case 2:
         return selectedTheme !== null // Theme selection required
       case 3:
-        return businessName.trim().length > 0 && selectedJobType !== '' // Business name + job specialization
+        return businessName.trim().length > 0 && (naicsResult !== null || selectedJobType !== '') // Business name + NAICS or job type
       case 4:
-        return true // Fiscal year - has default
+        return true // Additional job types (optional)
       case 5:
-        return fileSystemConfigured // File system setup required
+        return true // Fiscal year - has default
       case 6:
-        return true // Feature unlocks - informational only
+        return fileSystemConfigured // File system setup required
       case 7:
-        return true // API key - optional (can skip)
+        return true // Features overview - informational only
       case 8:
-        return true // Summary - always can proceed
+        return true // API Key (optional) (can skip)
+      case 9:
+        return true // Final step - always can proceed
       default:
         return false
     }
@@ -411,43 +467,229 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       <Briefcase className="h-4 w-4" />
-                      Job Specialization *
+                      What type of work do you do? *
                     </label>
-                    <select
-                      value={selectedJobType}
-                      onChange={(e) => {
-                        const value = e.target.value as TechTreePath | ''
-                        setSelectedJobType(value)
-                        // Update businessType to match selection
-                        if (value) {
-                          setBusinessType(JOB_TYPE_LABELS[value as TechTreePath])
-                        }
-                      }}
-                      className="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    >
-                      <option value="">Select your specialization...</option>
-                      {(Object.entries(JOB_TYPE_LABELS) as [TechTreePath, string][]).map(([key, label]) => (
-                        <option key={key} value={key}>{label}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => setShowCustomJobDialog(true)}
-                      className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                    >
-                      <Sparkles className="h-3 w-3" />
-                      Describe Your Job & Let AI Match
-                    </button>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      This customizes features and expense categories for your work
+                    <div className="space-y-3">
+                      <Input
+                        placeholder="e.g., I do residential kitchen remodeling"
+                        value={businessDescription}
+                        onChange={(e) => {
+                          setBusinessDescription(e.target.value)
+                          setNaicsError('')
+                        }}
+                        className="text-base"
+                        disabled={naicsLoading}
+                      />
+                      
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          if (!businessDescription.trim()) {
+                            setNaicsError('Please describe your work first')
+                            return
+                          }
+                          
+                          // Check if API key exists
+                          const currentApiKey = localStorage.getItem('gemini-api-key')
+                          if (!currentApiKey) {
+                            // No API key - show modal to get it first
+                            setShowApiKeyModal(true)
+                            return
+                          }
+                          
+                          setNaicsLoading(true)
+                          setNaicsError('')
+                          
+                          try {
+                            const result = await lookupNAICS(businessDescription)
+                            setNaicsResult(result)
+                            setBusinessType(result.description)
+                          } catch (error) {
+                            console.error('NAICS lookup error:', error)
+                            setNaicsError('Could not find NAICS code. Please try a different description or skip this step.')
+                          } finally {
+                            setNaicsLoading(false)
+                          }
+                        }}
+                        disabled={naicsLoading || !businessDescription.trim()}
+                        className="w-full"
+                        variant="outline"
+                      >
+                        {naicsLoading ? 'Finding your business code...' : '🔍 Find My Business Code (NAICS)'}
+                      </Button>
+                      
+                      {naicsResult && (
+                        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="font-semibold text-green-900 dark:text-green-100">
+                                {naicsResult.title}
+                              </p>
+                              <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                                NAICS Code: {naicsResult.code}
+                              </p>
+                              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                Sector: {naicsResult.sector}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {naicsError && (
+                        <p className="text-sm text-red-600 dark:text-red-400">
+                          {naicsError}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      💡 Your NAICS code is required for IRS Schedule C (Line B). We'll use AI to find the right code for your business.
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Step 4: Fiscal Year Configuration */}
+            {/* Step 4: Additional Income Sources (Optional) - NAICS System */}
             {currentStep === 4 && (
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <div className="text-5xl mb-4">💼➕</div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                    Do You Have Other Income Sources?
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Optional: Add up to 3 more income sources for better tax categorization
+                  </p>
+                </div>
+                
+                <div className="max-w-md mx-auto space-y-4">
+                  {/* Primary business display */}
+                  {naicsResult && (
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-1">PRIMARY BUSINESS</p>
+                      <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                        {naicsResult.title}
+                      </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        NAICS: {naicsResult.code} • {naicsResult.sector}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Show additional income sources */}
+                  {additionalNaicsResults.map((result, index) => (
+                    <div key={index} className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <p className="text-xs text-green-600 dark:text-green-400 font-semibold mb-1">ADDITIONAL INCOME SOURCE {index + 1}</p>
+                          <p className="text-sm text-green-800 dark:text-green-200 font-medium">
+                            {result.title}
+                          </p>
+                          <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                            NAICS: {result.code} • {result.sector}
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setAdditionalNaicsResults(additionalNaicsResults.filter((_, i) => i !== index))
+                          }}
+                          className="border-green-300 dark:border-green-700"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Add new income source form */}
+                  {additionalNaicsResults.length < 3 && (
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Describe Another Income Source (Optional)
+                      </label>
+                      <textarea
+                        placeholder="e.g., I also do gig driving for Uber on weekends"
+                        value={additionalNaicsDescription}
+                        onChange={(e) => setAdditionalNaicsDescription(e.target.value)}
+                        className="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                        rows={2}
+                        disabled={additionalNaicsLoading}
+                      />
+                      
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          if (!additionalNaicsDescription.trim()) {
+                            setAdditionalNaicsError('Please describe your additional income source first')
+                            return
+                          }
+                          
+                          // Check if API key exists
+                          const currentApiKey = localStorage.getItem('gemini-api-key')
+                          if (!currentApiKey) {
+                            setShowApiKeyModal(true)
+                            return
+                          }
+                          
+                          setAdditionalNaicsLoading(true)
+                          setAdditionalNaicsError('')
+                          
+                          try {
+                            const result = await lookupNAICS(additionalNaicsDescription)
+                            setAdditionalNaicsResults([...additionalNaicsResults, result])
+                            setAdditionalNaicsDescription('')
+                          } catch (error) {
+                            console.error('Additional NAICS lookup error:', error)
+                            setAdditionalNaicsError('Could not find NAICS code. Please try a different description.')
+                          } finally {
+                            setAdditionalNaicsLoading(false)
+                          }
+                        }}
+                        disabled={additionalNaicsLoading || !additionalNaicsDescription.trim()}
+                        className="w-full"
+                        variant="outline"
+                      >
+                        {additionalNaicsLoading ? 'Finding business code...' : '🔍 Find Business Code for Additional Income'}
+                      </Button>
+                      
+                      {additionalNaicsError && (
+                        <p className="text-sm text-red-600 dark:text-red-400">
+                          {additionalNaicsError}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {additionalNaicsResults.length >= 3 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      Maximum of 3 additional income sources reached (4 total including primary).
+                    </p>
+                  )}
+
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      <strong>💡 Tip:</strong> Adding multiple income sources helps categorize expenses correctly for each business activity (e.g., construction + rideshare driver).
+                    </p>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={handleNext}
+                    className="w-full"
+                  >
+                    {additionalNaicsResults.length > 0 ? `Continue with ${additionalNaicsResults.length + 1} income sources` : 'Skip - I only have one income source'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Fiscal Year Configuration */}
+            {currentStep === 5 && (
               <div className="space-y-6">
                 <div className="text-center mb-6">
                   <div className="text-5xl mb-4">📅</div>
@@ -531,8 +773,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               </div>
             )}
 
-            {/* Step 5: Local Storage Folder Setup */}
-            {currentStep === 5 && (
+            {/* Step 6: Local Storage Folder Setup */}
+            {currentStep === 6 && (
               <div className="space-y-6">
                 <div className="text-center mb-6">
                   <div className="text-5xl mb-4">📁</div>
@@ -600,8 +842,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               </div>
             )}
 
-            {/* Step 6: Feature Unlocks */}
-            {currentStep === 6 && (
+            {/* Step 7: Feature Unlocks */}
+            {currentStep === 7 && (
               <div className="space-y-6 relative">
                 {/* Confetti Animation */}
                 {showConfetti && (
@@ -768,8 +1010,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               </div>
             )}
 
-            {/* Step 7: API Key */}
-            {currentStep === 7 && (
+            {/* Step 8: API Key */}
+            {currentStep === 8 && (
               <div className="space-y-6">
                 <div className="text-center mb-6">
                   <div className="text-5xl mb-4">🤖</div>
@@ -833,8 +1075,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               </div>
             )}
 
-            {/* Step 8: Configuration Summary */}
-            {currentStep === 8 && (
+            {/* Step 9: Configuration Summary */}
+            {currentStep === 9 && (() => {
+              // Check for API key in localStorage (could be set via modal or Step 8)
+              const currentApiKey = localStorage.getItem('gemini-api-key') || apiKey
+              const hasApiKey = !!currentApiKey?.trim()
+              
+              return (
               <div className="space-y-6">
                 <div className="text-center mb-6">
                   <div className="text-6xl mb-4">✅</div>
@@ -848,10 +1095,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 
                 <div className="max-w-2xl mx-auto space-y-4">
                   {/* Theme */}
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                        {selectedTheme === 'dark' ? <Moon className="h-5 w-5 text-blue-600 dark:text-blue-400" /> : <Sun className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+                      <div className="flex-shrink-0 w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                        {selectedTheme === 'dark' ? <Moon className="h-5 w-5 text-purple-600 dark:text-purple-400" /> : <Sun className="h-5 w-5 text-purple-600 dark:text-purple-400" />}
                       </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">Theme</h3>
@@ -864,10 +1111,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </div>
 
                   {/* Business Info */}
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
-                        <Briefcase className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                      <div className="flex-shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                        <Briefcase className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">Business Information</h3>
@@ -880,10 +1127,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </div>
 
                   {/* Fiscal Year */}
-                  <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-900 rounded-full flex items-center justify-center">
-                        <Calendar className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      <div className="flex-shrink-0 w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                        <Calendar className="h-5 w-5 text-green-600 dark:text-green-400" />
                       </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">Fiscal Year</h3>
@@ -898,10 +1145,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </div>
 
                   {/* File System */}
-                  <div className={`p-4 border rounded-lg ${fileSystemConfigured ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
+                  <div className={`p-4 border rounded-lg ${fileSystemConfigured ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
                     <div className="flex items-start gap-3">
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${fileSystemConfigured ? 'bg-green-100 dark:bg-green-900' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                        <FolderOpen className={`h-5 w-5 ${fileSystemConfigured ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`} />
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${fileSystemConfigured ? 'bg-amber-100 dark:bg-amber-900' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                        <FolderOpen className={`h-5 w-5 ${fileSystemConfigured ? 'text-amber-600 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400'}`} />
                       </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">Local Storage Folder</h3>
@@ -919,34 +1166,35 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </div>
 
                   {/* API Key */}
-                  <div className={`p-4 border rounded-lg ${apiKey.trim() ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
+                  <div className={`p-4 border rounded-lg ${hasApiKey ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
                     <div className="flex items-start gap-3">
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${apiKey.trim() ? 'bg-green-100 dark:bg-green-900' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                        <Sparkles className={`h-5 w-5 ${apiKey.trim() ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`} />
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${hasApiKey ? 'bg-yellow-100 dark:bg-yellow-900' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                        <Sparkles className={`h-5 w-5 ${hasApiKey ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-500 dark:text-gray-400'}`} />
                       </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">AI Features</h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {apiKey.trim() ? `API Key: ${apiKey.substring(0, 8)}${'•'.repeat(20)}` : 'Not configured - Add API key in Settings'}
+                          {hasApiKey ? `API Key: ${currentApiKey!.substring(0, 8)}${'•'.repeat(20)}` : 'Not configured - Add API key in Settings'}
                         </p>
-                        {!apiKey.trim() && (
+                        {!hasApiKey && (
                           <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                             ⚠️ Receipt OCR requires an API key
                           </p>
                         )}
                       </div>
-                      {apiKey.trim() ? <CheckCircle className="h-5 w-5 text-green-600" /> : <span className="text-gray-400">⊘</span>}
+                      {hasApiKey ? <CheckCircle className="h-5 w-5 text-green-600" /> : <span className="text-gray-400">⊘</span>}
                     </div>
                   </div>
 
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg mt-6">
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 border border-purple-200 dark:border-purple-800 rounded-lg mt-6">
                     <p className="text-sm text-center text-gray-700 dark:text-gray-300">
                       💡 <strong>Pro Tip:</strong> Visit <strong>Settings</strong> anytime to adjust these preferences or view detailed configuration status.
                     </p>
                   </div>
                 </div>
               </div>
-            )}
+              )
+            })()}
 
             {/* Navigation Buttons */}
             <div className="flex justify-between items-center mt-8 pt-6 border-t dark:border-gray-700">
@@ -980,6 +1228,43 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* API Key Modal - shown when user tries AI matching without API key */}
+      {showApiKeyModal && (
+        <GeminiApiKeyRequiredModal
+          onSetupComplete={() => {
+            logger.debug('[ONBOARDING] API key setup complete')
+            setShowApiKeyModal(false)
+            // Update apiKey state to reflect newly saved key
+            const savedKey = localStorage.getItem('gemini-api-key')
+            if (savedKey) {
+              setApiKey(savedKey)
+            }
+            // Trigger API achievement when user sets up key via modal
+            store.unlockAchievement('api_connected')
+            // If they were trying to use custom job dialog, open it now
+            if (pendingCustomJobDialog) {
+              setPendingCustomJobDialog(false)
+              setShowCustomJobDialog(true)
+            }
+          }}
+          onSkip={() => {
+            logger.debug('[ONBOARDING] API key setup skipped')
+            setShowApiKeyModal(false)
+            setPendingCustomJobDialog(false)
+          }}
+        />
+      )}
+
+      {/* Donation Modal - shown before onboarding begins */}
+      <DonationModal
+        isOpen={showDonationModal}
+        onClose={() => {
+          localStorage.setItem('hasSeenWelcomeDonationModal', 'true')
+          setShowDonationModal(false)
+        }}
+        variant="welcome"
+      />
 
       {/* Custom Job Description Dialog */}
       {showCustomJobDialog && (

@@ -43,6 +43,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Clear all app data (localStorage, cache, etc.)
   clearAllAppData: () => ipcRenderer.invoke('clear-all-app-data'),
   
+  // Batch receipt temp folder operations
+  saveBatchReceiptImage: (receiptId, imageData) => ipcRenderer.invoke('save-batch-receipt-image', receiptId, imageData),
+  loadBatchReceiptImage: (receiptId) => ipcRenderer.invoke('load-batch-receipt-image', receiptId),
+  saveBatchReceiptMetadata: (receiptId, metadata) => ipcRenderer.invoke('save-batch-receipt-metadata', receiptId, metadata),
+  loadBatchReceiptMetadata: (receiptId) => ipcRenderer.invoke('load-batch-receipt-metadata', receiptId),
+  deleteBatchReceiptImage: (receiptId) => ipcRenderer.invoke('delete-batch-receipt-image', receiptId),
+  clearBatchReceiptTemp: () => ipcRenderer.invoke('clear-batch-receipt-temp'),
+  
+  // Print with preview
+  printPreview: (htmlContent) => ipcRenderer.invoke('print-preview', htmlContent),
+  
+  // Open external URLs in default browser
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  
   // Environment check
   isElectron: true
 })
