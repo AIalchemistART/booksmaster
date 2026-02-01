@@ -140,7 +140,8 @@
         "arch": [
           "x64"
         ]
-      }
+      },
+      "icon": "build/icon.png"
     },
     "nsis": {
       "oneClick": true,
